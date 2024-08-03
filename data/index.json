@@ -1,0 +1,16 @@
+{
+  "TotalNodes": 2,
+  "TotalEdges": 2,
+  "Nodes": [
+    {
+      "NodeId": 0,
+      "FilePath": "c:\\Users\\conor\\conor_code\\graph-with-nodes\\data\\0000\\00000000\\000000000000\\0000000000000000.node",
+      "EdgeCount": 2
+    },
+    {
+      "NodeId": 3,
+      "FilePath": "c:\\Users\\conor\\conor_code\\graph-with-nodes\\data\\0000\\00000000\\000000000000\\0000000000000003.node",
+      "EdgeCount": 0
+    }
+  ]
+}

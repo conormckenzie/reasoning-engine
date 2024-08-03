@@ -1,0 +1,18 @@
+{
+  "nodeID": 0,
+  "nodeContent": "Node 0 content",
+  "edges": [
+    {
+      "FromNode": 0,
+      "ToNode": 1,
+      "Weight": 0.9,
+      "EdgeContent": "edge to node 2"
+    },
+    {
+      "FromNode": 2,
+      "ToNode": 0,
+      "Weight": -0.3,
+      "EdgeContent": "edge from node 3"
+    }
+  ]
+}
