@@ -1,15 +1,19 @@
-﻿// Program.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 using DotNetEnv;
 using GraphFileHandling;
 using Newtonsoft.Json;
+using DebugUtils; // Ensure you use the correct namespace
 
 class Program
 {
-    static List<(long, string)> nodeChanges = new List<(long, string)>();
-    static List<Edge> edgeChanges = new List<Edge>();
-    static bool debugMode = false;
+    // Initialize nodes and edges
+    public static List<Node> nodes = new List<Node>(); // Use Node class instead of tuple
+    public static List<Edge> edges = new List<Edge>(); // Use Edge class
+
+    // Lists to track node and edge changes
+    public static List<Node> nodeChanges = new List<Node>();
+    public static List<Edge> edgeChanges = new List<Edge>();
 
     static void Main(string[] args)
     {
@@ -17,29 +21,10 @@ class Program
         Env.Load();
 
         // Get the folder path and file name from environment variables
-        string folderPath = Environment.GetEnvironmentVariable("FOLDER_PATH") ?? throw new Exception();
-        string fileName = Environment.GetEnvironmentVariable("FILE_NAME") ?? throw new Exception();
-
-        // Combine folder path and file name to get the full file path
-        string filePath = System.IO.Path.Combine(folderPath, fileName);
-
-        // Initialize nodes and edges
-        var nodes = new List<(int, string)>(); // [0] -> index; [1]-> semantic content of node 
-        var edges = new List<Edge>(); // Use Edge class instead of tuple
-
-        // Lists to track node and edge changes
-
-        // Example data to test saving
-        long nodeId = 1;
-        string nodeContent = "Node 1 content";
-        edges.Add(new Edge { FromNode = 1, ToNode = 2, Weight = 0.9, EdgeContent = "edge to node 2" });
-        edges.Add(new Edge { FromNode = 3, ToNode = 1, Weight = -0.3, EdgeContent = "edge from node 3" });
-
-        // Define the base directory for the graph files
-        string baseDir = folderPath;
+        string dataFolderPath = Environment.GetEnvironmentVariable("DATA_FOLDER_PATH") ?? throw new Exception();
 
         // Create an instance of the GraphFileManager
-        var manager = new GraphFileManager(baseDir);
+        var manager = new GraphFileManager(dataFolderPath);
 
         // Run the SaveLoad test
         // SaveLoadTest.RunTest(manager);
@@ -47,20 +32,16 @@ class Program
         ShowMenu(manager);
     }
 
-    // Method to show the menu and handle user input
     static void ShowMenu(GraphFileManager manager)
     {
         while (true)
         {
-            Console.ForegroundColor = ConsoleColor.Green;
-            DebugWriteLine("#MNMU#", "\nMAIN MENU");
-            Console.ResetColor();
-            Console.WriteLine("Select an option:");
-            Console.WriteLine("1. Save Node");
-            Console.WriteLine("2. Load Node");
-            Console.WriteLine("3. Set Debug Mode");
-            Console.WriteLine("4. Run Tests");
-            Console.Write("Enter option: ");
+            DebugWriter.DebugWriteLine("#D7D1#", "Select an option:");
+            DebugWriter.DebugWriteLine("#D7D2#", "1. Save Node");
+            DebugWriter.DebugWriteLine("#D7D3#", "2. Load Node");
+            DebugWriter.DebugWriteLine("#D7D4#", "3. Set Debug Mode");
+            DebugWriter.DebugWriteLine("#D7D5#", "4. Exit");
+            DebugWriter.DebugWrite("#D7D6#", "Enter option: ");
 
             var option = Console.ReadLine();
 
@@ -73,90 +54,47 @@ class Program
                     LoadNode(manager);
                     break;
                 case "3":
-                    SetDebugMode();
+                    DebugOptions.SetDebugMode();
                     break;
                 case "4":
-                    DebugWriteLine("#T7PC#", "Test non-debug message with inline: true");
-                    DebugWriteLine("#T7PD#", "Test non-debug message with inline: false", false);
-                    break;
-                case "5":
                     return; // Exit the loop and end the program
                 default:
-                    Console.WriteLine("Invalid option. Please try again.");
+                    DebugWriter.DebugWriteLine("#D7D7#", "Invalid option. Please try again.");
                     break;
             }
         }
     }
 
-    static void SetDebugMode()
+    static void SaveNode(GraphFileManager manager)
     {
-        Console.WriteLine("Debug mode is currently " + (debugMode ? "ON" : "OFF"));
-        Console.Write("Would you like to turn it " + (debugMode ? "OFF" : "ON") + "? (y/n): ");
-        string response = Console.ReadLine().ToLower();
-        if (response == "y")
-        {
-            debugMode = !debugMode;
-            Console.WriteLine("Debug mode is now " + (debugMode ? "ON" : "OFF"));
-        }
-        else
-        {
-            Console.WriteLine("Debug mode unchanged. It is currently " + (debugMode ? "ON" : "OFF"));
-        }
-    }
-
-    static void DebugWriteLine(string debugMessage, string regularMessage, bool inLine = true)
-    {
-        if (debugMode)
-        {
-            if (inLine)
-            {
-                Console.ForegroundColor = ConsoleColor.Yellow; // Set the color for debug messages
-                Console.Write("[DEBUG] { " + debugMessage + " }; ");
-                Console.ResetColor(); // Reset the color to default
-                Console.WriteLine(regularMessage);
-            }
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("[DEBUG] " + debugMessage);
-                Console.ResetColor();
-            }
-        }
-        Console.WriteLine(regularMessage);
-    }
-
-
-    // Method to save node data
-     static void SaveNode(GraphFileManager manager)
-    {
-        Console.WriteLine("Select save option:");
-        Console.WriteLine("1. Manual entry");
-        Console.WriteLine("2. Save from changes list");
-        Console.Write("Enter option: ");
+        DebugWriter.DebugWriteLine("#D7D8#", "Select save option:");
+        DebugWriter.DebugWriteLine("#D7D9#", "1. Manual entry");
+        DebugWriter.DebugWriteLine("#D7DA#", "2. Save from changes list");
+        DebugWriter.DebugWriteLine("#D7DB#", "Enter option: ");
         var saveOption = Console.ReadLine();
 
         if (saveOption == "1")
         {
-            Console.Write("Enter node ID: ");
+            DebugWriter.DebugWriteLine("#D7DC#", "Enter node ID: ");
             if (long.TryParse(Console.ReadLine(), out long nodeId))
             {
-                Console.Write("Enter node content: ");
+                DebugWriter.DebugWriteLine("#D7DD#", "Enter node content: ");
                 string nodeContent = Console.ReadLine();
 
                 var edges = new List<Edge>();
                 while (true)
                 {
-                    Console.Write("Add an edge? (yes/no): ");
+                    DebugWriter.DebugWriteLine("#D7DE#", "Add an edge? (yes/no): ");
                     if (Console.ReadLine().ToLower() != "yes")
                         break;
 
-                    Console.Write("Enter from node ID: ");
+                    DebugWriter.DebugWriteLine("#D7DF#", "Enter from node ID: ");
                     long fromNodeId = long.Parse(Console.ReadLine());
-                    Console.Write("Enter to node ID: ");
+                    DebugWriter.DebugWriteLine("#D7E0#", "Enter to node ID: ");
                     long toNodeId = long.Parse(Console.ReadLine());
-                    Console.Write("Enter edge weight: ");
+                    DebugWriter.DebugWriteLine("#D7E1#", "Enter edge weight: ");
                     double weight = double.Parse(Console.ReadLine());
-                    Console.Write("Enter edge content: ");
+                    DebugWriter.DebugWriteLine("#D7E2#", "Enter edge content: ");
                     string edgeContent = Console.ReadLine();
 
                     edges.Add(new Edge { FromNode = fromNodeId, ToNode = toNodeId, Weight = weight, EdgeContent = edgeContent });
@@ -164,57 +102,57 @@ class Program
 
                 if (manager.SaveNode(nodeId, nodeContent, edges))
                 {
-                    Console.WriteLine($"Node {nodeId} saved successfully.");
+                    DebugWriter.DebugWriteLine("#D7E3#", $"Node {nodeId} saved successfully.");
                     // Add to changes list
-                    nodeChanges.Add((nodeId, nodeContent));
+                    nodeChanges.Add(new Node { Id = nodeId, Content = nodeContent });
                     edgeChanges.AddRange(edges);
                 }
             }
             else
             {
-                Console.WriteLine("Invalid node ID.");
+                DebugWriter.DebugWriteLine("#D7E4#", "Invalid node ID.");
             }
         }
         else if (saveOption == "2")
         {
-            foreach (var (id, content) in nodeChanges)
+            foreach (var node in nodeChanges)
             {
-                if (manager.SaveNode(id, content, edgeChanges.FindAll(e => e.FromNode == id || e.ToNode == id)))
+                if (manager.SaveNode(node.Id, node.Content, edgeChanges.FindAll(e => e.FromNode == node.Id || e.ToNode == node.Id)))
                 {
-                    Console.WriteLine($"Node {id} saved successfully from changes list.");
+                    DebugWriter.DebugWriteLine("#D7E5#", $"Node {node.Id} saved successfully from changes list.");
                 }
                 else
                 {
-                    Console.WriteLine($"Failed to save node {id} from changes list.");
+                    DebugWriter.DebugWriteLine("#D7E6#", $"Failed to save node {node.Id} from changes list.");
                 }
             }
         }
         else
         {
-            Console.WriteLine("Invalid save option. Please try again.");
+            DebugWriter.DebugWriteLine("#D7E7#", "Invalid save option. Please try again.");
         }
     }
 
-    // Method to load node data
     static void LoadNode(GraphFileManager manager)
     {
-        Console.Write("Enter node ID: ");
+        DebugWriter.DebugWriteLine("#D7E8#", "Enter node ID: ");
         if (long.TryParse(Console.ReadLine(), out long nodeId))
         {
             var result = manager.LoadNode(nodeId);
             if (result.Item1)
             {
-                Console.WriteLine($"Node ID: {result.Item2}");
-                Console.WriteLine($"Node Content: {result.Item3}");
-                Console.WriteLine($"Edges: {JsonConvert.SerializeObject(result.Item4, Formatting.Indented)}");
+                DebugWriter.DebugWriteLine("#D7E9#", $"Node ID: {result.Item2}");
+                DebugWriter.DebugWriteLine("#D7EA#", $"Node Content: {result.Item3}");
+                DebugWriter.DebugWriteLine("#D7EB#", $"Edges: {JsonConvert.SerializeObject(result.Item4, Formatting.Indented)}");
             }
         }
         else
         {
-            Console.WriteLine("Invalid node ID.");
+            DebugWriter.DebugWriteLine("#D7EC#", "Invalid node ID.");
         }
     }
 }
+
 
 
 
