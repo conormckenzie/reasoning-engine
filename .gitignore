@@ -32,8 +32,6 @@ x86/
 *.obj
 *.iobj
 *.ipdb
-*.iobj.*
-*.ipdb.*
 *.pyc
 *.pyo
 *_i.c
@@ -49,13 +47,6 @@ x86/
 ._*
 *[Tt]humbs.db
 *.DS_Store
-*.suo
-*.user
-*.userprefs
-*.psess
-*.dotCover
-*.stacktrace
-*.userosscache
 
 # Ignore NuGet Packages
 *.nupkg
@@ -92,16 +83,9 @@ _TeamCity/
 # User-specific files
 *.rsuser
 *.rsuser.opt
-*.rsuser.suo
 *.vcxproj.user
 
 # Others
-*.tlog
 *.docstates
-*.cache
 *.tmp
-*.tlog
-*.lastbuildstate
-*.log
 *.scc
-*.sln.docstates

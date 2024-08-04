@@ -1,35 +1,53 @@
-// OneTimeSetup.cs
 using System;
-using System.Collections.Generic;
 using System.IO;
+using DebugUtils;
 
-public class OneTimeSetup
+namespace GraphFileHandling
 {
-    public static void RunSetup(string folderPath, string filePath, List<(int, string)> nodes, List<(int, int, double, string)> edges)
+    public static class OneTimeSetup
     {
-        // Check if the folder exists, and create it if it doesn't
-        if (!Directory.Exists(folderPath))
+        // Define the path for the main data folder
+        private static readonly string baseDir = "data";
+        private static readonly string indexFilePath = Path.Combine(baseDir, "index.json");
+
+        /// <summary>
+        /// Performs the one-time setup tasks.
+        /// </summary>
+        public static void Initialize()
         {
-            Directory.CreateDirectory(folderPath);
+            // Create the base data directory if it does not exist
+            CreateDirectoryIfNotExists(baseDir);
+
+            // Create the index file if it does not exist
+            CreateFileIfNotExists(indexFilePath, "{}");
+
+            DebugWriter.DebugWriteLine("#OTS1#", "One-time setup completed successfully.");
         }
 
-        // Check if the file exists, and create it if it doesn't
-        if (!File.Exists(filePath))
+        /// <summary>
+        /// Creates a directory if it does not exist.
+        /// </summary>
+        /// <param name="path">The path of the directory to create.</param>
+        private static void CreateDirectoryIfNotExists(string path)
         {
-            // Create a file to write to with default new nodes and edge
-            using (StreamWriter sw = File.CreateText(filePath))
+            if (!Directory.Exists(path))
             {
-                nodes.Add((0, "new node 0"));
-                nodes.Add((1, "new node 1"));
-                edges.Add((0, 1, 0.5, "new edge between new nodes 1 and 2"));
-                foreach (var node in nodes)
-                {
-                    sw.WriteLine("NODE:" + node);
-                }
-                foreach (var edge in edges)
-                {
-                    sw.WriteLine("EDGE:" + edge);
-                }
+                Directory.CreateDirectory(path);
+                DebugWriter.DebugWriteLine("#OTS2#", $"Created directory: {path}");
+            }
+        }
+
+        /// <summary>
+        /// Creates a file with the specified content if it does not exist.
+        /// </summary>
+        /// <param name="path">The path of the file to create.</param>
+        /// <param name="content">The content to write to the file if it does not exist.</param>
+        private static void CreateFileIfNotExists(string path, string content)
+        {
+            if (!File.Exists(path))
+            {
+                File.WriteAllText(path, content);
+                DebugWriter.DebugWriteLine("#OTS3#", $"Created file: {path}");
             }
         }
     }
