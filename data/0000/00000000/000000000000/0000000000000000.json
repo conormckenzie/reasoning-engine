@@ -1,0 +1,14 @@
+{
+  "Node": {
+    "Id": 0,
+    "Content": "test"
+  },
+  "Edges": [
+    {
+      "FromNode": 0,
+      "ToNode": 1,
+      "Weight": 0.0,
+      "EdgeContent": "nothing"
+    }
+  ]
+}

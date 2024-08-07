@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using Newtonsoft.Json;
 using DebugUtils;
 
@@ -26,8 +23,8 @@ namespace GraphFileHandling
         {
             try
             {
-                string nodeFileName = GetNodeFileName(nodeId);
-                string nodeFilePath = Path.Combine(baseDir, nodeFileName);
+                string nodeFilePath = GetNodeFilePath(nodeId);
+                EnsureDirectoryExists(nodeFilePath);
 
                 var node = new Node(nodeId, nodeContent);
                 var nodeData = new NodeData(node, edges);
@@ -52,8 +49,7 @@ namespace GraphFileHandling
         {
             try
             {
-                string nodeFileName = GetNodeFileName(nodeId);
-                string nodeFilePath = Path.Combine(baseDir, nodeFileName);
+                string nodeFilePath = GetNodeFilePath(nodeId);
 
                 if (!File.Exists(nodeFilePath))
                 {
@@ -236,6 +232,35 @@ namespace GraphFileHandling
             DebugWriter.DebugWriteLine("#O1P2#", $"Node ID: {result.Item2}");
             DebugWriter.DebugWriteLine("#Q3R4#", $"Node Content: {result.Item3}");
             DebugWriter.DebugWriteLine("#S5T6#", $"Edges: {JsonConvert.SerializeObject(result.Item4, Formatting.Indented)}");
+        }
+
+        /// <summary>
+        /// Ensures that the directory structure exists for the given file path.
+        /// </summary>
+        /// <param name="filePath">The file path for which the directory structure needs to be ensured.</param>
+        private void EnsureDirectoryExists(string filePath)
+        {
+            string? directoryPath = Path.GetDirectoryName(filePath);
+            if (directoryPath != null && !Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+        }
+
+        /// <summary>
+        /// Constructs the file path for a node based on its ID.
+        /// </summary>
+        /// <param name="nodeId">The ID of the node.</param>
+        /// <returns>The file path for the node.</returns>
+        private string GetNodeFilePath(long nodeId)
+        {
+            string nodeIdStr = nodeId.ToString("D16");
+            string[] pathSegments = new string[4];
+            pathSegments[0] = nodeIdStr.Substring(0, 4);
+            pathSegments[1] = nodeIdStr.Substring(0, 8);
+            pathSegments[2] = nodeIdStr.Substring(0, 12);
+            pathSegments[3] = nodeIdStr.Substring(0, 16) + ".json";
+            return Path.Combine(baseDir, Path.Combine(pathSegments));
         }
 
         private string GetNodeFileName(long nodeId)
