@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using DebugUtils;
 
-namespace GraphFileHandling
+namespace ReasoningEngine.GraphFileHandling
 {
     public static class OneTimeSetup
     {
