@@ -1,14 +1,13 @@
-<h2>dev-ace: An AI Engine Based on LLaMA</h1>
-
-<p>
-    This repository, is a branch of the 
-    <a href="https://github.com/conormckenzie/reasoning-engine">reasoning-engine</a> project, 
-    focusing on developing an AI engine based on LLaMA.
-</p>
+<h2>Reasoning Engine: An AI Engine Based on llama</h1>
 
 <h2>Overview</h2>
 <p>
-    The branch will be used to push and pull to and from the main branch
+    An AI system designed to exceed human-level problem-solving in general contexts by: 
+
+1. encoding knowledge in a human-readable graph,
+2. performing explicit and auditable reasoning,
+3. incorporating new information via data ingestion algorithms assisted by LLMs, and
+4. enhancing knowledge accuracy and predictive power through refinement algorithms.
 </p>
 
 <h2>Features</h2>
@@ -19,7 +18,6 @@
 <h2>Acknowledgments</h2>
 <ul>
     <li><a href="https://github.com/conormckenzie/reasoning-engine">Original reasoning-engine repository</a></li>
-    <li>The LLaMA model by Meta AI</li>
 </ul>
 
 <p>For more information, feel free to reach out or open an issue in the repository.</p>
