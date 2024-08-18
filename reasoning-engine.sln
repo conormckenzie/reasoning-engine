@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReasoningEngine", "ReasoningEngine\ReasoningEngine.csproj", "{11C754FA-DBD8-4EFB-981F-45CAAC7AD7C8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReasoningEngineTests", "ReasoningEngineTests\ReasoningEngineTests.csproj", "{8B1754D7-5158-4B2C-A9A0-41331426F974}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{11C754FA-DBD8-4EFB-981F-45CAAC7AD7C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{11C754FA-DBD8-4EFB-981F-45CAAC7AD7C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{11C754FA-DBD8-4EFB-981F-45CAAC7AD7C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{11C754FA-DBD8-4EFB-981F-45CAAC7AD7C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B1754D7-5158-4B2C-A9A0-41331426F974}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B1754D7-5158-4B2C-A9A0-41331426F974}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B1754D7-5158-4B2C-A9A0-41331426F974}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B1754D7-5158-4B2C-A9A0-41331426F974}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
