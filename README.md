@@ -1,4 +1,4 @@
-<h2>Reasoning Engine: An AI Engine Based on llama</h1>
+<h2>Reasoning Engine: Transparent and Auditable AI Reasoning with LLM Support</h1>
 
 <h2>Overview</h2>
 <p>
