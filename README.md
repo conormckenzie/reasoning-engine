@@ -1,4 +1,4 @@
-# Reasoning Engine Project
+# Reasoning Engine: Chain-of-Logic Inference on a Human-Readable Knowledge Graph
 
 ## Status
 This project is still in development and has no current releases.
@@ -6,7 +6,7 @@ This project is still in development and has no current releases.
 ## Getting Started
 
 **Developers:**  
-Welcome to the Reasoning Engine project! To get started with contributing to or reviewing the project, please check out the [`dev`](https://github.com/your-repo/repository-name/tree/dev) branch. 
+Welcome to the Reasoning Engine project! To get started with contributing to or reviewing the project, please check out the [`dev`](https://github.com/conormckenzie/reasoning-engine/tree/dev) branch. 
 
 ## Contributing
 
@@ -14,7 +14,7 @@ If you wish to contribute to the project, please follow these steps:
 
 1. **Clone the repository**:
    ```
-   git clone https://github.com/your-repo/repository-name.git
+   git clone https://github.com/conormckenzie/reasoning-engine.git
    ```
 2. **Checkout the `dev` branch**:
    ```
