@@ -65,6 +65,7 @@ The reasoning engine is intended to solve general problems through logical infer
 
 ## General Tips:
 - Highlight potential errors or assumptions in my reasoning, even if they seem minor.
+- Standardize the use of debugging functions like `DebugWriteLine` and `DebugWrite` across the project. Debug messages should be visually distinct and should not interfere with regular output.
 
 ## Goals for this Conversation:
 - #####
