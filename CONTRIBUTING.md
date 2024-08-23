@@ -6,9 +6,9 @@
 - **Running Tests**:
   1. Navigate to the project directory.
   2. Run the tests using the following command:
-     \`\`\`bash
+     ```bash
      dotnet test
-     \`\`\`
+     ```
 - **Expanding Coverage**: Contributors are encouraged to write unit tests for other components such as `IndexManager`, `Node`, and `Edge`.
 - **Test Structure**:
   - Follow the Arrange-Act-Assert pattern.
