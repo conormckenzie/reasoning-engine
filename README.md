@@ -27,43 +27,45 @@ This project is still in development and has no current releases.
      DATA_FOLDER_PATH=/path/to/your/data/folder
      ```
 2. Build the project using the .NET CLI:
-   \`\`\`bash
+   ```bash
    dotnet build
-   \`\`\`
+   ```
 
 3. Run the project:
-   \`\`\`bash
+   ```bash
    dotnet run --project reasoningEngine
-   \`\`\`
+   ```
 
 ### For Developers
 Welcome to the Reasoning Engine project! To get started with contributing to or reviewing the project, please check out the [`dev`](https://github.com/your-repo/repository-name/tree/dev) branch.
 
 ## Contributing
 
-If you wish to contribute to the project, please follow these steps:
+We welcome contributions from the community! Before you begin, please take a moment to review our [CONTRIBUTING.md](CONTRIBUTING.md) file for detailed guidelines on the development workflow, coding standards, and testing practices.
+
+### Steps to Contribute:
 
 1. **Clone the repository**:
-   \`\`\`bash
+   ```bash
    git clone https://github.com/your-repo/repository-name.git
-   \`\`\`
+   ```
 2. **Checkout the `dev` branch**:
-   \`\`\`bash
+   ```bash
    git checkout dev
-   \`\`\`
+   ```
 3. **Create a new branch for your changes following the naming scheme `<name-of-contributor>/<feature-branch-name>`**:
-   \`\`\`bash
+   ```bash
    git checkout -b yourname/your-feature-branch
-   \`\`\`
+   ```
 4. **Make your changes and commit them**:
-   \`\`\`bash
+   ```bash
    git add .
    git commit -m "Your commit message"
-   \`\`\`
+   ```
 5. **Push your changes to your branch**:
-   \`\`\`bash
+   ```bash
    git push origin yourname/your-feature-branch
-   \`\`\`
+   ```
 6. **Create a pull request** on GitHub targeting the `dev` branch.
 
 ## Features
