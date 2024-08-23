@@ -3,6 +3,7 @@
 ## Context:
 This message contains information that may be relevant to our conversation, or may not. It is not necessarily tailored specifically to this conversation, and instead is a template which is easy to copy and paste to quickly give you (the AI) hopefully-relevant information. This is an attempt to save me (the human conversation participant) time.
 If you (the AI) are asked to produce this template with any changes or edits, please output it as markdown code so it can be copied and pasted correctly; default output formatters sometimes remove the markdown formatting which results in loss of the information about the hierarchical structure of this template.
+If producing this template, please also replace the "Goals for this Conversation" section content with "(Please ask the user for the goals for this conversation)" as a placeholder.
 
 ## Key Information:
 - **Project Name:** Reasoning Engine
@@ -66,9 +67,19 @@ The reasoning engine is intended to solve general problems through logical infer
 ## Technical Details:
 - The program is implemented in C#/.NET
 
+## Development Guidelines:
+- **Contributing**: Please review the [CONTRIBUTING.md](CONTRIBUTING.md) file for detailed guidelines on the development workflow, coding standards, and testing practices before contributing to the project.
+- **Placeholders**: If certain sections are not yet fully developed, use clear and concise placeholders to maintain a professional tone.
+- **Future Development**: Always include a section for future development or a roadmap to show that the project is actively evolving.
+- **Formatting**: When documenting directory structures and code blocks, remember to escape special characters (e.g., backticks) and provide instructions on how to un-escape them to avoid formatting issues.
+
+## Incomplete Tasks:
+- **Usage Scenarios**: Example workflows and usage scenarios will be added to the readme as the project evolves.
+- **Future Development**: Detailed features in the readme and a roadmap will be included in future updates.
+
 ## General Tips:
 - Highlight potential errors or assumptions in my reasoning, even if they seem minor.
 - Standardize the use of debugging functions like `DebugWriteLine` and `DebugWrite` across the project. Debug messages should be visually distinct and should not interfere with regular output.
 
 ## Goals for this Conversation:
-- #####
+- (Please ask the user for the goals for this conversation)
