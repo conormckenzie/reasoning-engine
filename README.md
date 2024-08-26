@@ -41,7 +41,12 @@ For any questions or issues, please reach out to [your contact email or issue tr
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License.
+
+- **NonCommercial**: You may not use the material for commercial purposes.
+- **Attribution**: You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+
+For more details, you can view the full license [here](http://creativecommons.org/licenses/by-nc/4.0/).
 
 ## Acknowledgments
 
