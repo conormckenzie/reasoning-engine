@@ -27,17 +27,17 @@ This project is still in development and has no current releases.
      DATA_FOLDER_PATH=/path/to/your/data/folder
      ```
 2. Build the project using the .NET CLI:
-   \`\`\`bash
+   ```bash
    dotnet build
-   \`\`\`
+   ```
 
 3. Run the project:
-   \`\`\`bash
+   ```bash
    dotnet run --project reasoningEngine
-   \`\`\`
+   ```
 
 ### For Developers
-Welcome to the Reasoning Engine project! To get started with contributing to or reviewing the project, please check out the [`dev`](https://github.com/your-repo/repository-name/tree/dev) branch.
+Welcome to the Reasoning Engine project! To get started with contributing to or reviewing the project, please check out the [`dev`](https://github.com/conormckenzie/reasoning-engine/tree/dev) branch.
 
 ## Contributing
 
@@ -46,26 +46,26 @@ We welcome contributions from the community! Before you begin, please take a mom
 ### Steps to Contribute:
 
 1. **Clone the repository**:
-   \`\`\`bash
-   git clone https://github.com/your-repo/repository-name.git
-   \`\`\`
+   ```bash
+   git clone https://github.com/conormckenzie/reasoning-engine.git
+   ```
 2. **Checkout the `dev` branch**:
-   \`\`\`bash
+   ```bash
    git checkout dev
-   \`\`\`
+   ```
 3. **Create a new branch for your changes following the naming scheme `<name-of-contributor>/<feature-branch-name>`**:
-   \`\`\`bash
+   ```bash
    git checkout -b yourname/your-feature-branch
-   \`\`\`
+   ```
 4. **Make your changes and commit them**:
-   \`\`\`bash
+   ```bash
    git add .
    git commit -m "Your commit message"
-   \`\`\`
+   ```
 5. **Push your changes to your branch**:
-   \`\`\`bash
+   ```bash
    git push origin yourname/your-feature-branch
-   \`\`\`
+   ```
 6. **Create a pull request** on GitHub targeting the `dev` branch.
 
 ## Project Structure
@@ -74,7 +74,7 @@ The Reasoning Engine project is organized into several key directories and files
 
 ### Directory Layout
 
-\```
+```
 ReasoningEngine/
 │
 ├── Core/
@@ -95,7 +95,7 @@ ReasoningEngine/
 ├── Program.cs                # The main entry point of the application
 ├── ReasoningEngine.csproj    # Project file defining dependencies and build settings
 └── .env                      # Environment variables configuration file
-\```
+```
 
 ### Core Components
 
@@ -127,7 +127,10 @@ The Reasoning Engine is an evolving project, with many exciting features and imp
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License.
+
+- **NonCommercial**: You may not use the material for commercial purposes.
+- **Attribution**: You must give appropriate credit, provide a link to the license, and indicate if changes were made.
 
 ## Acknowledgments
 
