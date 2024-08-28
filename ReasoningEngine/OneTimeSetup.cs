@@ -1,13 +1,21 @@
 using System;
 using System.IO;
 using DebugUtils;
+using DotNetEnv;
 
 namespace ReasoningEngine.GraphFileHandling
 {
     public static class OneTimeSetup
     {
-        // Define the path for the main data folder
-        private static readonly string baseDir = "data";
+        // Load environment variables from the .env file
+        static OneTimeSetup()
+        {
+            Env.Load();
+        }
+
+        // Get the data folder path from environment variables, or throw an exception if not set
+        private static readonly string baseDir = Environment.GetEnvironmentVariable("DATA_FOLDER_PATH") 
+                                                 ?? throw new Exception("DATA_FOLDER_PATH is not set in the environment variables.");
         private static readonly string indexFilePath = Path.Combine(baseDir, "index.json");
 
         /// <summary>

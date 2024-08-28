@@ -45,11 +45,12 @@ namespace ReasoningEngine
             {
                 // Display menu options
                 DebugWriter.DebugWriteLine("#D7D1#", "Select an option:");
-                DebugWriter.DebugWriteLine("#D7D2#", "1. Save Node");
-                DebugWriter.DebugWriteLine("#D7D3#", "2. Load Node");
-                DebugWriter.DebugWriteLine("#D7D4#", "3. Set Debug Mode");
-                DebugWriter.DebugWriteLine("#D7D5#", "4. Exit");
-                DebugWriter.DebugWrite("#D7D6#", "Enter option: ");
+                DebugWriter.DebugWriteLine("#D7D2#", "1. Run Setup");
+                DebugWriter.DebugWriteLine("#D7D3#", "2. Save Node");
+                DebugWriter.DebugWriteLine("#D7D4#", "3. Load Node");
+                DebugWriter.DebugWriteLine("#D7D5#", "4. Set Debug Mode");
+                DebugWriter.DebugWriteLine("#D7D6#", "5. Exit");
+                DebugWriter.DebugWrite("#D7D7#", "Enter option: ");
 
                 // Read user input
                 var option = Console.ReadLine();
@@ -58,20 +59,23 @@ namespace ReasoningEngine
                 switch (option)
                 {
                     case "1":
+                        OneTimeSetup.Initialize();
+                        break;
+                    case "2":
                         // manager.SaveNodeWithUserInput();
                         DebugWriter.DebugWriteLine("#SOR1#", "Sorry, this has been disabled for now");
                         break;
-                    case "2":
+                    case "3":
                         // manager.LoadNodeWithUserInput();
                         DebugWriter.DebugWriteLine("#SOR2#", "Sorry, this has been disabled for now");
                         break;
-                    case "3":
+                    case "4":
                         DebugOptions.SetDebugMode();
                         break;
-                    case "4":
+                    case "5":
                         return; // Exit the loop and end the program
                     default:
-                        DebugWriter.DebugWriteLine("#D7D7#", "Invalid option. Please try again.");
+                        DebugWriter.DebugWriteLine("#D7D8#", "Invalid option. Please try again.");
                         break;
                 }
             }
