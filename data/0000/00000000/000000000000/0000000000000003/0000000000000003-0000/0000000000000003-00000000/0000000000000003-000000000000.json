@@ -1,0 +1,6 @@
+{
+  "FromNode": 1,
+  "ToNode": 3,
+  "Weight": 0.2,
+  "EdgeContent": "Test edge 1->3"
+}
