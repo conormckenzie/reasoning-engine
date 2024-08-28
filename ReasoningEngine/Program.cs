@@ -45,11 +45,12 @@ namespace ReasoningEngine
             {
                 // Display menu options
                 DebugWriter.DebugWriteLine("#D7D1#", "Select an option:");
-                DebugWriter.DebugWriteLine("#D7D2#", "1. Save Node");
-                DebugWriter.DebugWriteLine("#D7D3#", "2. Load Node");
-                DebugWriter.DebugWriteLine("#D7D4#", "3. Set Debug Mode");
-                DebugWriter.DebugWriteLine("#D7D5#", "4. Exit");
-                DebugWriter.DebugWrite("#D7D6#", "Enter option: ");
+                DebugWriter.DebugWriteLine("#D7D2#", "1. Run Setup");
+                DebugWriter.DebugWriteLine("#D7D3#", "2. Save Node");
+                DebugWriter.DebugWriteLine("#D7D4#", "3. Load Node");
+                DebugWriter.DebugWriteLine("#D7D5#", "4. Set Debug Mode");
+                DebugWriter.DebugWriteLine("#D7D6#", "5. Exit");
+                DebugWriter.DebugWrite("#D7D7#", "Enter option: ");
 
                 // Read user input
                 var option = Console.ReadLine();
@@ -58,53 +59,26 @@ namespace ReasoningEngine
                 switch (option)
                 {
                     case "1":
+                        OneTimeSetup.Initialize();
+                        break;
+                    case "2":
                         // manager.SaveNodeWithUserInput();
                         DebugWriter.DebugWriteLine("#SOR1#", "Sorry, this has been disabled for now");
                         break;
-                    case "2":
+                    case "3":
                         // manager.LoadNodeWithUserInput();
                         DebugWriter.DebugWriteLine("#SOR2#", "Sorry, this has been disabled for now");
                         break;
-                    case "3":
+                    case "4":
                         DebugOptions.SetDebugMode();
                         break;
-                    case "4":
+                    case "5":
                         return; // Exit the loop and end the program
                     default:
-                        DebugWriter.DebugWriteLine("#D7D7#", "Invalid option. Please try again.");
+                        DebugWriter.DebugWriteLine("#D7D8#", "Invalid option. Please try again.");
                         break;
                 }
             }
         }
     }
 }
-
-
-// ============================================================================
-//                               TODO LIST
-// ============================================================================
-// ** THIS SECTION IS SPECIFIC TO CONTRIBUTOR: CONOR ONLY **
-// ** OTHER CONTRIBUTORS CAN IGNORE THIS SECTION **
-
-/* TODO:
-
-(1,-1) Test functionality so far
-(1,-0,1) Fix GraphFileManager.cs, implement functions
-(1,-0,2) Move Index class outside of IndexManager since it's a structural spec, effectively
-(1,-0,3) Change Nodedata class in IndexManager to not duplicate the structure of a Node
-(1) Test Save/Load function a bit better
-
-(2,-1) Figure out if using a certain method of tracking new & changed nodes & edges introduces limitations on how I can update the graph
-(2) Track new nodes; edges
-(2,1) Track changed nodes; edges
-(3) Append new nodes & edges to file
-(4) Print all nodes, edges to console
-(5) Make sure the program can cleanly handle learge numbers of nodes / edges 
-    - files (definitely will need a fix; no clear way to split the edges of a node between multiple files if #edgesPerNode = O(#nodes))
-    - storing values; local variables
-    - passing values between functions
-
-TO IMPORT TO CLICKUP:
-    Future items:
-        - Improve file structure to not wastefully overwrite complete file each time an update is made
-*/
