@@ -78,33 +78,3 @@ namespace ReasoningEngine
         }
     }
 }
-
-
-// ============================================================================
-//                               TODO LIST
-// ============================================================================
-// ** THIS SECTION IS SPECIFIC TO CONTRIBUTOR: CONOR ONLY **
-// ** OTHER CONTRIBUTORS CAN IGNORE THIS SECTION **
-
-/* TODO:
-
-(1,-1) Test functionality so far
-(1,-0,1) Fix GraphFileManager.cs, implement functions
-(1,-0,2) Move Index class outside of IndexManager since it's a structural spec, effectively
-(1,-0,3) Change Nodedata class in IndexManager to not duplicate the structure of a Node
-(1) Test Save/Load function a bit better
-
-(2,-1) Figure out if using a certain method of tracking new & changed nodes & edges introduces limitations on how I can update the graph
-(2) Track new nodes; edges
-(2,1) Track changed nodes; edges
-(3) Append new nodes & edges to file
-(4) Print all nodes, edges to console
-(5) Make sure the program can cleanly handle learge numbers of nodes / edges 
-    - files (definitely will need a fix; no clear way to split the edges of a node between multiple files if #edgesPerNode = O(#nodes))
-    - storing values; local variables
-    - passing values between functions
-
-TO IMPORT TO CLICKUP:
-    Future items:
-        - Improve file structure to not wastefully overwrite complete file each time an update is made
-*/
