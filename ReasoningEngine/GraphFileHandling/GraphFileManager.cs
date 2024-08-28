@@ -6,10 +6,19 @@ namespace ReasoningEngine.GraphFileHandling
     public class GraphFileManager
     {
         private readonly string baseDir;
+        private readonly IndexManager indexManager;
 
         public GraphFileManager(string baseDir)
         {
             this.baseDir = baseDir;
+            string indexFilePath = Path.Combine(baseDir, "index.json");
+            this.indexManager = new IndexManager(indexFilePath);
+        }
+
+        public List<long> GetAllNodeIds()
+        {
+            // This assumes we're using the IndexManager to keep track of all nodes
+            return indexManager.GetNodeIds();
         }
 
         // Save a node without any edge data
@@ -63,16 +72,29 @@ namespace ReasoningEngine.GraphFileHandling
         {
             try
             {
-                string sourceEdgeFilePath = GetEdgeFilePath(edge.FromNode, edge.ToNode);
-                string destEdgeFilePath = GetEdgeFilePath(edge.ToNode, edge.FromNode);
+                string edgeFilePath = GetEdgeFilePath(edge.FromNode, edge.ToNode);
+                EnsureDirectoryExists(edgeFilePath);
 
-                EnsureDirectoryExists(sourceEdgeFilePath);
-                EnsureDirectoryExists(destEdgeFilePath);
+                List<Edge> edges;
+                if (File.Exists(edgeFilePath))
+                {
+                    string existingData = File.ReadAllText(edgeFilePath);
+                    edges = JsonConvert.DeserializeObject<List<Edge>>(existingData) ?? new List<Edge>();
+                    
+                    // Remove the old edge if it exists
+                    edges.RemoveAll(e => e.FromNode == edge.FromNode && e.ToNode == edge.ToNode);
+                }
+                else
+                {
+                    edges = new List<Edge>();
+                }
 
-                var edgeData = JsonConvert.SerializeObject(edge, Formatting.Indented);
+                // Add the new edge
+                edges.Add(edge);
 
-                File.WriteAllText(sourceEdgeFilePath, edgeData);
-                File.WriteAllText(destEdgeFilePath, edgeData);
+                string edgeData = JsonConvert.SerializeObject(edges, Formatting.Indented);
+                File.WriteAllText(edgeFilePath, edgeData);
+
                 return true;
             }
             catch (Exception ex)
@@ -96,16 +118,14 @@ namespace ReasoningEngine.GraphFileHandling
                     return edges;
                 }
 
-                foreach (string filePath in Directory.EnumerateFiles(nodeDir, "*.json", SearchOption.AllDirectories))
+                string edgeFilePattern = nodeId.ToString("D16") + "-*.json";
+                foreach (string filePath in Directory.EnumerateFiles(nodeDir, edgeFilePattern, SearchOption.AllDirectories))
                 {
-                    if (Path.GetFileName(filePath).StartsWith(nodeId.ToString("D16") + "-"))
+                    string edgeData = File.ReadAllText(filePath);
+                    var edgesInFile = JsonConvert.DeserializeObject<List<Edge>>(edgeData);
+                    if (edgesInFile != null)
                     {
-                        string edgeData = File.ReadAllText(filePath);
-                        var edge = JsonConvert.DeserializeObject<Edge>(edgeData);
-                        if (edge != null)
-                        {
-                            edges.Add(edge);
-                        }
+                        edges.AddRange(edgesInFile);
                     }
                 }
             }
