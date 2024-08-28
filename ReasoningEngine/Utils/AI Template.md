@@ -5,6 +5,7 @@ This message contains information that may be relevant to our conversation, or m
 If you (the AI) are asked to produce this template with any changes or edits, please output it as markdown code so it can be copied and pasted correctly; default output formatters sometimes remove the markdown formatting which results in loss of the information about the hierarchical structure of this template.
 If producing this template, please also replace the "Goals for this Conversation" section content with "(Please ask the user for the goals for this conversation)" as a placeholder.
 
+
 ## Key Information:
 - **Project Name:** Reasoning Engine
 
