@@ -74,5 +74,26 @@ namespace DebugUtils
             var regex = new Regex(@"^#.{4}#$");
             return regex.IsMatch(debugMessage);
         }
+
+        /// <summary>
+        /// Generates a new random debug message in the format "#XXXX#".
+        /// </summary>
+        /// <returns>A randomly generated debug message.</returns>
+        /// <remarks>
+        /// The generated message consists of a '#' character, followed by 4 random uppercase letters or digits, and ends with another '#' character.
+        /// </remarks>
+        public static string GenerateRandomDebugMessage()
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var random = new Random();
+            var result = new char[4];
+
+            for (int i = 0; i < 4; i++)
+            {
+                result[i] = chars[random.Next(chars.Length)];
+            }
+
+            return $"#{new string(result)}#";
+        }
     }
 }
