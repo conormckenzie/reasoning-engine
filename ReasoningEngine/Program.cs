@@ -48,7 +48,7 @@ namespace ReasoningEngine
                 DebugWriter.DebugWriteLine("#D7D2#", "1. Run Setup");
                 DebugWriter.DebugWriteLine("#D7D3#", "2. Save Node");
                 DebugWriter.DebugWriteLine("#D7D4#", "3. Load Node");
-                DebugWriter.DebugWriteLine("#D7D5#", "4. Set Debug Mode");
+                DebugWriter.DebugWriteLine("#D7D5#", "4. Debug Options");
                 DebugWriter.DebugWriteLine("#D7D6#", "5. Exit");
                 DebugWriter.DebugWrite("#D7D7#", "Enter option: ");
 
@@ -70,7 +70,7 @@ namespace ReasoningEngine
                         DebugWriter.DebugWriteLine("#SOR2#", "Sorry, this has been disabled for now");
                         break;
                     case "4":
-                        DebugOptions.SetDebugMode();
+                        DebugOptions.ShowDebugOptionsMenu();
                         break;
                     case "5":
                         return; // Exit the loop and end the program
