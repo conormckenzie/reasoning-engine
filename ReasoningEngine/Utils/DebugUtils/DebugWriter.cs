@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace DebugUtils
 {
     /// <summary>
@@ -17,6 +19,10 @@ namespace DebugUtils
             if (DebugOptions.DebugMode)
             {
                 Console.ForegroundColor = ConsoleColor.Yellow; // Set the color for debug messages
+                if (!IsDebugMessageValid(debugMessage)) 
+                {
+                    Console.BackgroundColor = ConsoleColor.Magenta;
+                }
                 if (inLine)
                 {
                     Console.Write($"[DEBUG] {{ {debugMessage} }}; ");
@@ -46,6 +52,27 @@ namespace DebugUtils
         public static void DebugWriteLine(string debugMessage, string regularMessage, bool inLine = true)
         {
             DebugWrite(debugMessage, regularMessage, inLine, true);
+        }
+
+        /// <summary>
+        /// Validates if a debug message adheres to the required format.
+        /// </summary>
+        /// <param name="debugMessage">The debug message to validate.</param>
+        /// <returns>True if the debug message is valid; otherwise, false.</returns>
+        /// <remarks>
+        /// A valid debug message should be of the form "#XXXX#" where XXXX is any 4-character string.
+        /// The 4-character string can contain any characters but should be unique across the whole program.
+        /// </remarks>
+        public static bool IsDebugMessageValid(string debugMessage)
+        {
+            if (string.IsNullOrEmpty(debugMessage))
+            {
+                return false;
+            }
+
+            // Use a regular expression to check the format
+            var regex = new Regex(@"^#.{4}#$");
+            return regex.IsMatch(debugMessage);
         }
     }
 }
