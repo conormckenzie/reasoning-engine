@@ -14,11 +14,11 @@ namespace DebugUtils
         {
             while (true)
             {
-                DebugWriter.DebugWriteLine("#TP7Q#", "\nDebug Options Menu:");
-                DebugWriter.DebugWriteLine("#TP7R#", $"1. Change Debug Mode (Currently: {(DebugOptions.DebugMode ? "ON" : "OFF")})");
-                DebugWriter.DebugWriteLine("#TP7S#", "2. Generate New Debug Message");
-                DebugWriter.DebugWriteLine("#TP7T#", "3. Return to Main Menu");
-                DebugWriter.DebugWrite("#TP7U#", "Enter option: ");
+                DebugWriter.DebugWriteLine("#00TP7Q#", "\nDebug Options Menu:");
+                DebugWriter.DebugWriteLine("#00TP7R#", $"1. Change Debug Mode (Currently: {(DebugOptions.DebugMode ? "ON" : "OFF")})");
+                DebugWriter.DebugWriteLine("#00TP7S#", "2. Generate New Debug Message");
+                DebugWriter.DebugWriteLine("#00TP7T#", "3. Return to Main Menu");
+                DebugWriter.DebugWrite("#00TP7U#", "Enter option: ");
 
                 var option = Console.ReadLine();
 
@@ -26,18 +26,18 @@ namespace DebugUtils
                 {
                     case "1":
                         DebugOptions.DebugMode = !DebugOptions.DebugMode;
-                        DebugWriter.DebugWriteLine("#W3BA#", $"Debug mode is now {(DebugOptions.DebugMode ? "ON" : "OFF")}");
+                        DebugWriter.DebugWriteLine("#00W3BA#", $"Debug mode is now {(DebugOptions.DebugMode ? "ON" : "OFF")}");
                         break;
                     case "2":
                         string newDebugMessage = DebugWriter.GenerateRandomDebugMessage();
-                        DebugWriter.DebugWriteLine("#W3BB#", $"New debug message: {newDebugMessage}");
-                        DebugWriter.DebugWriteLine("#W3BC#", "Please check that this message is not already in use in the program.");
-                        DebugWriter.DebugWriteLine("#W3BD#", "In VS Code, you can use Ctrl+Shift+F to search across all files.");
+                        DebugWriter.DebugWriteLine("#00W3BB#", $"New debug message: {newDebugMessage}");
+                        DebugWriter.DebugWriteLine("#00W3BC#", "Please check that this message is not already in use in the program.");
+                        DebugWriter.DebugWriteLine("#00W3BD#", "In VS Code, you can use Ctrl+Shift+F to search across all files.");
                         break;
                     case "3":
                         return;
                     default:
-                        DebugWriter.DebugWriteLine("#W3BE#", "Invalid option. Please try again.");
+                        DebugWriter.DebugWriteLine("#00W3BE#", "Invalid option. Please try again.");
                         break;
                 }
             }
@@ -52,8 +52,8 @@ namespace DebugUtils
         public static void SetDebugMode()
         {
             // Display current debug mode status
-            DebugWriter.DebugWriteLine("#D7C9#", $"Debug mode is currently {(DebugMode ? "ON" : "OFF")}");
-            DebugWriter.DebugWriteLine("#D7CA#", $"Would you like to turn it {(DebugMode ? "OFF" : "ON")}? (y/n): ");
+            DebugWriter.DebugWriteLine("#00D7C9#", $"Debug mode is currently {(DebugMode ? "ON" : "OFF")}");
+            DebugWriter.DebugWriteLine("#00D7CA#", $"Would you like to turn it {(DebugMode ? "OFF" : "ON")}? (y/n): ");
 
             // Read user input
             string response = Console.ReadLine()?.ToLower() ?? string.Empty;
@@ -61,12 +61,12 @@ namespace DebugUtils
             {
                 // Toggle debug mode and display the new status
                 DebugMode = !DebugMode;
-                DebugWriter.DebugWriteLine("#D7CB#", $"Debug mode is now {(DebugMode ? "ON" : "OFF")}");
+                DebugWriter.DebugWriteLine("#00D7CB#", $"Debug mode is now {(DebugMode ? "ON" : "OFF")}");
             }
             else
             {
                 // Inform the user that debug mode remains unchanged
-                DebugWriter.DebugWriteLine("#D7CC#", $"Debug mode unchanged. It is currently {(DebugMode ? "ON" : "OFF")}");
+                DebugWriter.DebugWriteLine("#00D7CC#", $"Debug mode unchanged. It is currently {(DebugMode ? "ON" : "OFF")}");
             }
         }
     }

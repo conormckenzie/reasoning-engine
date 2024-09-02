@@ -44,13 +44,13 @@ namespace ReasoningEngine
             while (true)
             {
                 // Display menu options
-                DebugWriter.DebugWriteLine("#D7D1#", "Select an option:");
-                DebugWriter.DebugWriteLine("#D7D2#", "1. Run Setup");
-                DebugWriter.DebugWriteLine("#D7D3#", "2. Save Node");
-                DebugWriter.DebugWriteLine("#D7D4#", "3. Load Node");
-                DebugWriter.DebugWriteLine("#D7D5#", "4. Debug Options");
-                DebugWriter.DebugWriteLine("#D7D6#", "5. Exit");
-                DebugWriter.DebugWrite("#D7D7#", "Enter option: ");
+                DebugWriter.DebugWriteLine("#00D7D1#", "Select an option:");
+                DebugWriter.DebugWriteLine("#00D7D2#", "1. Run Setup");
+                DebugWriter.DebugWriteLine("#00D7D3#", "2. Save Node");
+                DebugWriter.DebugWriteLine("#00D7D4#", "3. Load Node");
+                DebugWriter.DebugWriteLine("#00D7D5#", "4. Debug Options");
+                DebugWriter.DebugWriteLine("#00D7D6#", "5. Exit");
+                DebugWriter.DebugWrite("#00D7D7#", "Enter option: ");
 
                 // Read user input
                 var option = Console.ReadLine();
@@ -63,11 +63,11 @@ namespace ReasoningEngine
                         break;
                     case "2":
                         // manager.SaveNodeWithUserInput();
-                        DebugWriter.DebugWriteLine("#SOR1#", "Sorry, this has been disabled for now");
+                        DebugWriter.DebugWriteLine("#00SOR1#", "Sorry, this has been disabled for now");
                         break;
                     case "3":
                         // manager.LoadNodeWithUserInput();
-                        DebugWriter.DebugWriteLine("#SOR2#", "Sorry, this has been disabled for now");
+                        DebugWriter.DebugWriteLine("#00SOR2#", "Sorry, this has been disabled for now");
                         break;
                     case "4":
                         DebugOptions.ShowDebugOptionsMenu();
@@ -75,7 +75,7 @@ namespace ReasoningEngine
                     case "5":
                         return; // Exit the loop and end the program
                     default:
-                        DebugWriter.DebugWriteLine("#D7D8#", "Invalid option. Please try again.");
+                        DebugWriter.DebugWriteLine("#00D7D8#", "Invalid option. Please try again.");
                         break;
                 }
             }

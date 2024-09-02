@@ -60,8 +60,8 @@ namespace DebugUtils
         /// <param name="debugMessage">The debug message to validate.</param>
         /// <returns>True if the debug message is valid; otherwise, false.</returns>
         /// <remarks>
-        /// A valid debug message should be of the form "#XXXX#" where XXXX is any 4-character string.
-        /// The 4-character string can contain any characters but should be unique across the whole program.
+        /// A valid debug message should be of the form "#XXXXXX#" where XXXXXX is any 6-character string.
+        /// The 6-character string can contain any uppercase letters or digits and should be unique across the whole program.
         /// </remarks>
         public static bool IsDebugMessageValid(string debugMessage)
         {
@@ -71,12 +71,12 @@ namespace DebugUtils
             }
 
             // Use a regular expression to check the format
-            var regex = new Regex(@"^#.{4}#$");
+            var regex = new Regex(@"^#.{6}#$");
             return regex.IsMatch(debugMessage);
         }
 
         /// <summary>
-        /// Generates a new random debug message in the format "#XXXX#".
+        /// Generates a new random debug message in the format "#XXXXXX#".
         /// </summary>
         /// <returns>A randomly generated debug message.</returns>
         /// <remarks>
@@ -86,9 +86,9 @@ namespace DebugUtils
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
             var random = new Random();
-            var result = new char[4];
+            var result = new char[6];
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 6; i++)
             {
                 result[i] = chars[random.Next(chars.Length)];
             }

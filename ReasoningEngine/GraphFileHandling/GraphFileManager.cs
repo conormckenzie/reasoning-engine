@@ -28,7 +28,7 @@ namespace ReasoningEngine.GraphFileHandling
             }
             catch (Exception ex)
             {
-                DebugWriter.DebugWriteLine("#SAV1#", $"Error saving node {nodeId}: {ex.Message}");
+                DebugWriter.DebugWriteLine("#00SAV1#", $"Error saving node {nodeId}: {ex.Message}");
                 return false;
             }
         }
@@ -42,7 +42,7 @@ namespace ReasoningEngine.GraphFileHandling
 
                 if (!File.Exists(nodeFilePath))
                 {
-                    DebugWriter.DebugWriteLine("#LOD1#", $"Node file {nodeFilePath} does not exist.");
+                    DebugWriter.DebugWriteLine("#00LOD1#", $"Node file {nodeFilePath} does not exist.");
                     return null;
                 }
 
@@ -53,7 +53,7 @@ namespace ReasoningEngine.GraphFileHandling
             }
             catch (Exception ex)
             {
-                DebugWriter.DebugWriteLine("#LOD2#", $"Error loading node {nodeId}: {ex.Message}");
+                DebugWriter.DebugWriteLine("#00LOD2#", $"Error loading node {nodeId}: {ex.Message}");
                 return null;
             }
         }
@@ -77,7 +77,7 @@ namespace ReasoningEngine.GraphFileHandling
             }
             catch (Exception ex)
             {
-                DebugWriter.DebugWriteLine("#SAV2#", $"Error saving edge from {edge.FromNode} to {edge.ToNode}: {ex.Message}");
+                DebugWriter.DebugWriteLine("#00SAV2#", $"Error saving edge from {edge.FromNode} to {edge.ToNode}: {ex.Message}");
                 return false;
             }
         }
@@ -92,7 +92,7 @@ namespace ReasoningEngine.GraphFileHandling
                 string nodeDir = GetNodeDirPath(nodeId);
                 if (!Directory.Exists(nodeDir))
                 {
-                    DebugWriter.DebugWriteLine("#LOD3#", $"Node directory {nodeDir} does not exist.");
+                    DebugWriter.DebugWriteLine("#00LOD3#", $"Node directory {nodeDir} does not exist.");
                     return edges;
                 }
 
@@ -111,7 +111,7 @@ namespace ReasoningEngine.GraphFileHandling
             }
             catch (Exception ex)
             {
-                DebugWriter.DebugWriteLine("#LOD4#", $"Error loading edges for node {nodeId}: {ex.Message}");
+                DebugWriter.DebugWriteLine("#00LOD4#", $"Error loading edges for node {nodeId}: {ex.Message}");
             }
 
             return edges;
