@@ -29,7 +29,7 @@ namespace ReasoningEngine.GraphFileHandling
             // Create the index file if it does not exist
             CreateFileIfNotExists(indexFilePath, "{}");
 
-            DebugWriter.DebugWriteLine("#OTS1#", "One-time setup completed successfully.");
+            DebugWriter.DebugWriteLine("#00OTS1#", "One-time setup completed successfully.");
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace ReasoningEngine.GraphFileHandling
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
-                DebugWriter.DebugWriteLine("#OTS2#", $"Created directory: {path}");
+                DebugWriter.DebugWriteLine("#00OTS2#", $"Created directory: {path}");
             }
         }
 
@@ -55,7 +55,7 @@ namespace ReasoningEngine.GraphFileHandling
             if (!File.Exists(path))
             {
                 File.WriteAllText(path, content);
-                DebugWriter.DebugWriteLine("#OTS3#", $"Created file: {path}");
+                DebugWriter.DebugWriteLine("#00OTS3#", $"Created file: {path}");
             }
         }
     }

@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace DebugUtils
 {
     /// <summary>
@@ -17,6 +19,10 @@ namespace DebugUtils
             if (DebugOptions.DebugMode)
             {
                 Console.ForegroundColor = ConsoleColor.Yellow; // Set the color for debug messages
+                if (!IsDebugMessageValid(debugMessage)) 
+                {
+                    Console.BackgroundColor = ConsoleColor.Magenta;
+                }
                 if (inLine)
                 {
                     Console.Write($"[DEBUG] {{ {debugMessage} }}; ");
@@ -46,6 +52,48 @@ namespace DebugUtils
         public static void DebugWriteLine(string debugMessage, string regularMessage, bool inLine = true)
         {
             DebugWrite(debugMessage, regularMessage, inLine, true);
+        }
+
+        /// <summary>
+        /// Validates if a debug message adheres to the required format.
+        /// </summary>
+        /// <param name="debugMessage">The debug message to validate.</param>
+        /// <returns>True if the debug message is valid; otherwise, false.</returns>
+        /// <remarks>
+        /// A valid debug message should be of the form "#XXXXXX#" where XXXXXX is any 6-character string.
+        /// The 6-character string can contain any uppercase letters or digits and should be unique across the whole program.
+        /// </remarks>
+        public static bool IsDebugMessageValid(string debugMessage)
+        {
+            if (string.IsNullOrEmpty(debugMessage))
+            {
+                return false;
+            }
+
+            // Use a regular expression to check the format
+            var regex = new Regex(@"^#.{6}#$");
+            return regex.IsMatch(debugMessage);
+        }
+
+        /// <summary>
+        /// Generates a new random debug message in the format "#XXXXXX#".
+        /// </summary>
+        /// <returns>A randomly generated debug message.</returns>
+        /// <remarks>
+        /// The generated message consists of a '#' character, followed by 4 random uppercase letters or digits, and ends with another '#' character.
+        /// </remarks>
+        public static string GenerateRandomDebugMessage()
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var random = new Random();
+            var result = new char[6];
+
+            for (int i = 0; i < 6; i++)
+            {
+                result[i] = chars[random.Next(chars.Length)];
+            }
+
+            return $"#{new string(result)}#";
         }
     }
 }
