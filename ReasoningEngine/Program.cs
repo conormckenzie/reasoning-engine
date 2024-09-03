@@ -49,7 +49,7 @@ namespace ReasoningEngine
             while (true)
             {
                 // Display menu options
-                DebugWriter.DebugWriteLine("#00D7D1#", "Select an option:");
+                DebugWriter.DebugWriteLine("#00D7D1#", "\nMain Menu:");
                 DebugWriter.DebugWriteLine("#00D7D2#", "1. Run Setup");
                 DebugWriter.DebugWriteLine("#00D7D3#", "2. Save Node");
                 DebugWriter.DebugWriteLine("#00D7D4#", "3. Load Node");
