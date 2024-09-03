@@ -22,7 +22,7 @@ namespace ReasoningEngine.GraphAccess
             while (true)
             {
                 // Display command processor options
-                DebugWriter.DebugWriteLine("#CMD001#", "Command Processor Options:");
+                DebugWriter.DebugWriteLine("#CMD001#", "\nCommand Processor Options:");
                 DebugWriter.DebugWriteLine("#CMD002#", "1. Process Node Query");
                 DebugWriter.DebugWriteLine("#CMD003#", "2. Process Edge Query");
                 DebugWriter.DebugWriteLine("#CMD004#", "3. Add Node");
