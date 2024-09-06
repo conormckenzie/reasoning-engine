@@ -31,7 +31,7 @@ namespace ReasoningEngine.GraphAccess
         DebugWriter.DebugWriteLine("#CMD007#", "6. Add Edge");
         DebugWriter.DebugWriteLine("#CMD008#", "7. Delete Edge");
         DebugWriter.DebugWriteLine("#CMD009#", "8. Edit Edge");
-        DebugWriter.DebugWriteLine("#CMD012#", "0. Return to Previous Menu");
+        DebugWriter.DebugWriteLine("#CMD010#", "0. Return to Previous Menu");
         DebugWriter.DebugWrite("#CMD011#", "Enter option: ");
 
         // Read user input
