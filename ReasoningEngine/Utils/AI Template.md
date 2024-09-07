@@ -1,10 +1,14 @@
 # Introduction Prompt Template for AI Chatbots
 
-## Context:
-This message contains information that may be relevant to our conversation, or may not. It is not necessarily tailored specifically to this conversation, and instead is a template which is easy to copy and paste to quickly give you (the AI) hopefully-relevant information. This is an attempt to save me (the human conversation participant) time.
-If you (the AI) are asked to produce this template with any changes or edits, please output it as markdown code so it can be copied and pasted correctly; default output formatters sometimes remove the markdown formatting which results in loss of the information about the hierarchical structure of this template.
-If producing this template, please also replace the "Goals for this Conversation" section content with "(Please ask the user for the goals for this conversation)" as a placeholder.
+## Version:
+Introduction Prompt Template for AI Chatbots, Version 1.0
 
+## Context:
+This message contains information that may be relevant to our conversation, or may not. It is not necessarily tailored specifically to this conversation, and instead is a template which is easy to copy and paste to quickly give you (the AI) hopefully-relevant information. This is an attempt to save me (the user & human conversation participant) time.
+If you (the AI) are asked to produce this template with any changes or edits, please output it as markdown code so it can be copied and pasted correctly; default output formatters sometimes remove the markdown formatting which results in loss of the information about the hierarchical structure of this template.
+If when producing this template you suggest any changes, please update the template version with the standard naming scheme `Version x.y` where x represents the major version and y represents the minor version. At your discretion you may choose to consider the changes as a major update or a minor version update, and update the template version accordingly. Please do not use sub-minor versions or any other deviation from this naming scheme.
+If producing this template, please output the full text, so that it can be copied and pasted over the previous version. Do not use shortcuts such as "(section remains unchanged)" since this breaks the ability to copy and paste correctly over the previous version.
+If producing this template, please also replace the "Goals for this Conversation" section content with "(Please ask the user for the goals for this conversation)" as a placeholder.
 
 ## Key Information:
 - **Project Name:** Reasoning Engine
@@ -32,7 +36,7 @@ The reasoning engine is intended to solve general problems through logical infer
 - Param edges should have a weight of 1, transferring the value from the source node without changing it.
 
 ### **Long Term:**
-- Expand the engine’s reasoning capabilities to handle more complex queries and refine its knowledge base dynamically through interaction with LLMs.
+- Expand the engine's reasoning capabilities to handle more complex queries and refine its knowledge base dynamically through interaction with LLMs.
 
 ## Key Concepts:
 - **Human-Readable Knowledge Graph:** A graph data structure designed to store knowledge in a way that is both machine-processable and easily interpretable by humans. Each node represents a concept, and each edge represents a logical or relational connection between these concepts. This structure supports explicit reasoning, where inferences and deductions can be made by traversing the graph using logical rules.
@@ -67,20 +71,35 @@ The reasoning engine is intended to solve general problems through logical infer
 
 ## Technical Details:
 - The program is implemented in C#/.NET
+- The project uses a GraphFileManager for handling file operations related to nodes and edges.
+- An IndexManager is used to keep track of all nodes and their metadata.
+- The project includes a CommandProcessor for handling user commands and interactions with the graph.
+- Debug utilities (DebugWriter and DebugOptions) are implemented for easier debugging and development.
+- The project follows a specific file and directory structure for storing node and edge data.
+
+## Project Structure:
+- Core: Contains fundamental classes like Node and Edge.
+- GraphAccess: Includes CommandProcessor and ConsoleMenu for user interaction.
+- GraphFileHandling: Contains GraphFileManager and IndexManager for file operations and indexing.
+- Utils: Includes debugging utilities and this AI template.
 
 ## Development Guidelines:
 - **Contributing**: Please review the [CONTRIBUTING.md](CONTRIBUTING.md) file for detailed guidelines on the development workflow, coding standards, and testing practices before contributing to the project.
 - **Placeholders**: If certain sections are not yet fully developed, use clear and concise placeholders to maintain a professional tone.
 - **Future Development**: Always include a section for future development or a roadmap to show that the project is actively evolving.
 - **Formatting**: When documenting directory structures and code blocks, remember to escape special characters (e.g., backticks) and provide instructions on how to un-escape them to avoid formatting issues.
+- **Debugging**: Use the DebugWriter class for debug messages. Debug messages should follow the format "#XXXXXX#" where XXXXXX is a unique 6-character string.
 
 ## Incomplete Tasks:
 - **Usage Scenarios**: Example workflows and usage scenarios will be added to the readme as the project evolves.
 - **Future Development**: Detailed features in the readme and a roadmap will be included in future updates.
+- Implement the actual functionality for node and edge operations in the CommandProcessor.
 
-## General Tips:
+## General Tips for you (the AI):
 - Highlight potential errors or assumptions in my reasoning, even if they seem minor.
 - Standardize the use of debugging functions like `DebugWriteLine` and `DebugWrite` across the project. Debug messages should be visually distinct and should not interfere with regular output.
+- When making changes, consider the implications on the entire system, including file structure, indexing, and user interaction.
+- When outputting one or more files (e.g. code files), for each file output the entire file contents even if only a small part of the file has been changed, unless the file is so large that doing so would be infeasible.
 
 ## Goals for this Conversation:
-- (Please ask the user for the goals for this conversation)
+(Please ask the user for the goals for this conversation)
