@@ -1,22 +1,32 @@
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 using ReasoningEngine;
 using ReasoningEngine.GraphFileHandling;
+using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace ReasoningEngineTests
 {
     [TestFixture]
-    public class UnitTest1
+    public class GraphFileHandlingUnitTests
     {
         private GraphFileManager graphFileManager;
+        private string tempDir;
 
         [SetUp]
         public void Setup()
         {
-            graphFileManager = new GraphFileManager("data");
+            tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            Directory.CreateDirectory(tempDir);
+            graphFileManager = new GraphFileManager(tempDir);
         }
-        
+
+        [TearDown]
+        public void TearDown()
+        {
+            Directory.Delete(tempDir, true);
+        }
+
         /// <summary>
         /// Tests saving and loading a single node.
         /// Verifies that the node remains unchanged after saving and loading.
@@ -26,11 +36,11 @@ namespace ReasoningEngineTests
         public void TestSaveAndLoadSingleNode()
         {
             var node = new Node(1234567890123456, "Test Node");
-            ClassicAssert.IsTrue(graphFileManager.SaveNode(node.Id, node.Content));
+            Assert.That(graphFileManager.SaveNode(node), Is.True);
             var loadedNode = graphFileManager.LoadNode(node.Id);
-            ClassicAssert.IsNotNull(loadedNode);
-            ClassicAssert.AreEqual(node.Id, loadedNode.Id);
-            ClassicAssert.AreEqual(node.Content, loadedNode.Content);
+            Assert.That(loadedNode, Is.Not.Null);
+            Assert.That(loadedNode.Id, Is.EqualTo(node.Id));
+            Assert.That((loadedNode as dynamic).Content, Is.EqualTo(node.Content));
         }
 
         /// <summary>
@@ -50,15 +60,15 @@ namespace ReasoningEngineTests
 
             foreach (var node in nodes)
             {
-                ClassicAssert.IsTrue(graphFileManager.SaveNode(node.Id, node.Content));
+                Assert.That(graphFileManager.SaveNode(node), Is.True);
             }
 
             foreach (var node in nodes)
             {
                 var loadedNode = graphFileManager.LoadNode(node.Id);
-                ClassicAssert.IsNotNull(loadedNode);
-                ClassicAssert.AreEqual(node.Id, loadedNode.Id);
-                ClassicAssert.AreEqual(node.Content, loadedNode.Content);
+                Assert.That(loadedNode, Is.Not.Null);
+                Assert.That(loadedNode.Id, Is.EqualTo(node.Id));
+                Assert.That((loadedNode as dynamic).Content, Is.EqualTo(node.Content));
             }
         }
 
@@ -72,18 +82,18 @@ namespace ReasoningEngineTests
         public void TestSaveAndLoadNodeWithSpecialCharacters()
         {
             var node = new Node(1234567890123456, "Test Node!@#$%^&*()");
-            ClassicAssert.IsTrue(graphFileManager.SaveNode(node.Id, node.Content));
+            Assert.That(graphFileManager.SaveNode(node), Is.True);
             var loadedNode = graphFileManager.LoadNode(node.Id);
-            ClassicAssert.IsNotNull(loadedNode);
-            ClassicAssert.AreEqual(node.Id, loadedNode.Id);
-            ClassicAssert.AreEqual(node.Content, loadedNode.Content);
+            Assert.That(loadedNode, Is.Not.Null);
+            Assert.That(loadedNode.Id, Is.EqualTo(node.Id));
+            Assert.That((loadedNode as dynamic).Content, Is.EqualTo(node.Content));
         }
 
         [Test]
         public void TestLoadNodeThatDoesNotExist()
         {
             var loadedNode = graphFileManager.LoadNode(9999999999999999);
-            ClassicAssert.IsNull(loadedNode);
+            Assert.That(loadedNode, Is.Null);
         }
 
         /// <summary>
@@ -95,14 +105,14 @@ namespace ReasoningEngineTests
         public void TestSaveAndLoadSingleEdge()
         {
             var edge = new Edge(1234567890123456, 6543210987654321, 1.5, "Test Edge");
-            ClassicAssert.IsTrue(graphFileManager.SaveEdge(edge));
+            Assert.That(graphFileManager.SaveEdge(edge), Is.True);
             var loadedEdges = graphFileManager.LoadEdges(edge.FromNode);
-            ClassicAssert.IsNotEmpty(loadedEdges);
+            Assert.That(loadedEdges, Is.Not.Empty);
             var loadedEdge = loadedEdges[0];
-            ClassicAssert.AreEqual(edge.FromNode, loadedEdge.FromNode);
-            ClassicAssert.AreEqual(edge.ToNode, loadedEdge.ToNode);
-            ClassicAssert.AreEqual(edge.Weight, loadedEdge.Weight);
-            ClassicAssert.AreEqual(edge.EdgeContent, loadedEdge.EdgeContent);
+            Assert.That(loadedEdge.FromNode, Is.EqualTo(edge.FromNode));
+            Assert.That(loadedEdge.ToNode, Is.EqualTo(edge.ToNode));
+            Assert.That((loadedEdge as dynamic).Weight, Is.EqualTo(edge.Weight));
+            Assert.That((loadedEdge as dynamic).EdgeContent, Is.EqualTo(edge.EdgeContent));
         }
 
         /// <summary>
@@ -122,18 +132,18 @@ namespace ReasoningEngineTests
 
             foreach (var edge in edges)
             {
-                ClassicAssert.IsTrue(graphFileManager.SaveEdge(edge));
+                Assert.That(graphFileManager.SaveEdge(edge), Is.True);
             }
 
             var loadedEdges = graphFileManager.LoadEdges(1234567890123456);
-            ClassicAssert.AreEqual(edges.Count, loadedEdges.Count);
+            Assert.That(loadedEdges.Count, Is.EqualTo(edges.Count));
 
             for (int i = 0; i < edges.Count; i++)
             {
-                ClassicAssert.AreEqual(edges[i].FromNode, loadedEdges[i].FromNode);
-                ClassicAssert.AreEqual(edges[i].ToNode, loadedEdges[i].ToNode);
-                ClassicAssert.AreEqual(edges[i].Weight, loadedEdges[i].Weight);
-                ClassicAssert.AreEqual(edges[i].EdgeContent, loadedEdges[i].EdgeContent);
+                Assert.That(loadedEdges[i].FromNode, Is.EqualTo(edges[i].FromNode));
+                Assert.That(loadedEdges[i].ToNode, Is.EqualTo(edges[i].ToNode));
+                Assert.That((loadedEdges[i] as dynamic).Weight, Is.EqualTo(edges[i].Weight));
+                Assert.That((loadedEdges[i] as dynamic).EdgeContent, Is.EqualTo(edges[i].EdgeContent));
             }
         }
 
@@ -147,14 +157,14 @@ namespace ReasoningEngineTests
         public void TestSaveAndLoadEdgeWithSpecialCharacters()
         {
             var edge = new Edge(1234567890123456, 6543210987654321, 1.5, "Test Edge!@#$%^&*()");
-            ClassicAssert.IsTrue(graphFileManager.SaveEdge(edge));
+            Assert.That(graphFileManager.SaveEdge(edge), Is.True);
             var loadedEdges = graphFileManager.LoadEdges(edge.FromNode);
-            ClassicAssert.IsNotEmpty(loadedEdges);
+            Assert.That(loadedEdges, Is.Not.Empty);
             var loadedEdge = loadedEdges[0];
-            ClassicAssert.AreEqual(edge.FromNode, loadedEdge.FromNode);
-            ClassicAssert.AreEqual(edge.ToNode, loadedEdge.ToNode);
-            ClassicAssert.AreEqual(edge.Weight, loadedEdge.Weight);
-            ClassicAssert.AreEqual(edge.EdgeContent, loadedEdge.EdgeContent);
+            Assert.That(loadedEdge.FromNode, Is.EqualTo(edge.FromNode));
+            Assert.That(loadedEdge.ToNode, Is.EqualTo(edge.ToNode));
+            Assert.That((loadedEdge as dynamic).Weight, Is.EqualTo(edge.Weight));
+            Assert.That((loadedEdge as dynamic).EdgeContent, Is.EqualTo(edge.EdgeContent));
         }
 
         /// <summary>
@@ -166,7 +176,7 @@ namespace ReasoningEngineTests
         public void TestLoadEdgeThatDoesNotExist()
         {
             var loadedEdges = graphFileManager.LoadEdges(9999999999999999);
-            ClassicAssert.IsEmpty(loadedEdges);
+            Assert.That(loadedEdges, Is.Empty);
         }
 
         /// <summary>
@@ -181,34 +191,20 @@ namespace ReasoningEngineTests
             var edge2 = new Edge(1234567890123456, 6543210987654321, 2.0, "Test Edge 2");
             var edge3 = new Edge(1234567890123456, 6543210987654321, 2.5, "Test Edge 3");
 
-            // Save the first edge
-            ClassicAssert.IsTrue(graphFileManager.SaveEdge(edge1));
-            // Save the second edge, which should overwrite the first one due to the same source and destination
-            ClassicAssert.IsTrue(graphFileManager.SaveEdge(edge2));
-            // Save the third edge, which should overwrite the second one
-            ClassicAssert.IsTrue(graphFileManager.SaveEdge(edge3));
+            Assert.That(graphFileManager.SaveEdge(edge1), Is.True);
+            Assert.That(graphFileManager.SaveEdge(edge2), Is.True);
+            Assert.That(graphFileManager.SaveEdge(edge3), Is.True);
 
             var loadedEdges = graphFileManager.LoadEdges(1234567890123456);
-
-            // Filter to find edges from source to the specific destination node
             var filteredEdges = loadedEdges.Where(e => e.ToNode == 6543210987654321).ToList();
 
-            // Debug output to check the filtered edges
-            System.Console.WriteLine($"Filtered Edges Count: {filteredEdges.Count}");
-            foreach (var edge in filteredEdges)
-            {
-                System.Console.WriteLine($"Edge from {edge.FromNode} to {edge.ToNode} with weight {edge.Weight} and content {edge.EdgeContent}");
-            }
+            Assert.That(filteredEdges, Has.Count.EqualTo(1));
 
-            // Expect only one edge between the specified source and destination nodes
-            ClassicAssert.AreEqual(1, filteredEdges.Count);
-
-            // The last saved edge should be the one that's loaded
             var loadedEdge = filteredEdges[0];
-            ClassicAssert.AreEqual(edge3.FromNode, loadedEdge.FromNode);
-            ClassicAssert.AreEqual(edge3.ToNode, loadedEdge.ToNode);
-            ClassicAssert.AreEqual(edge3.Weight, loadedEdge.Weight);
-            ClassicAssert.AreEqual(edge3.EdgeContent, loadedEdge.EdgeContent);
+            Assert.That(loadedEdge.FromNode, Is.EqualTo(edge3.FromNode));
+            Assert.That(loadedEdge.ToNode, Is.EqualTo(edge3.ToNode));
+            Assert.That((loadedEdge as dynamic).Weight, Is.EqualTo(edge3.Weight));
+            Assert.That((loadedEdge as dynamic).EdgeContent, Is.EqualTo(edge3.EdgeContent));
         }
     }
 }
