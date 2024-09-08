@@ -251,6 +251,20 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
+        public List<EdgeBase> FindEdgesByDestinationNode(long destinationNodeId)
+        {
+            var result = new List<EdgeBase>();
+            var allNodeIds = indexManager.GetNodeIds();
+
+            foreach (var nodeId in allNodeIds)
+            {
+                var edges = LoadEdges(nodeId);
+                result.AddRange(edges.Where(e => e.ToNode == destinationNodeId));
+            }
+
+            return result;
+        }
+
         private void EnsureDirectoryExists(string filePath)
         {
             string? directoryPath = Path.GetDirectoryName(filePath);

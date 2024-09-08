@@ -22,7 +22,6 @@ namespace ReasoningEngine.GraphAccess
         {
             while (true)
             {
-                // Display command processor options
                 DebugWriter.DebugWriteLine("#CMD001#", "\nCommand Processor Options:");
                 DebugWriter.DebugWriteLine("#CMD002#", "1. Process Node Query");
                 DebugWriter.DebugWriteLine("#CMD003#", "2. Process Edge Query");
@@ -32,13 +31,12 @@ namespace ReasoningEngine.GraphAccess
                 DebugWriter.DebugWriteLine("#CMD007#", "6. Add Edge");
                 DebugWriter.DebugWriteLine("#CMD008#", "7. Delete Edge");
                 DebugWriter.DebugWriteLine("#CMD009#", "8. Edit Edge");
-                DebugWriter.DebugWriteLine("#CMD010#", "9. Back to Main Menu");
-                DebugWriter.DebugWrite("#CMD011#", "Enter option: ");
+                DebugWriter.DebugWriteLine("#CMD010#", "9. Find Edges by Destination Node");
+                DebugWriter.DebugWriteLine("#CMD011#", "10. Back to Main Menu");
+                DebugWriter.DebugWrite("#CMD012#", "Enter option: ");
 
-                // Read user input
                 var option = Console.ReadLine();
 
-                // Process the command based on user input
                 string commandResult;
                 switch (option)
                 {
@@ -75,7 +73,11 @@ namespace ReasoningEngine.GraphAccess
                         DebugWriter.DebugWriteLine("#RES008#", commandResult);
                         break;
                     case "9":
-                        return; // Go back to the main menu
+                        commandResult = FindEdgesByDestination();
+                        DebugWriter.DebugWriteLine("#RES009#", commandResult);
+                        break;
+                    case "10":
+                        return;
                     default:
                         DebugWriter.DebugWriteLine("#INV002#", "Invalid option. Please try again.");
                         break;
@@ -286,6 +288,26 @@ namespace ReasoningEngine.GraphAccess
                 return "Invalid destination node ID.";
             }
             return "Invalid source node ID.";
+        }
+
+        private string FindEdgesByDestination()
+        {
+            DebugWriter.DebugWrite("#FND001#", "Enter destination node ID: ");
+            if (long.TryParse(Console.ReadLine(), out long destNodeId))
+            {
+                List<EdgeBase> edges = graphFileManager.FindEdgesByDestinationNode(destNodeId);
+                if (edges.Count > 0)
+                {
+                    string result = $"Edges to node {destNodeId}:\n";
+                    foreach (var edge in edges)
+                    {
+                        result += $"From node {edge.FromNode}: Version {edge.Version}, Weight: {(edge as dynamic).Weight}, Content: {(edge as dynamic).EdgeContent}\n";
+                    }
+                    return result;
+                }
+                return $"No edges found with destination node {destNodeId}.";
+            }
+            return "Invalid node ID.";
         }
     }
 }
