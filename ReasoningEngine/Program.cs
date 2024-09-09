@@ -53,10 +53,10 @@ namespace ReasoningEngine
                 DebugWriter.DebugWriteLine("#00D7D2#", "1. Run Setup");
                 DebugWriter.DebugWriteLine("#00D7D3#", "2. Save Node");
                 DebugWriter.DebugWriteLine("#00D7D4#", "3. Load Node");
-                DebugWriter.DebugWriteLine("#00D7D5#", "4. Command Processor Options"); // Updated option for Command Processor
+                DebugWriter.DebugWriteLine("#00D7D5#", "4. Command Processor Options");
                 DebugWriter.DebugWriteLine("#00D7D6#", "5. Debug Options");
-                DebugWriter.DebugWriteLine("#00D7D7#", "6. Exit"); // Updated to reflect added Command Processor option
-                DebugWriter.DebugWrite("#00D7D8#", "Enter option: "); // Updated to next unique code
+                DebugWriter.DebugWriteLine("#00D7D7#", "0. Exit");
+                DebugWriter.DebugWrite("#00D7D8#", "Enter option: ");
 
                 // Read user input
                 var option = Console.ReadLine();
@@ -81,7 +81,7 @@ namespace ReasoningEngine
                     case "5":
                         DebugOptions.ShowDebugOptionsMenu();
                         break;
-                    case "6":
+                    case "0":
                         return; // Exit the loop and end the program
                     default:
                         DebugWriter.DebugWriteLine("#00INV1#", "Invalid option. Please try again."); // Updated to next unique code
