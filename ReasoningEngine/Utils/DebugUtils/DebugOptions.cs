@@ -17,7 +17,7 @@ namespace DebugUtils
                 DebugWriter.DebugWriteLine("#00TP7Q#", "\nDebug Options Menu:");
                 DebugWriter.DebugWriteLine("#00TP7R#", $"1. Change Debug Mode (Currently: {(DebugOptions.DebugMode ? "ON" : "OFF")})");
                 DebugWriter.DebugWriteLine("#00TP7S#", "2. Generate New Debug Message");
-                DebugWriter.DebugWriteLine("#00TP7T#", "3. Return to Main Menu");
+                DebugWriter.DebugWriteLine("#00TP7T#", "0. Return to Main Menu");
                 DebugWriter.DebugWrite("#00TP7U#", "Enter option: ");
 
                 var option = Console.ReadLine();
@@ -34,7 +34,7 @@ namespace DebugUtils
                         DebugWriter.DebugWriteLine("#00W3BC#", "Please check that this message is not already in use in the program.");
                         DebugWriter.DebugWriteLine("#00W3BD#", "In VS Code, you can use Ctrl+Shift+F to search across all files.");
                         break;
-                    case "3":
+                    case "0":
                         return;
                     default:
                         DebugWriter.DebugWriteLine("#00W3BE#", "Invalid option. Please try again.");
