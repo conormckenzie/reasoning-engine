@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ReasoningEngine.GraphFileHandling;
 using DebugUtils;
@@ -8,81 +9,79 @@ namespace ReasoningEngine.GraphAccess
     public class CommandProcessor
     {
         private readonly GraphFileManager graphFileManager;
+        private List<MenuItem> menuItems;
 
         public CommandProcessor(GraphFileManager graphFileManager)
         {
             this.graphFileManager = graphFileManager;
+
+            // Initialize command processor menu items
+            menuItems = new List<MenuItem>
+            {
+                new MenuItem("Process Node Query", "node_query"),
+                new MenuItem("Process Edge Query", "edge_query"),
+                new MenuItem("Add Node", "add_node"),
+                new MenuItem("Delete Node", "delete_node"),
+                new MenuItem("Edit Node", "edit_node"),
+                new MenuItem("Add Edge", "add_edge"),
+                new MenuItem("Delete Edge", "delete_edge"),
+                new MenuItem("Edit Edge", "edit_edge"),
+                new MenuItem("Test", "test")
+            };
         }
 
         /// <summary>
         /// Displays the command processor menu and handles user input for command processing.
         /// </summary>
         public void ShowCommandProcessorMenu()
-{
-    while (true)
-    {
-        // Display command processor options
-        DebugWriter.DebugWriteLine("#CMD001#", "\nCommand Processor Options:");
-        DebugWriter.DebugWriteLine("#CMD002#", "1. Process Node Query");
-        DebugWriter.DebugWriteLine("#CMD003#", "2. Process Edge Query");
-        DebugWriter.DebugWriteLine("#CMD004#", "3. Add Node");
-        DebugWriter.DebugWriteLine("#CMD005#", "4. Delete Node");
-        DebugWriter.DebugWriteLine("#CMD006#", "5. Edit Node");
-        DebugWriter.DebugWriteLine("#CMD007#", "6. Add Edge");
-        DebugWriter.DebugWriteLine("#CMD008#", "7. Delete Edge");
-        DebugWriter.DebugWriteLine("#CMD009#", "8. Edit Edge");
-        DebugWriter.DebugWriteLine("#CMD010#", "0. Return to Previous Menu");
-        DebugWriter.DebugWrite("#CMD011#", "Enter option: ");
-
-        // Read user input
-        var option = Console.ReadLine();
-
-        // Process the command based on user input
-        string commandResult;
-        switch (option)
         {
-            case "1":
-                commandResult = ProcessCommand("node_query", "");
-                DebugWriter.DebugWriteLine("#RES001#", commandResult);
-                break;
-            case "2":
-                commandResult = ProcessCommand("edge_query", "");
-                DebugWriter.DebugWriteLine("#RES002#", commandResult);
-                break;
-            case "3":
-                commandResult = ProcessCommand("add_node", "");
-                DebugWriter.DebugWriteLine("#RES003#", commandResult);
-                break;
-            case "4":
-                commandResult = ProcessCommand("delete_node", "");
-                DebugWriter.DebugWriteLine("#RES004#", commandResult);
-                break;
-            case "5":
-                commandResult = ProcessCommand("edit_node", "");
-                DebugWriter.DebugWriteLine("#RES005#", commandResult);
-                break;
-            case "6":
-                commandResult = ProcessCommand("add_edge", "");
-                DebugWriter.DebugWriteLine("#RES006#", commandResult);
-                break;
-            case "7":
-                commandResult = ProcessCommand("delete_edge", "");
-                DebugWriter.DebugWriteLine("#RES007#", commandResult);
-                break;
-            case "8":
-                commandResult = ProcessCommand("edit_edge", "");
-                DebugWriter.DebugWriteLine("#RES008#", commandResult);
-                break;
-            case "0":
-                DebugWriter.DebugWriteLine("#RES000#", "Returning to the previous menu...");
-                return;
-            default:
-                DebugWriter.DebugWriteLine("#INV002#", "Invalid option. Please try again.");
-                break;
-        }
-    }
-}
+            while (true)
+            {
+                DebugWriter.DebugWriteLine("#CMD001#", "\nCommand Processor Options:");
 
+                // Display menu items dynamically with proper debug codes
+                for (int i = 0; i < menuItems.Count; i++)
+                {
+                    string commandCode;
+
+                    // Handle cases for different ranges
+                    if (i + 2 < 10)
+                    {
+                        commandCode = $"#CMD00{i + 2}#";
+                    }
+                    else if (i + 2 < 100)
+                    {
+                        commandCode = $"#CMD0{i + 2}#";
+                    }
+                    else
+                    {
+                        commandCode = $"#CMD{i + 2}#"; 
+                    }
+
+                    DebugWriter.DebugWriteLine(commandCode, $"{i + 1}. {menuItems[i].Text}");
+                }
+
+                DebugWriter.DebugWriteLine("#CMD000#", "0. Back to Main Menu");
+
+                DebugWriter.DebugWrite("#CMD999#", "Enter option: ");
+                var option = Console.ReadLine();
+
+                if (option == "0")
+                {
+                    return; // Go back to main menu
+                }
+                else if (int.TryParse(option, out int selectedOption) && selectedOption > 0 && selectedOption <= menuItems.Count)
+                {
+                    var selectedItem = menuItems[selectedOption - 1];
+                    string commandResult = ProcessCommand(selectedItem.DebugString, "");
+                    DebugWriter.DebugWriteLine("#RES#", commandResult);
+                }
+                else
+                {
+                    DebugWriter.DebugWriteLine("#INV002#", "Invalid option. Please try again.");
+                }
+            }
+        }
 
         // Synchronous command processing
         public string ProcessCommand(string command, string payload)
@@ -105,6 +104,8 @@ namespace ReasoningEngine.GraphAccess
                     return "Delete edge function is not available right now since I'm still working on it.";
                 case "edit_edge":
                     return "Edit edge function is not available right now since I'm still working on it.";
+                case "test":
+                    return "Test MenuItem.";
                 default:
                     return "Unknown command";
             }
@@ -131,6 +132,8 @@ namespace ReasoningEngine.GraphAccess
                     return await Task.FromResult("Delete edge function is not available right now since I'm still working on it.");
                 case "edit_edge":
                     return await Task.FromResult("Edit edge function is not available right now since I'm still working on it.");
+                case "test":
+                    return await Task.FromResult("Test MenuItem.");
                 default:
                     return "Unknown command";
             }

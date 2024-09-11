@@ -10,15 +10,15 @@ namespace ReasoningEngine
 {
     class Program
     {
-        // List to store nodes
-        public static List<Node> nodes = new List<Node>();
-        
-        // List to store edges
-        public static List<Edge> edges = new List<Edge>();
-
-        // Lists to track changes in nodes and edges
-        public static List<Node> nodeChanges = new List<Node>();
-        public static List<Edge> edgeChanges = new List<Edge>();
+        // List to store main menu items
+        private static List<MenuItem> mainMenuItems = new List<MenuItem>
+        {
+            new MenuItem("Run Setup", "setup"),
+            new MenuItem("Save Node", "save_node"),
+            new MenuItem("Load Node", "load_node"),
+            new MenuItem("Command Processor Options", "command_processor"),
+            new MenuItem("Debug Options", "debug_options"),
+        };
 
         static void Main(string[] args)
         {
@@ -48,44 +48,63 @@ namespace ReasoningEngine
         {
             while (true)
             {
-                // Display menu options
-                DebugWriter.DebugWriteLine("#00D7D1#", "\nMain Menu:");
-                DebugWriter.DebugWriteLine("#00D7D2#", "1. Run Setup");
-                DebugWriter.DebugWriteLine("#00D7D3#", "2. Save Node");
-                DebugWriter.DebugWriteLine("#00D7D4#", "3. Load Node");
-                DebugWriter.DebugWriteLine("#00D7D5#", "4. Command Processor Options");
-                DebugWriter.DebugWriteLine("#00D7D6#", "5. Debug Options");
-                DebugWriter.DebugWriteLine("#00D7D7#", "0. Exit");
-                DebugWriter.DebugWrite("#00D7D8#", "Enter option: ");
+                DebugWriter.DebugWriteLine("#0D7D01#", "\nMain Menu:");
 
-                // Read user input
+                // Display regular menu items dynamically with unique codes
+                for (int i = 0; i < mainMenuItems.Count; i++)
+                {
+                    string colorCode;
+
+                    if (i + 2 < 10)
+                    {
+                        colorCode = $"#0D7D0{i + 2}#";
+                    }
+                    else
+                    {
+                        colorCode = $"#0D7D{i + 2}#";
+                    }
+
+                    DebugWriter.DebugWriteLine(colorCode, $"{i + 1}. {mainMenuItems[i].Text}");
+                }
+
+                DebugWriter.DebugWriteLine("#0D7D00#", "0. Exit");
+
+                DebugWriter.DebugWrite("#0D7D00#", "Enter option: ");
                 var option = Console.ReadLine();
 
-                // Handle user input
-                switch (option)
+                if (option == "0")
                 {
-                    case "1":
-                        OneTimeSetup.Initialize();
-                        break;
-                    case "2":
-                        // manager.SaveNodeWithUserInput(); // Keeping it commented out
-                        DebugWriter.DebugWriteLine("#00SOR1#", "Sorry, this has been disabled for now");
-                        break;
-                    case "3":
-                        // manager.LoadNodeWithUserInput(); // Keeping it commented out
-                        DebugWriter.DebugWriteLine("#00SOR2#", "Sorry, this has been disabled for now");
-                        break;
-                    case "4":
-                        commandProcessor.ShowCommandProcessorMenu(); // Added call to show Command Processor menu
-                        break;
-                    case "5":
-                        DebugOptions.ShowDebugOptionsMenu();
-                        break;
-                    case "0":
-                        return; // Exit the loop and end the program
-                    default:
-                        DebugWriter.DebugWriteLine("#00INV1#", "Invalid option. Please try again."); // Updated to next unique code
-                        break;
+                    return; // Exit the program
+                }
+                else if (int.TryParse(option, out int selectedOption) && selectedOption > 0 && selectedOption <= mainMenuItems.Count)
+                {
+                    var selectedItem = mainMenuItems[selectedOption - 1];
+
+                    switch (selectedItem.DebugString)
+                    {
+                        case "setup":
+                            OneTimeSetup.Initialize();
+                            break;
+                        case "save_node":
+                            DebugWriter.DebugWriteLine("#00SOR1#", "Sorry, this has been disabled for now");
+                            break;
+                        case "load_node":
+                            DebugWriter.DebugWriteLine("#00SOR2#", "Sorry, this has been disabled for now");
+                            break;
+                        case "command_processor":
+                            commandProcessor.ShowCommandProcessorMenu();
+                            break;
+                        case "debug_options":
+                            DebugOptions.ShowDebugOptionsMenu();
+                            break;
+                        default:
+                            DebugWriter.DebugWriteLine("#00INV1#", "Invalid option. Please try again.");
+                            break;
+                    }
+                }
+                else
+                {
+                    DebugWriter.DebugWriteLine("#00INV1#", "Invalid option. Please try again.");
                 }
             }
         }
