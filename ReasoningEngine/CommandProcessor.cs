@@ -15,7 +15,6 @@ namespace ReasoningEngine.GraphAccess
         {
             this.graphFileManager = graphFileManager;
 
-            // Initialize command processor menu items
             menuItems = new List<MenuItem>
             {
                 new MenuItem("Process Node Query", "node_query"),
@@ -26,7 +25,6 @@ namespace ReasoningEngine.GraphAccess
                 new MenuItem("Add Edge", "add_edge"),
                 new MenuItem("Delete Edge", "delete_edge"),
                 new MenuItem("Edit Edge", "edit_edge"),
-                new MenuItem("Test", "test")
             };
         }
 
@@ -39,12 +37,10 @@ namespace ReasoningEngine.GraphAccess
             {
                 DebugWriter.DebugWriteLine("#CMD001#", "\nCommand Processor Options:");
 
-                // Display menu items dynamically with proper debug codes
                 for (int i = 0; i < menuItems.Count; i++)
                 {
                     string commandCode;
 
-                    // Handle cases for different ranges
                     if (i + 2 < 10)
                     {
                         commandCode = $"#CMD00{i + 2}#";
@@ -55,7 +51,7 @@ namespace ReasoningEngine.GraphAccess
                     }
                     else
                     {
-                        commandCode = $"#CMD{i + 2}#"; 
+                        commandCode = $"#CMD{i + 2}#";
                     }
 
                     DebugWriter.DebugWriteLine(commandCode, $"{i + 1}. {menuItems[i].Text}");
@@ -68,13 +64,29 @@ namespace ReasoningEngine.GraphAccess
 
                 if (option == "0")
                 {
-                    return; // Go back to main menu
+                    return;
                 }
                 else if (int.TryParse(option, out int selectedOption) && selectedOption > 0 && selectedOption <= menuItems.Count)
                 {
                     var selectedItem = menuItems[selectedOption - 1];
+
+                    string resCode;
+                    if (selectedOption < 10)
+                    {
+                        resCode = $"#RES00{selectedOption}#";
+                    }
+                    else if (selectedOption < 100)
+                    {
+                        resCode = $"#RES0{selectedOption}#";
+                    }
+                    else
+                    {
+                        resCode = $"#RES{selectedOption}#";
+                    }
+
                     string commandResult = ProcessCommand(selectedItem.DebugString, "");
-                    DebugWriter.DebugWriteLine("#RES#", commandResult);
+
+                    DebugWriter.DebugWriteLine(resCode, commandResult);
                 }
                 else
                 {
@@ -83,7 +95,6 @@ namespace ReasoningEngine.GraphAccess
             }
         }
 
-        // Synchronous command processing
         public string ProcessCommand(string command, string payload)
         {
             switch (command.ToLower())
@@ -104,14 +115,11 @@ namespace ReasoningEngine.GraphAccess
                     return "Delete edge function is not available right now since I'm still working on it.";
                 case "edit_edge":
                     return "Edit edge function is not available right now since I'm still working on it.";
-                case "test":
-                    return "Test MenuItem.";
                 default:
                     return "Unknown command";
             }
         }
 
-        // Asynchronous command processing
         public async Task<string> ProcessCommandAsync(string command, string payload)
         {
             switch (command.ToLower())
@@ -132,8 +140,6 @@ namespace ReasoningEngine.GraphAccess
                     return await Task.FromResult("Delete edge function is not available right now since I'm still working on it.");
                 case "edit_edge":
                     return await Task.FromResult("Edit edge function is not available right now since I'm still working on it.");
-                case "test":
-                    return await Task.FromResult("Test MenuItem.");
                 default:
                     return "Unknown command";
             }
