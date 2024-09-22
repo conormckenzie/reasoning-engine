@@ -1,7 +1,7 @@
 # Introduction Prompt Template for AI Chatbots
 
 ## Version:
-Introduction Prompt Template for AI Chatbots, Version 2.0
+Introduction Prompt Template for AI Chatbots, Version 2.1
 
 ## Context:
 This message contains information that may be relevant to our conversation, or may not. It is not necessarily tailored specifically to this conversation, and instead is a template which is easy to copy and paste to quickly give you (the AI) hopefully-relevant information. This is an attempt to save me (the user & human conversation participant) time.
@@ -111,3 +111,11 @@ The reasoning engine is intended to solve general problems through logical infer
 
 ## Goals for this Conversation:
 (Please ask the user for the goals for this conversation)
+
+## Important Details from Recent Discussions (needs to be integrated into the rest of the document):
+- The project uses a bidirectional edge storage system, with separate structures for incoming and outgoing edges to improve efficiency in graph operations.
+- The file structure for edges includes separate "incoming" and "outgoing" subfolders under the "edges" directory to allow fast access to a node's incoming and outgoing connections.
+- The `GetEdgeFilePath` method in `GraphFileManager` should take into account whether an edge is incoming or outgoing when constructing the file path.
+- Edge operations (save, delete, etc.) should be performed for both the outgoing and incoming representations of each edge.
+- The `UpdateNodeEdgeCount` method takes two parameters: the node ID and a boolean indicating whether it's updating outgoing or incoming edge counts.
+- Consistency in implementation and adherence to the agreed-upon design are crucial for the project's integrity and functionality.

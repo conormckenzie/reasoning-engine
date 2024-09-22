@@ -1,5 +1,8 @@
+// File: GraphFileManager.cs
+
 using Newtonsoft.Json;
 using DebugUtils;
+using System.Collections.Concurrent;
 
 namespace ReasoningEngine.GraphFileHandling
 {
@@ -35,7 +38,7 @@ namespace ReasoningEngine.GraphFileHandling
 
                 string jsonData = JsonConvert.SerializeObject(nodeData, Formatting.Indented);
                 File.WriteAllText(nodeFilePath, jsonData);
-                indexManager.AddOrUpdateNode(node.Id, nodeFilePath, 0); // Assuming 0 edges initially
+                indexManager.AddOrUpdateNode(node.Id, nodeFilePath, 0);
                 return true;
             }
             catch (Exception ex)
@@ -91,15 +94,35 @@ namespace ReasoningEngine.GraphFileHandling
                 string nodeFilePath = GetNodeFilePath(nodeId);
                 if (File.Exists(nodeFilePath))
                 {
+                    // Delete the node file
                     File.Delete(nodeFilePath);
-                    indexManager.RemoveNode(nodeId);
 
-                    // Delete all edges associated with this node
-                    string nodeDir = GetNodeDirPath(nodeId);
-                    if (Directory.Exists(nodeDir))
+                    // Delete outgoing edges
+                    string outgoingEdgeDir = GetEdgeDirPath(nodeId, true);
+                    if (Directory.Exists(outgoingEdgeDir))
                     {
-                        Directory.Delete(nodeDir, true);
+                        Directory.Delete(outgoingEdgeDir, true);
                     }
+
+                    // Delete incoming edges
+                    string incomingEdgeDir = GetEdgeDirPath(nodeId, false);
+                    if (Directory.Exists(incomingEdgeDir))
+                    {
+                        Directory.Delete(incomingEdgeDir, true);
+                    }
+
+                    // Remove incoming edges from other nodes
+                    var allNodeIds = GetAllNodeIds();
+                    foreach (var otherNodeId in allNodeIds)
+                    {
+                        if (otherNodeId != nodeId)
+                        {
+                            DeleteEdge(otherNodeId, nodeId);
+                        }
+                    }
+
+                    // Remove the node from the index
+                    indexManager.RemoveNode(nodeId);
 
                     return true;
                 }
@@ -117,35 +140,17 @@ namespace ReasoningEngine.GraphFileHandling
         {
             try
             {
-                string edgeFilePath = GetEdgeFilePath(edge.FromNode, edge.ToNode);
-                EnsureDirectoryExists(edgeFilePath);
+                // Save outgoing edge
+                string outgoingEdgeFilePath = GetEdgeFilePath(edge.FromNode, edge.ToNode, true);
+                SaveEdgeToFile(edge, outgoingEdgeFilePath);
 
-                List<dynamic> edges;
-                if (File.Exists(edgeFilePath))
-                {
-                    string existingData = File.ReadAllText(edgeFilePath);
-                    edges = JsonConvert.DeserializeObject<List<dynamic>>(existingData) ?? new List<dynamic>();
-                    
-                    // Remove the old edge if it exists
-                    edges.RemoveAll(e => (long)e.Edge.FromNode == edge.FromNode && (long)e.Edge.ToNode == edge.ToNode);
-                }
-                else
-                {
-                    edges = new List<dynamic>();
-                }
+                // Save incoming edge
+                string incomingEdgeFilePath = GetEdgeFilePath(edge.ToNode, edge.FromNode, false);
+                SaveEdgeToFile(edge, incomingEdgeFilePath);
 
-                // Add the new edge
-                edges.Add(new
-                {
-                    Version = edge.Version,
-                    Edge = edge
-                });
-
-                string edgeData = JsonConvert.SerializeObject(edges, Formatting.Indented);
-                File.WriteAllText(edgeFilePath, edgeData);
-
-                // Update edge count for the source node
-                indexManager.AddOrUpdateNode(edge.FromNode, GetNodeFilePath(edge.FromNode), edges.Count);
+                // Update edge counts for nodes
+                UpdateNodeEdgeCount(edge.FromNode, true);
+                UpdateNodeEdgeCount(edge.ToNode, false);
 
                 return true;
             }
@@ -156,46 +161,55 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
-        public List<EdgeBase> LoadEdges(long nodeId)
+        private void SaveEdgeToFile(EdgeBase edge, string filePath)
+        {
+            EnsureDirectoryExists(filePath);
+            var edgeData = new
+            {
+                Version = edge.Version,
+                Edge = edge
+            };
+            string jsonData = JsonConvert.SerializeObject(edgeData, Formatting.Indented);
+            File.WriteAllText(filePath, jsonData);
+
+            // Update index files
+            UpdateEdgeIndex(filePath, edge, true);
+        }
+
+        public List<EdgeBase> LoadEdges(long nodeId, bool outgoing = true)
         {
             var edges = new List<EdgeBase>();
-
             try
             {
-                string nodeDir = GetNodeDirPath(nodeId);
-                if (!Directory.Exists(nodeDir))
+                string edgeDir = GetEdgeDirPath(nodeId, outgoing);
+                if (!Directory.Exists(edgeDir))
                 {
-                    DebugWriter.DebugWriteLine("#00LOD3#", $"Node directory {nodeDir} does not exist.");
                     return edges;
                 }
 
-                string edgeFilePattern = nodeId.ToString("D16") + "-*.json";
-                foreach (string filePath in Directory.EnumerateFiles(nodeDir, edgeFilePattern, SearchOption.AllDirectories))
+                // Traverse the directory hierarchy using index files
+                var edgeFiles = GetAllEdgeFiles(nodeId, outgoing);
+
+                foreach (string filePath in edgeFiles)
                 {
                     string fileContent = File.ReadAllText(filePath);
-                    var edgesInFile = JsonConvert.DeserializeObject<List<dynamic>>(fileContent);
-                    if (edgesInFile != null)
+                    var edgeData = JsonConvert.DeserializeObject<dynamic>(fileContent);
+                    int version = edgeData.Version;
+                    EdgeBase edge;
+
+                    switch (version)
                     {
-                        foreach (var edgeItem in edgesInFile)
-                        {
-                            int version = edgeItem.Version;
-                            EdgeBase edge;
-
-                            switch (version)
-                            {
-                                case 1:
-                                    edge = JsonConvert.DeserializeObject<EdgeV1>(edgeItem.Edge.ToString());
-                                    break;
-                                case 2:
-                                    edge = JsonConvert.DeserializeObject<EdgeV2>(edgeItem.Edge.ToString());
-                                    break;
-                                default:
-                                    throw new NotSupportedException($"Edge version {version} is not supported.");
-                            }
-
-                            edges.Add(edge.UpgradeToLatest());
-                        }
+                        case 1:
+                            edge = JsonConvert.DeserializeObject<EdgeV1>(edgeData.Edge.ToString());
+                            break;
+                        case 2:
+                            edge = JsonConvert.DeserializeObject<EdgeV2>(edgeData.Edge.ToString());
+                            break;
+                        default:
+                            throw new NotSupportedException($"Edge version {version} is not supported.");
                     }
+
+                    edges.Add(edge.UpgradeToLatest());
                 }
             }
             catch (Exception ex)
@@ -210,59 +224,39 @@ namespace ReasoningEngine.GraphFileHandling
         {
             try
             {
-                string edgeFilePath = GetEdgeFilePath(fromNodeId, toNodeId);
-                if (File.Exists(edgeFilePath))
+                // Delete from outgoing edges
+                string outgoingEdgeFilePath = GetEdgeFilePath(fromNodeId, toNodeId, true);
+                if (File.Exists(outgoingEdgeFilePath))
                 {
-                    string existingData = File.ReadAllText(edgeFilePath);
-                    var edges = JsonConvert.DeserializeObject<List<dynamic>>(existingData) ?? new List<dynamic>();
-
-                    int initialCount = edges.Count;
-                    edges.RemoveAll(e => (long)e.Edge.FromNode == fromNodeId && (long)e.Edge.ToNode == toNodeId);
-
-                    if (edges.Count < initialCount)
-                    {
-                        if (edges.Count == 0)
-                        {
-                            // If no edges left, delete the file
-                            File.Delete(edgeFilePath);
-                        }
-                        else
-                        {
-                            // Otherwise, save the updated edge list
-                            string edgeData = JsonConvert.SerializeObject(edges, Formatting.Indented);
-                            File.WriteAllText(edgeFilePath, edgeData);
-                        }
-
-                        // Update edge count for the source node
-                        indexManager.AddOrUpdateNode(fromNodeId, GetNodeFilePath(fromNodeId), edges.Count);
-
-                        return true;
-                    }
-                    DebugWriter.DebugWriteLine("#00DEL3#", $"Edge from {fromNodeId} to {toNodeId} not found in file {edgeFilePath}.");
-                    return false;
+                    File.Delete(outgoingEdgeFilePath);
+                    RemoveEdgeFromIndex(outgoingEdgeFilePath);
                 }
-                DebugWriter.DebugWriteLine("#00DEL4#", $"Edge file {edgeFilePath} does not exist.");
-                return false;
+
+                // Delete from incoming edges
+                string incomingEdgeFilePath = GetEdgeFilePath(toNodeId, fromNodeId, false);
+                if (File.Exists(incomingEdgeFilePath))
+                {
+                    File.Delete(incomingEdgeFilePath);
+                    RemoveEdgeFromIndex(incomingEdgeFilePath);
+                }
+
+                // Update edge counts for nodes
+                UpdateNodeEdgeCount(fromNodeId, true);
+                UpdateNodeEdgeCount(toNodeId, false);
+
+                return true;
             }
             catch (Exception ex)
             {
-                DebugWriter.DebugWriteLine("#00DEL5#", $"Error deleting edge from {fromNodeId} to {toNodeId}: {ex.Message}");
+                DebugWriter.DebugWriteLine("#00DEL3#", $"Error deleting edge from {fromNodeId} to {toNodeId}: {ex.Message}");
                 return false;
             }
         }
 
-        public List<EdgeBase> FindEdgesByDestinationNode(long destinationNodeId)
+        private void UpdateNodeEdgeCount(long nodeId, bool outgoing)
         {
-            var result = new List<EdgeBase>();
-            var allNodeIds = indexManager.GetNodeIds();
-
-            foreach (var nodeId in allNodeIds)
-            {
-                var edges = LoadEdges(nodeId);
-                result.AddRange(edges.Where(e => e.ToNode == destinationNodeId));
-            }
-
-            return result;
+            int edgeCount = GetEdgeCount(nodeId, outgoing);
+            indexManager.AddOrUpdateNode(nodeId, GetNodeFilePath(nodeId), edgeCount);
         }
 
         private void EnsureDirectoryExists(string filePath)
@@ -277,37 +271,161 @@ namespace ReasoningEngine.GraphFileHandling
         private string GetNodeFilePath(long nodeId)
         {
             string nodeIdStr = nodeId.ToString("D16");
-            string[] pathSegments = new string[4];
-            pathSegments[0] = nodeIdStr.Substring(0, 4);
-            pathSegments[1] = nodeIdStr.Substring(0, 8);
-            pathSegments[2] = nodeIdStr.Substring(0, 12);
-            pathSegments[3] = nodeIdStr + "/" + nodeIdStr + ".json";
-            return Path.Combine(baseDir, Path.Combine(pathSegments));
+            string[] pathSegments = new string[5];
+            pathSegments[0] = baseDir;
+            pathSegments[1] = nodeIdStr.Substring(0, 4);
+            pathSegments[2] = nodeIdStr.Substring(0, 8);
+            pathSegments[3] = nodeIdStr.Substring(0, 12);
+            pathSegments[4] = nodeIdStr + ".json";
+            return Path.Combine(pathSegments);
         }
 
-        private string GetNodeDirPath(long nodeId)
+        private string GetEdgeFilePath(long fromNodeId, long toNodeId, bool outgoing)
         {
-            string nodeIdStr = nodeId.ToString("D16");
-            string[] pathSegments = new string[4];
-            pathSegments[0] = nodeIdStr.Substring(0, 4);
-            pathSegments[1] = nodeIdStr.Substring(0, 8);
-            pathSegments[2] = nodeIdStr.Substring(0, 12);
-            pathSegments[3] = nodeIdStr;
-            return Path.Combine(baseDir, Path.Combine(pathSegments));
-        }
-
-        private string GetEdgeFilePath(long fromNodeId, long toNodeId)
-        {
+            string direction = outgoing ? "outgoing" : "incoming";
             string fromNodeIdStr = fromNodeId.ToString("D16");
             string toNodeIdStr = toNodeId.ToString("D16");
-            string[] pathSegments = new string[6];
-            pathSegments[0] = fromNodeIdStr.Substring(0, 4);
-            pathSegments[1] = fromNodeIdStr.Substring(0, 8);
-            pathSegments[2] = fromNodeIdStr.Substring(0, 12);
-            pathSegments[3] = fromNodeIdStr;
-            pathSegments[4] = fromNodeIdStr + "-" + toNodeIdStr.Substring(0, 4);
-            pathSegments[5] = fromNodeIdStr + "-" + toNodeIdStr.Substring(0, 8) + "/" + fromNodeIdStr + "-" + toNodeIdStr.Substring(0, 12) + ".json";
-            return Path.Combine(baseDir, Path.Combine(pathSegments));
+
+            List<string> pathSegments = new List<string>
+            {
+                baseDir,
+                "edges",
+                direction,
+                fromNodeIdStr.Substring(0, 4),
+                fromNodeIdStr.Substring(0, 8),
+                fromNodeIdStr.Substring(0, 12),
+                fromNodeIdStr
+            };
+
+            // Include ToNodeId segments to further split directories
+            pathSegments.Add($"{fromNodeIdStr}-{toNodeIdStr.Substring(0, 4)}");
+            pathSegments.Add($"{fromNodeIdStr}-{toNodeIdStr.Substring(0, 8)}");
+            pathSegments.Add($"{fromNodeIdStr}-{toNodeIdStr.Substring(0, 12)}");
+
+            string fileName = $"{fromNodeIdStr}-{toNodeIdStr}.json";
+            pathSegments.Add(fileName);
+
+            return Path.Combine(pathSegments.ToArray());
         }
+
+        private string GetEdgeDirPath(long nodeId, bool outgoing)
+        {
+            string direction = outgoing ? "outgoing" : "incoming";
+            string nodeIdStr = nodeId.ToString("D16");
+            string[] pathSegments = new string[7];
+            pathSegments[0] = baseDir;
+            pathSegments[1] = "edges";
+            pathSegments[2] = direction;
+            pathSegments[3] = nodeIdStr.Substring(0, 4);
+            pathSegments[4] = nodeIdStr.Substring(0, 8);
+            pathSegments[5] = nodeIdStr.Substring(0, 12);
+            pathSegments[6] = nodeIdStr;
+            return Path.Combine(pathSegments);
+        }
+
+        private int GetEdgeCount(long nodeId, bool outgoing)
+        {
+            var edgeFiles = GetAllEdgeFiles(nodeId, outgoing);
+            return edgeFiles.Count;
+        }
+
+        private void UpdateEdgeIndex(string edgeFilePath, EdgeBase edge, bool isAdding)
+        {
+            string indexFilePath = GetIndexFilePath(edgeFilePath);
+            EnsureDirectoryExists(indexFilePath);
+
+            IndexFile indexFile = LoadIndexFile(indexFilePath);
+
+            string edgeFileName = Path.GetFileName(edgeFilePath);
+
+            if (isAdding)
+            {
+                if (!indexFile.EdgeFiles.Contains(edgeFileName))
+                {
+                    indexFile.EdgeFiles.Add(edgeFileName);
+                }
+            }
+            else
+            {
+                indexFile.EdgeFiles.Remove(edgeFileName);
+            }
+
+            SaveIndexFile(indexFilePath, indexFile);
+        }
+
+        private void RemoveEdgeFromIndex(string edgeFilePath)
+        {
+            UpdateEdgeIndex(edgeFilePath, null, false);
+        }
+
+        private string GetIndexFilePath(string edgeFilePath)
+        {
+            string directoryPath = Path.GetDirectoryName(edgeFilePath);
+            return Path.Combine(directoryPath, "index.json");
+        }
+
+        private IndexFile LoadIndexFile(string indexFilePath)
+        {
+            if (File.Exists(indexFilePath))
+            {
+                string json = File.ReadAllText(indexFilePath);
+                return JsonConvert.DeserializeObject<IndexFile>(json) ?? new IndexFile();
+            }
+            else
+            {
+                return new IndexFile();
+            }
+        }
+
+        private void SaveIndexFile(string indexFilePath, IndexFile indexFile)
+        {
+            string json = JsonConvert.SerializeObject(indexFile, Formatting.Indented);
+            File.WriteAllText(indexFilePath, json);
+        }
+
+        private List<string> GetAllEdgeFiles(long nodeId, bool outgoing)
+        {
+            List<string> edgeFiles = new List<string>();
+            string edgeDir = GetEdgeDirPath(nodeId, outgoing);
+
+            if (!Directory.Exists(edgeDir))
+            {
+                return edgeFiles;
+            }
+
+            Queue<string> directories = new Queue<string>();
+            directories.Enqueue(edgeDir);
+
+            while (directories.Count > 0)
+            {
+                string currentDir = directories.Dequeue();
+                string indexFilePath = Path.Combine(currentDir, "index.json");
+
+                if (File.Exists(indexFilePath))
+                {
+                    IndexFile indexFile = LoadIndexFile(indexFilePath);
+
+                    // Add edge files
+                    foreach (var fileName in indexFile.EdgeFiles)
+                    {
+                        edgeFiles.Add(Path.Combine(currentDir, fileName));
+                    }
+
+                    // Enqueue subdirectories
+                    foreach (var subDirName in indexFile.Subdirectories)
+                    {
+                        directories.Enqueue(Path.Combine(currentDir, subDirName));
+                    }
+                }
+            }
+
+            return edgeFiles;
+        }
+    }
+
+    public class IndexFile
+    {
+        public List<string> Subdirectories { get; set; } = new List<string>();
+        public List<string> EdgeFiles { get; set; } = new List<string>();
     }
 }
