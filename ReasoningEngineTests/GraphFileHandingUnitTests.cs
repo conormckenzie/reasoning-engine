@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace ReasoningEngineTests
 {
@@ -38,8 +39,8 @@ namespace ReasoningEngineTests
 
             var outgoingEdges = graphFileManager.LoadEdges(edge.FromNode, true);
             var incomingEdges = graphFileManager.LoadEdges(edge.ToNode, false);
-            Assert.That(outgoingEdges, Has.Count.EqualTo(1));
-            Assert.That(incomingEdges, Has.Count.EqualTo(1));
+            Assert.That(outgoingEdges.Count, Is.EqualTo(1));
+            Assert.That(incomingEdges.Count, Is.EqualTo(1));
 
             var loadedOutgoingEdge = outgoingEdges[0];
             var loadedIncomingEdge = incomingEdges[0];
@@ -56,12 +57,14 @@ namespace ReasoningEngineTests
 
             // Verify index files exist and contain correct entries
             string outgoingEdgeFilePath = graphFileManager.GetEdgeFilePath(edge.FromNode, edge.ToNode, true);
-            string outgoingIndexFilePath = Path.Combine(Path.GetDirectoryName(outgoingEdgeFilePath), "index.json");
-            Assert.IsTrue(File.Exists(outgoingIndexFilePath));
+            string? outgoingEdgeDir = Path.GetDirectoryName(outgoingEdgeFilePath);
+            string outgoingIndexFilePath = Path.Combine(outgoingEdgeDir ?? "", "index.json");
+            Assert.That(File.Exists(outgoingIndexFilePath), Is.True);
 
             string incomingEdgeFilePath = graphFileManager.GetEdgeFilePath(edge.ToNode, edge.FromNode, false);
-            string incomingIndexFilePath = Path.Combine(Path.GetDirectoryName(incomingEdgeFilePath), "index.json");
-            Assert.IsTrue(File.Exists(incomingIndexFilePath));
+            string? incomingEdgeDir = Path.GetDirectoryName(incomingEdgeFilePath);
+            string incomingIndexFilePath = Path.Combine(incomingEdgeDir ?? "", "index.json");
+            Assert.That(File.Exists(incomingIndexFilePath), Is.True);
         }
 
         [Test]
@@ -71,30 +74,32 @@ namespace ReasoningEngineTests
             graphFileManager.SaveEdge(edge);
 
             string outgoingEdgeFilePath = graphFileManager.GetEdgeFilePath(edge.FromNode, edge.ToNode, true);
-            string outgoingIndexFilePath = Path.Combine(Path.GetDirectoryName(outgoingEdgeFilePath), "index.json");
+            string? outgoingEdgeDir = Path.GetDirectoryName(outgoingEdgeFilePath);
+            string outgoingIndexFilePath = Path.Combine(outgoingEdgeDir ?? "", "index.json");
 
             string incomingEdgeFilePath = graphFileManager.GetEdgeFilePath(edge.ToNode, edge.FromNode, false);
-            string incomingIndexFilePath = Path.Combine(Path.GetDirectoryName(incomingEdgeFilePath), "index.json");
+            string? incomingEdgeDir = Path.GetDirectoryName(incomingEdgeFilePath);
+            string incomingIndexFilePath = Path.Combine(incomingEdgeDir ?? "", "index.json");
 
             // Ensure edge and index files exist
-            Assert.IsTrue(File.Exists(outgoingEdgeFilePath));
-            Assert.IsTrue(File.Exists(outgoingIndexFilePath));
-            Assert.IsTrue(File.Exists(incomingEdgeFilePath));
-            Assert.IsTrue(File.Exists(incomingIndexFilePath));
+            Assert.That(File.Exists(outgoingEdgeFilePath), Is.True);
+            Assert.That(File.Exists(outgoingIndexFilePath), Is.True);
+            Assert.That(File.Exists(incomingEdgeFilePath), Is.True);
+            Assert.That(File.Exists(incomingIndexFilePath), Is.True);
 
             // Delete the edge
-            Assert.IsTrue(graphFileManager.DeleteEdge(edge.FromNode, edge.ToNode));
+            Assert.That(graphFileManager.DeleteEdge(edge.FromNode, edge.ToNode), Is.True);
 
             // Edge files should be deleted
-            Assert.IsFalse(File.Exists(outgoingEdgeFilePath));
-            Assert.IsFalse(File.Exists(incomingEdgeFilePath));
+            Assert.That(File.Exists(outgoingEdgeFilePath), Is.False);
+            Assert.That(File.Exists(incomingEdgeFilePath), Is.False);
 
             // Index files should be updated
             IndexFile outgoingIndex = LoadIndexFile(outgoingIndexFilePath);
             IndexFile incomingIndex = LoadIndexFile(incomingIndexFilePath);
 
-            Assert.IsFalse(outgoingIndex.EdgeFiles.Contains(Path.GetFileName(outgoingEdgeFilePath)));
-            Assert.IsFalse(incomingIndex.EdgeFiles.Contains(Path.GetFileName(incomingEdgeFilePath)));
+            Assert.That(outgoingIndex.EdgeFiles.Contains(Path.GetFileName(outgoingEdgeFilePath)), Is.False);
+            Assert.That(incomingIndex.EdgeFiles.Contains(Path.GetFileName(incomingEdgeFilePath)), Is.False);
         }
 
         [Test]
@@ -109,30 +114,31 @@ namespace ReasoningEngineTests
             graphFileManager.SaveEdge(edge3);
 
             var outgoingEdges = graphFileManager.LoadEdges(1234567890123456, true);
-            Assert.AreEqual(3, outgoingEdges.Count);
+            Assert.That(outgoingEdges.Count, Is.EqualTo(3));
 
             var incomingEdges1 = graphFileManager.LoadEdges(6543210987654321, false);
             var incomingEdges2 = graphFileManager.LoadEdges(7654321098765432, false);
             var incomingEdges3 = graphFileManager.LoadEdges(8765432109876543, false);
 
-            Assert.AreEqual(1, incomingEdges1.Count);
-            Assert.AreEqual(1, incomingEdges2.Count);
-            Assert.AreEqual(1, incomingEdges3.Count);
+            Assert.That(incomingEdges1.Count, Is.EqualTo(1));
+            Assert.That(incomingEdges2.Count, Is.EqualTo(1));
+            Assert.That(incomingEdges3.Count, Is.EqualTo(1));
 
             // Verify that index files exist and are correct
             foreach (var edge in outgoingEdges)
             {
                 string edgeFilePath = graphFileManager.GetEdgeFilePath(edge.FromNode, edge.ToNode, true);
-                string indexFilePath = Path.Combine(Path.GetDirectoryName(edgeFilePath), "index.json");
+                string? edgeDir = Path.GetDirectoryName(edgeFilePath);
+                string indexFilePath = Path.Combine(edgeDir ?? "", "index.json");
                 IndexFile indexFile = LoadIndexFile(indexFilePath);
-                Assert.IsTrue(indexFile.EdgeFiles.Contains(Path.GetFileName(edgeFilePath)));
+                Assert.That(indexFile.EdgeFiles.Contains(Path.GetFileName(edgeFilePath)), Is.True);
             }
         }
 
         private IndexFile LoadIndexFile(string indexFilePath)
         {
             string json = File.ReadAllText(indexFilePath);
-            return JsonConvert.DeserializeObject<IndexFile>(json);
+            return JsonConvert.DeserializeObject<IndexFile>(json) ?? new IndexFile();
         }
     }
 }

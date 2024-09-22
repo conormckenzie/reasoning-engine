@@ -111,16 +111,6 @@ namespace ReasoningEngine.GraphFileHandling
                         Directory.Delete(incomingEdgeDir, true);
                     }
 
-                    // Remove incoming edges from other nodes
-                    var allNodeIds = GetAllNodeIds();
-                    foreach (var otherNodeId in allNodeIds)
-                    {
-                        if (otherNodeId != nodeId)
-                        {
-                            DeleteEdge(otherNodeId, nodeId);
-                        }
-                    }
-
                     // Remove the node from the index
                     indexManager.RemoveNode(nodeId);
 
@@ -173,7 +163,7 @@ namespace ReasoningEngine.GraphFileHandling
             File.WriteAllText(filePath, jsonData);
 
             // Update index files
-            UpdateEdgeIndex(filePath, edge, true);
+            UpdateEdgeIndex(filePath, true);
         }
 
         public List<EdgeBase> LoadEdges(long nodeId, bool outgoing = true)
@@ -268,7 +258,7 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
-        private string GetNodeFilePath(long nodeId)
+        public string GetNodeFilePath(long nodeId)
         {
             string nodeIdStr = nodeId.ToString("D16");
             string[] pathSegments = new string[5];
@@ -308,7 +298,7 @@ namespace ReasoningEngine.GraphFileHandling
             return Path.Combine(pathSegments.ToArray());
         }
 
-        private string GetEdgeDirPath(long nodeId, bool outgoing)
+        public string GetEdgeDirPath(long nodeId, bool outgoing)
         {
             string direction = outgoing ? "outgoing" : "incoming";
             string nodeIdStr = nodeId.ToString("D16");
@@ -329,9 +319,14 @@ namespace ReasoningEngine.GraphFileHandling
             return edgeFiles.Count;
         }
 
-        private void UpdateEdgeIndex(string edgeFilePath, EdgeBase edge, bool isAdding)
+        private void UpdateEdgeIndex(string edgeFilePath, bool isAdding)
         {
-            string indexFilePath = GetIndexFilePath(edgeFilePath);
+            string? indexFilePath = GetIndexFilePath(edgeFilePath);
+            if (indexFilePath == null)
+            {
+                throw new InvalidOperationException("Index file path cannot be null.");
+            }
+
             EnsureDirectoryExists(indexFilePath);
 
             IndexFile indexFile = LoadIndexFile(indexFilePath);
@@ -355,12 +350,16 @@ namespace ReasoningEngine.GraphFileHandling
 
         private void RemoveEdgeFromIndex(string edgeFilePath)
         {
-            UpdateEdgeIndex(edgeFilePath, null, false);
+            UpdateEdgeIndex(edgeFilePath, false);
         }
 
-        private string GetIndexFilePath(string edgeFilePath)
+        private string? GetIndexFilePath(string edgeFilePath)
         {
-            string directoryPath = Path.GetDirectoryName(edgeFilePath);
+            string? directoryPath = Path.GetDirectoryName(edgeFilePath);
+            if (directoryPath == null)
+            {
+                return null;
+            }
             return Path.Combine(directoryPath, "index.json");
         }
 
