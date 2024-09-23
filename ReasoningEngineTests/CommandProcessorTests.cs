@@ -193,5 +193,68 @@ namespace ReasoningEngineTests
             Assert.That((loadedEdges[0] as dynamic).Weight, Is.EqualTo(2.0));
             Assert.That((loadedEdges[0] as dynamic).EdgeContent, Is.EqualTo("Updated Edge"));
         }
+
+        [Test]
+        public void TestAddEdgeWithLargeNodeIds()
+        {
+            long largeId1 = 9223372036854775807; // Max long value
+            long largeId2 = 9223372036854775806;
+            
+            commandProcessor.ProcessCommand("add_node", $"{largeId1}|Large Node 1");
+            commandProcessor.ProcessCommand("add_node", $"{largeId2}|Large Node 2");
+            string result = commandProcessor.ProcessCommand("add_edge", $"{largeId1}|{largeId2}|1.5|Large Edge");
+            
+            Assert.That(result, Is.EqualTo($"Edge from {largeId1} to {largeId2} added successfully."));
+            
+            var loadedEdges = graphFileManager.LoadEdges(largeId1, true);
+            Assert.That(loadedEdges, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void TestAddEdgeToNonExistentNode()
+        {
+            commandProcessor.ProcessCommand("add_node", "1|Existing Node");
+            string result = commandProcessor.ProcessCommand("add_edge", "1|2|1.0|Invalid Edge");
+            
+            Assert.That(result, Does.Contain("Failed to add edge"));
+            Assert.That(result, Does.Not.Contain("added successfully"));
+
+            var loadedEdges = graphFileManager.LoadEdges(1, true);
+            Assert.That(loadedEdges, Is.Empty);
+        }
+
+        [Test]
+        public void TestDeleteNodeWithMultipleEdges()
+        {
+            commandProcessor.ProcessCommand("add_node", "1|Central Node");
+            commandProcessor.ProcessCommand("add_node", "2|Node 2");
+            commandProcessor.ProcessCommand("add_node", "3|Node 3");
+            
+            commandProcessor.ProcessCommand("add_edge", "1|2|1.0|Edge 1-2");
+            commandProcessor.ProcessCommand("add_edge", "1|3|1.0|Edge 1-3");
+            commandProcessor.ProcessCommand("add_edge", "2|1|1.0|Edge 2-1");
+            
+            string result = commandProcessor.ProcessCommand("delete_node", "1");
+            Assert.That(result, Does.Contain("deleted successfully"));
+            
+            var loadedEdgesFrom2 = graphFileManager.LoadEdges(2, true);
+            Assert.That(loadedEdgesFrom2, Is.Empty);
+        }
+
+        [Test]
+        public void TestEdgeConsistency()
+        {
+            commandProcessor.ProcessCommand("add_node", "1|Node 1");
+            commandProcessor.ProcessCommand("add_node", "2|Node 2");
+            commandProcessor.ProcessCommand("add_edge", "1|2|1.0|Test Edge");
+            
+            var outgoingEdges = graphFileManager.LoadEdges(1, true);
+            var incomingEdges = graphFileManager.LoadEdges(2, false);
+            
+            Assert.That(outgoingEdges, Has.Count.EqualTo(1));
+            Assert.That(incomingEdges, Has.Count.EqualTo(1));
+            Assert.That(outgoingEdges[0].ToNode, Is.EqualTo(2));
+            Assert.That(incomingEdges[0].FromNode, Is.EqualTo(1));
+        }
     }
 }

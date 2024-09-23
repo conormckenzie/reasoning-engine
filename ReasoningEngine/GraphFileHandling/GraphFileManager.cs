@@ -98,18 +98,10 @@ namespace ReasoningEngine.GraphFileHandling
                     File.Delete(nodeFilePath);
 
                     // Delete outgoing edges
-                    string outgoingEdgeDir = GetEdgeDirPath(nodeId, true);
-                    if (Directory.Exists(outgoingEdgeDir))
-                    {
-                        Directory.Delete(outgoingEdgeDir, true);
-                    }
+                    DeleteEdgesForNode(nodeId, true);
 
                     // Delete incoming edges
-                    string incomingEdgeDir = GetEdgeDirPath(nodeId, false);
-                    if (Directory.Exists(incomingEdgeDir))
-                    {
-                        Directory.Delete(incomingEdgeDir, true);
-                    }
+                    DeleteEdgesForNode(nodeId, false);
 
                     // Remove the node from the index
                     indexManager.RemoveNode(nodeId);
@@ -126,11 +118,42 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
+        private void DeleteEdgesForNode(long nodeId, bool outgoing)
+        {
+            var edges = LoadEdges(nodeId, outgoing);
+            foreach (var edge in edges)
+            {
+                long fromNodeId = outgoing ? nodeId : edge.FromNode;
+                long toNodeId = outgoing ? edge.ToNode : nodeId;
+                DeleteEdge(fromNodeId, toNodeId);
+            }
+
+            // Clear the index file for this node's edges
+            string edgeDirPath = GetEdgeDirPath(nodeId, outgoing);
+            string indexFilePath = Path.Combine(edgeDirPath, "index.json");
+            if (File.Exists(indexFilePath))
+            {
+                File.Delete(indexFilePath);
+            }
+        }
+
         public bool SaveEdge(EdgeBase edge)
         {
             try
             {
                 DebugWriter.DebugWriteLine("#00SAV9#", $"Starting to save edge from {edge.FromNode} to {edge.ToNode}");
+
+                // Check if both nodes exist
+                if (!NodeExists(edge.FromNode))
+                {
+                    DebugWriter.DebugWriteLine("#00SAV19#", $"Cannot save edge: source node {edge.FromNode} does not exist.");
+                    return false;
+                }
+                if (!NodeExists(edge.ToNode))
+                {
+                    DebugWriter.DebugWriteLine("#00SAV20#", $"Cannot save edge: destination node {edge.ToNode} does not exist.");
+                    return false;
+                }
 
                 // Save outgoing edge
                 string outgoingEdgeFilePath = GetEdgeFilePath(edge.FromNode, edge.ToNode, true);
@@ -163,6 +186,12 @@ namespace ReasoningEngine.GraphFileHandling
                 DebugWriter.DebugWriteLine("#00SAV2#", $"Error saving edge from {edge.FromNode} to {edge.ToNode}: {ex.Message}");
                 return false;
             }
+        }
+
+        private bool NodeExists(long nodeId)
+        {
+            string nodeFilePath = GetNodeFilePath(nodeId);
+            return File.Exists(nodeFilePath);
         }
 
         private bool SaveEdgeToFile(EdgeBase edge, string filePath)
@@ -390,7 +419,11 @@ namespace ReasoningEngine.GraphFileHandling
 
         private void RemoveEdgeFromIndex(string edgeFilePath)
         {
-            UpdateEdgeIndex(edgeFilePath, false);
+            string? indexFilePath = GetIndexFilePath(edgeFilePath);
+            if (indexFilePath != null)
+            {
+                UpdateEdgeIndex(edgeFilePath, false);
+            }
         }
 
         private string? GetIndexFilePath(string edgeFilePath)

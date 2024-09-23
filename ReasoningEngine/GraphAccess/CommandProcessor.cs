@@ -236,18 +236,18 @@ namespace ReasoningEngine.GraphAccess
         private string AddEdge(string payload)
         {
             string[] parts = payload.Split('|');
-            if (parts.Length != 4 || !long.TryParse(parts[0], out long sourceNodeId) || 
-                !long.TryParse(parts[1], out long destNodeId) || !double.TryParse(parts[2], out double weight))
+            if (parts.Length != 4 || !long.TryParse(parts[0], out long fromNodeId) || 
+                !long.TryParse(parts[1], out long toNodeId) || !double.TryParse(parts[2], out double weight))
             {
                 return "Invalid payload for adding an edge.";
             }
             string content = parts[3];
-            Edge newEdge = new Edge(sourceNodeId, destNodeId, weight, content);
+            Edge newEdge = new Edge(fromNodeId, toNodeId, weight, content);
             if (graphFileManager.SaveEdge(newEdge))
             {
-                return $"Edge from {sourceNodeId} to {destNodeId} added successfully.";
+                return $"Edge from {fromNodeId} to {toNodeId} added successfully.";
             }
-            return $"Failed to add edge from {sourceNodeId} to {destNodeId}.";
+            return $"Failed to add edge from {fromNodeId} to {toNodeId}. One or both nodes may not exist.";
         }
 
         private string DeleteEdge(string payload)
