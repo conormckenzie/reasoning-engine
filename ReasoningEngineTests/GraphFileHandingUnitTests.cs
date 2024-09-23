@@ -1,5 +1,3 @@
-// File: GraphFileHandlingUnitTests.cs
-
 using NUnit.Framework;
 using ReasoningEngine;
 using ReasoningEngine.GraphFileHandling;
@@ -35,6 +33,11 @@ namespace ReasoningEngineTests
         public void TestSaveAndLoadSingleEdge()
         {
             var edge = new Edge(1234567890123456, 6543210987654321, 1.5, "Test Edge");
+
+            // Create nodes first
+            graphFileManager.SaveNode(new Node(edge.FromNode, "From Node"));
+            graphFileManager.SaveNode(new Node(edge.ToNode, "To Node"));
+
             Assert.That(graphFileManager.SaveEdge(edge), Is.True);
 
             var outgoingEdges = graphFileManager.LoadEdges(edge.FromNode, true);
@@ -71,7 +74,12 @@ namespace ReasoningEngineTests
         public void TestDeleteEdgeUpdatesIndex()
         {
             var edge = new Edge(1234567890123456, 6543210987654321, 1.5, "Test Edge");
-            graphFileManager.SaveEdge(edge);
+    
+            // Create nodes first
+            graphFileManager.SaveNode(new Node(edge.FromNode, "From Node"));
+            graphFileManager.SaveNode(new Node(edge.ToNode, "To Node"));
+    
+            Assert.That(graphFileManager.SaveEdge(edge), Is.True);
 
             string outgoingEdgeFilePath = graphFileManager.GetEdgeFilePath(edge.FromNode, edge.ToNode, true);
             string? outgoingEdgeDir = Path.GetDirectoryName(outgoingEdgeFilePath);
@@ -108,6 +116,12 @@ namespace ReasoningEngineTests
             var edge1 = new Edge(1234567890123456, 6543210987654321, 1.0, "Edge 1");
             var edge2 = new Edge(1234567890123456, 7654321098765432, 2.0, "Edge 2");
             var edge3 = new Edge(1234567890123456, 8765432109876543, 3.0, "Edge 3");
+
+            // Create nodes first
+            graphFileManager.SaveNode(new Node(1234567890123456, "Source Node"));
+            graphFileManager.SaveNode(new Node(6543210987654321, "Dest Node 1"));
+            graphFileManager.SaveNode(new Node(7654321098765432, "Dest Node 2"));
+            graphFileManager.SaveNode(new Node(8765432109876543, "Dest Node 3"));
 
             graphFileManager.SaveEdge(edge1);
             graphFileManager.SaveEdge(edge2);
