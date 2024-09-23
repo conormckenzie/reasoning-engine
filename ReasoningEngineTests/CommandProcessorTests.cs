@@ -51,16 +51,76 @@ namespace ReasoningEngineTests
         [Test]
         public void TestAddEdge()
         {
-            commandProcessor.ProcessCommand("add_node", "1234567890123456|Source Node");
-            commandProcessor.ProcessCommand("add_node", "6543210987654321|Destination Node");
-            string result = commandProcessor.ProcessCommand("add_edge", "1234567890123456|6543210987654321|1.5|Test Edge");
-            Assert.That(result, Is.EqualTo("Edge from 1234567890123456 to 6543210987654321 added successfully."));
+            // Add nodes
+            var addSourceNodeResult = commandProcessor.ProcessCommand("add_node", "1234567890123456|Source Node");
+            Assert.That(addSourceNodeResult, Is.EqualTo("Node 1234567890123456 added successfully."), "Failed to add source node");
 
-            var loadedEdges = graphFileManager.LoadEdges(1234567890123456, true);
-            Assert.That(loadedEdges, Has.Count.EqualTo(1));
-            Assert.That(loadedEdges[0].ToNode, Is.EqualTo(6543210987654321));
-            Assert.That((loadedEdges[0] as dynamic).Weight, Is.EqualTo(1.5));
-            Assert.That((loadedEdges[0] as dynamic).EdgeContent, Is.EqualTo("Test Edge"));
+            var addDestNodeResult = commandProcessor.ProcessCommand("add_node", "6543210987654321|Destination Node");
+            Assert.That(addDestNodeResult, Is.EqualTo("Node 6543210987654321 added successfully."), "Failed to add destination node");
+
+            // Add edge
+            string addEdgeResult = commandProcessor.ProcessCommand("add_edge", "1234567890123456|6543210987654321|1.5|Test Edge");
+            Assert.That(addEdgeResult, Is.EqualTo("Edge from 1234567890123456 to 6543210987654321 added successfully."), "Failed to add edge");
+
+            // Load and check outgoing edges
+            var loadedOutgoingEdges = graphFileManager.LoadEdges(1234567890123456, true);
+            Console.WriteLine($"Loaded outgoing edges count: {loadedOutgoingEdges.Count}");
+            Assert.That(loadedOutgoingEdges, Has.Count.EqualTo(1), "Failed to load outgoing edge");
+
+            if (loadedOutgoingEdges.Count > 0)
+            {
+                Assert.That(loadedOutgoingEdges[0].ToNode, Is.EqualTo(6543210987654321), "Incorrect destination node for outgoing edge");
+                Assert.That((loadedOutgoingEdges[0] as dynamic).Weight, Is.EqualTo(1.5), "Incorrect weight for outgoing edge");
+                Assert.That((loadedOutgoingEdges[0] as dynamic).EdgeContent, Is.EqualTo("Test Edge"), "Incorrect content for outgoing edge");
+            }
+            else
+            {
+                Console.WriteLine("No outgoing edges found. Checking file system...");
+                string outgoingEdgeDir = graphFileManager.GetEdgeDirPath(1234567890123456, true);
+                Console.WriteLine($"Outgoing edge directory: {outgoingEdgeDir}");
+                if (Directory.Exists(outgoingEdgeDir))
+                {
+                    Console.WriteLine("Directory exists. Listing contents:");
+                    foreach (var file in Directory.GetFiles(outgoingEdgeDir, "*", SearchOption.AllDirectories))
+                    {
+                        Console.WriteLine(file);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Outgoing edge directory does not exist.");
+                }
+            }
+
+            // Load and check incoming edges
+            var loadedIncomingEdges = graphFileManager.LoadEdges(6543210987654321, false);
+            Console.WriteLine($"Loaded incoming edges count: {loadedIncomingEdges.Count}");
+            Assert.That(loadedIncomingEdges, Has.Count.EqualTo(1), "Failed to load incoming edge");
+
+            if (loadedIncomingEdges.Count > 0)
+            {
+                Assert.That(loadedIncomingEdges[0].FromNode, Is.EqualTo(1234567890123456), "Incorrect source node for incoming edge");
+                Assert.That((loadedIncomingEdges[0] as dynamic).Weight, Is.EqualTo(1.5), "Incorrect weight for incoming edge");
+                Assert.That((loadedIncomingEdges[0] as dynamic).EdgeContent, Is.EqualTo("Test Edge"), "Incorrect content for incoming edge");
+            }
+            else
+            {
+                Console.WriteLine("No incoming edges found. Checking file system...");
+                string incomingEdgeDir = graphFileManager.GetEdgeDirPath(6543210987654321, false);
+                Console.WriteLine($"Incoming edge directory: {incomingEdgeDir}");
+                if (Directory.Exists(incomingEdgeDir))
+                {
+                    Console.WriteLine("Directory exists. Listing contents:");
+                    foreach (var file in Directory.GetFiles(incomingEdgeDir, "*", SearchOption.AllDirectories))
+                    {
+                        Console.WriteLine(file);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Incoming edge directory does not exist.");
+                }
+            }
         }
 
         [Test]

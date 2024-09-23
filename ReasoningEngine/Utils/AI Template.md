@@ -1,7 +1,7 @@
 # Introduction Prompt Template for AI Chatbots
 
 ## Version:
-Introduction Prompt Template for AI Chatbots, Version 2.1
+Introduction Prompt Template for AI Chatbots, Version 2.2
 
 ## Context:
 This message contains information that may be relevant to our conversation, or may not. It is not necessarily tailored specifically to this conversation, and instead is a template which is easy to copy and paste to quickly give you (the AI) hopefully-relevant information. This is an attempt to save me (the user & human conversation participant) time.
@@ -35,16 +35,22 @@ The reasoning engine is intended to solve general problems through logical infer
 - There are no edges from MISO nodes to other MISO nodes, nor from SIMO nodes to other SIMO nodes.
 - Func edges should be function-weighted and represent performing a function on multiple inputs to get a single output.
 - Param edges should have a weight of 1, transferring the value from the source node without changing it.
+- Implement hierarchical edge indexing for efficient retrieval of incoming and outgoing edges.
+- Update edge and node directory structures to limit entries per directory.
+- Implement index.json files at each directory level for efficient traversal.
 
 ### **Long Term:**
 - Expand the engine's reasoning capabilities to handle more complex queries and refine its knowledge base dynamically through interaction with LLMs.
+- Consider performance optimizations and integration with large language models.
+- Address concurrency and consistency concerns as the system scales.
 
 ## Key Concepts:
 - **Human-Readable Knowledge Graph:** A graph data structure designed to store knowledge in a way that is both machine-processable and easily interpretable by humans. Each node represents a concept, and each edge represents a logical or relational connection between these concepts. This structure supports explicit reasoning, where inferences and deductions can be made by traversing the graph using logical rules.
 - **Chain-of-Logic Inference:** The process of making deductions by sequentially applying logical rules to known facts in the graph. This involves traversing the graph and combining information from various nodes and edges to reach a conclusion.
 - **Disambiguation:** The process by which the model clarifies, resolves conflicts, and reduces uncertainty when multiple potential outcomes or interpretations arise under the same conditions, ensuring that the most appropriate or likely outcome is identified.
-- **Versioned Nodes and Edges:** The system uses abstract base classes (NodeBase and EdgeBase) with version-specific implementations to allow for future extensions.
+- **Versioned Nodes and Edges:** The system uses abstract base classes (NodeBase and EdgeBase) with version-specific implementations to allow for future extensions. The versioning system uses linear inheritance to ensure backward compatibility without branching functionalities.
 - **Version Compatibility:** A VersionCompatibilityAttribute and VersionCompatibilityChecker are used to manage algorithm compatibility with different node/edge versions.
+- **Hierarchical Edge Indexing:** A system designed to efficiently retrieve incoming and outgoing edges without scanning large directories, using index.json files at each directory level.
 
 ### **Approaches for Disambiguation**:
 
@@ -78,7 +84,7 @@ The reasoning engine is intended to solve general problems through logical infer
 - An IndexManager is used to keep track of all nodes, their versions, and associated metadata.
 - The project includes a CommandProcessor for handling user commands and a ConsoleMenu for user interactions with the graph.
 - Debug utilities (DebugWriter and DebugOptions) are implemented for easier debugging and development.
-- The project follows a specific file and directory structure for storing node and edge data.
+- The project follows a specific file and directory structure for storing node and edge data, including hierarchical indexing for edges.
 
 ## Project Structure:
 - Core: Contains fundamental classes like NodeBase, EdgeBase, and their versioned implementations.
@@ -94,20 +100,23 @@ The reasoning engine is intended to solve general problems through logical infer
 - **Debugging**: Use the DebugWriter class for debug messages. Debug messages should follow the format "#XXXXXX#" where XXXXXX is a unique 6-character string.
 - When implementing new features, consider version compatibility and update the VersionCompatibilityAttribute as necessary.
 - Ensure proper error handling and input validation, especially in user-facing methods.
+- When updating edge or node structures, ensure that the changes are reflected in both the file system and the indexing system.
 
 ## Incomplete Tasks:
 - **Usage Scenarios**: Example workflows and usage scenarios will be added to the readme as the project evolves.
 - **Future Development**: Detailed features in the readme and a roadmap will be included in future updates.
 - Integrate ConsoleMenu with CommandProcessor while maintaining separation of concerns.
-- Implement comprehensive unit tests for GraphFileManager, CommandProcessor, and ConsoleMenu.
+- Implement comprehensive unit tests for GraphFileManager, CommandProcessor, and ConsoleMenu, including tests for the new hierarchical indexing system.
 - Optimize file I/O operations for better performance with large graphs.
 - Implement more robust error handling and input validation across all classes.
+- Refine the implementation of hierarchical edge indexing and ensure it's properly integrated with existing systems.
 
 ## General Tips for you (the AI):
 - Highlight potential errors or assumptions in my reasoning, even if they seem minor.
 - Standardize the use of debugging functions like `DebugWriteLine` and `DebugWrite` across the project. Debug messages should be visually distinct and should not interfere with regular output.
 - When making changes, consider the implications on the entire system, including file structure, indexing, and user interaction.
 - When outputting one or more files (e.g. code files), for each file output the entire file contents even if only a small part of the file has been changed, unless the file is so large that doing so would be infeasible.
+- Be aware of the hierarchical indexing system when discussing or implementing changes related to edge storage or retrieval.
 
 ## Goals for this Conversation:
 (Please ask the user for the goals for this conversation)
