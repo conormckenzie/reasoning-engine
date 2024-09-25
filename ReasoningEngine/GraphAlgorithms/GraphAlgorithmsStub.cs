@@ -9,8 +9,14 @@ namespace ReasoningEngine.GraphAlgorithms
         [VersionCompatibility(minimumNodeVersion: 2, minimumEdgeVersion: 1)]
         public void AdvancedAlgorithm(NodeBase node, EdgeBase edge)
         {
-            if (!VersionCompatibilityChecker.IsCompatible(node, MethodBase.GetCurrentMethod() as MethodInfo) ||
-                !VersionCompatibilityChecker.IsCompatible(edge, MethodBase.GetCurrentMethod() as MethodInfo))
+            MethodInfo? currentMethod = MethodBase.GetCurrentMethod() as MethodInfo;
+            if (currentMethod == null)
+            {
+                throw new InvalidOperationException("Unable to get current method information");
+            }
+
+            if (!VersionCompatibilityChecker.IsCompatible(node, currentMethod) ||
+                !VersionCompatibilityChecker.IsCompatible(edge, currentMethod))
             {
                 throw new InvalidOperationException("Node or Edge version not compatible with this algorithm");
             }

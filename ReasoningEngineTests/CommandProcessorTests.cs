@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using ReasoningEngine;
 using ReasoningEngine.GraphAccess;
 using ReasoningEngine.GraphFileHandling;
 using System;
@@ -36,7 +37,13 @@ namespace ReasoningEngineTests
 
             var loadedNode = graphFileManager.LoadNode(1234567890123456);
             Assert.That(loadedNode, Is.Not.Null);
-            Assert.That((loadedNode as dynamic).Content, Is.EqualTo("Test Node"));
+            Assert.That(loadedNode, Is.InstanceOf<NodeBase>());
+            
+            if (loadedNode != null)
+            {
+                dynamic dynamicNode = loadedNode;
+                Assert.That(dynamicNode.Content, Is.EqualTo("Test Node"));
+            }
         }
 
         [Test]
@@ -175,7 +182,13 @@ namespace ReasoningEngineTests
 
             var loadedNode = graphFileManager.LoadNode(1234567890123456);
             Assert.That(loadedNode, Is.Not.Null);
-            Assert.That((loadedNode as dynamic).Content, Is.EqualTo("Updated Content"));
+            Assert.That(loadedNode, Is.InstanceOf<NodeBase>());
+            
+            if (loadedNode != null)
+            {
+                dynamic dynamicNode = loadedNode;
+                Assert.That(dynamicNode.Content, Is.EqualTo("Updated Content"));
+            }
         }
 
         [Test]

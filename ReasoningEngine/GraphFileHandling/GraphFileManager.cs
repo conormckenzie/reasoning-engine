@@ -63,7 +63,13 @@ namespace ReasoningEngine.GraphFileHandling
                 string jsonData = File.ReadAllText(nodeFilePath);
                 var nodeData = JsonConvert.DeserializeObject<dynamic>(jsonData);
 
-                int version = nodeData.Version;
+                if (nodeData == null)
+                {
+                    DebugWriter.DebugWriteLine("#00LOD3#", $"Failed to deserialize node data for node {nodeId}.");
+                    return null;
+                }
+
+                int version = (int)nodeData.Version;
                 NodeBase node;
 
                 switch (version)
@@ -78,7 +84,7 @@ namespace ReasoningEngine.GraphFileHandling
                         throw new NotSupportedException($"Node version {version} is not supported.");
                 }
 
-                return node.UpgradeToLatest();
+                return node?.UpgradeToLatest();
             }
             catch (Exception ex)
             {
@@ -225,7 +231,12 @@ namespace ReasoningEngine.GraphFileHandling
             try
             {
                 DebugWriter.DebugWriteLine("#00SAV13#", $"Updating edge index for {edgeFilePath}, isAdding: {isAdding}");
-                string indexFilePath = Path.Combine(Path.GetDirectoryName(edgeFilePath), "index.json");
+                string? directoryPath = Path.GetDirectoryName(edgeFilePath);
+                if (string.IsNullOrEmpty(directoryPath))
+                {
+                    throw new InvalidOperationException("Unable to get directory path for edge file");
+                }
+                string indexFilePath = Path.Combine(directoryPath, "index.json");
                 
                 EnsureDirectoryExists(indexFilePath);
 
@@ -281,8 +292,15 @@ namespace ReasoningEngine.GraphFileHandling
                 {
                     string fileContent = File.ReadAllText(filePath);
                     var edgeData = JsonConvert.DeserializeObject<dynamic>(fileContent);
-                    int version = edgeData.Version;
-                    EdgeBase edge;
+                    
+                    if (edgeData == null)
+                    {
+                        DebugWriter.DebugWriteLine("#00LOD5#", $"Failed to deserialize edge data from file: {filePath}");
+                        continue;
+                    }
+
+                    int version = (int)edgeData.Version;
+                    EdgeBase? edge;
 
                     switch (version)
                     {
@@ -296,7 +314,10 @@ namespace ReasoningEngine.GraphFileHandling
                             throw new NotSupportedException($"Edge version {version} is not supported.");
                     }
 
-                    edges.Add(edge.UpgradeToLatest());
+                    if (edge != null)
+                    {
+                        edges.Add(edge.UpgradeToLatest());
+                    }
                 }
             }
             catch (Exception ex)
@@ -350,7 +371,7 @@ namespace ReasoningEngine.GraphFileHandling
         private void EnsureDirectoryExists(string filePath)
         {
             string? directoryPath = Path.GetDirectoryName(filePath);
-            if (directoryPath != null && !Directory.Exists(directoryPath))
+            if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
             {
                 Directory.CreateDirectory(directoryPath);
             }
