@@ -1,7 +1,7 @@
 # Introduction Prompt Template for AI Chatbots
 
 ## Version:
-Introduction Prompt Template for AI Chatbots, Version 2.2
+Introduction Prompt Template for AI Chatbots, Version 2.3
 
 ## Context:
 This message contains information that may be relevant to our conversation, or may not. It is not necessarily tailored specifically to this conversation, and instead is a template which is easy to copy and paste to quickly give you (the AI) hopefully-relevant information. This is an attempt to save me (the user & human conversation participant) time.
@@ -43,6 +43,7 @@ The reasoning engine is intended to solve general problems through logical infer
 - Expand the engine's reasoning capabilities to handle more complex queries and refine its knowledge base dynamically through interaction with LLMs.
 - Consider performance optimizations and integration with large language models.
 - Address concurrency and consistency concerns as the system scales.
+- Split the main node index into multiple files to handle large numbers of nodes efficiently.
 
 ## Key Concepts:
 - **Human-Readable Knowledge Graph:** A graph data structure designed to store knowledge in a way that is both machine-processable and easily interpretable by humans. Each node represents a concept, and each edge represents a logical or relational connection between these concepts. This structure supports explicit reasoning, where inferences and deductions can be made by traversing the graph using logical rules.
@@ -51,6 +52,7 @@ The reasoning engine is intended to solve general problems through logical infer
 - **Versioned Nodes and Edges:** The system uses abstract base classes (NodeBase and EdgeBase) with version-specific implementations to allow for future extensions. The versioning system uses linear inheritance to ensure backward compatibility without branching functionalities.
 - **Version Compatibility:** A VersionCompatibilityAttribute and VersionCompatibilityChecker are used to manage algorithm compatibility with different node/edge versions.
 - **Hierarchical Edge Indexing:** A system designed to efficiently retrieve incoming and outgoing edges without scanning large directories, using index.json files at each directory level.
+- **File Management System:** A hierarchical file-based storage system that efficiently organizes and manages nodes and edges, following principles of self-documentation, error resistance, and consistency.
 
 ### **Approaches for Disambiguation**:
 
@@ -85,6 +87,9 @@ The reasoning engine is intended to solve general problems through logical infer
 - The project includes a CommandProcessor for handling user commands and a ConsoleMenu for user interactions with the graph.
 - Debug utilities (DebugWriter and DebugOptions) are implemented for easier debugging and development.
 - The project follows a specific file and directory structure for storing node and edge data, including hierarchical indexing for edges.
+- The file management system uses a hierarchical structure to organize nodes and edges, with specific naming conventions to ensure self-documentation and error resistance.
+- Edges are stored bidirectionally (as both outgoing and incoming) to allow efficient querying in both directions.
+- The system uses deterministic algorithms to generate file paths for nodes and edges based on their IDs.
 
 ## Project Structure:
 - Core: Contains fundamental classes like NodeBase, EdgeBase, and their versioned implementations.
@@ -101,6 +106,7 @@ The reasoning engine is intended to solve general problems through logical infer
 - When implementing new features, consider version compatibility and update the VersionCompatibilityAttribute as necessary.
 - Ensure proper error handling and input validation, especially in user-facing methods.
 - When updating edge or node structures, ensure that the changes are reflected in both the file system and the indexing system.
+- Follow the correct file structure for nodes and edges as outlined in the file management documentation. Pay special attention to the differences between outgoing and incoming edge structures.
 
 ## Incomplete Tasks:
 - **Usage Scenarios**: Example workflows and usage scenarios will be added to the readme as the project evolves.
@@ -110,6 +116,7 @@ The reasoning engine is intended to solve general problems through logical infer
 - Optimize file I/O operations for better performance with large graphs.
 - Implement more robust error handling and input validation across all classes.
 - Refine the implementation of hierarchical edge indexing and ensure it's properly integrated with existing systems.
+- Develop a strategy for splitting the main node index into multiple files to handle large numbers of nodes.
 
 ## General Tips for you (the AI):
 - Highlight potential errors or assumptions in my reasoning, even if they seem minor.
@@ -117,6 +124,7 @@ The reasoning engine is intended to solve general problems through logical infer
 - When making changes, consider the implications on the entire system, including file structure, indexing, and user interaction.
 - When outputting one or more files (e.g. code files), for each file output the entire file contents even if only a small part of the file has been changed, unless the file is so large that doing so would be infeasible.
 - Be aware of the hierarchical indexing system when discussing or implementing changes related to edge storage or retrieval.
+- Ensure that any proposed changes to the file structure or indexing system align with the design principles of self-documentation, error resistance, and consistency.
 
 ## Goals for this Conversation:
 (Please ask the user for the goals for this conversation)
@@ -128,3 +136,4 @@ The reasoning engine is intended to solve general problems through logical infer
 - Edge operations (save, delete, etc.) should be performed for both the outgoing and incoming representations of each edge.
 - The `UpdateNodeEdgeCount` method takes two parameters: the node ID and a boolean indicating whether it's updating outgoing or incoming edge counts.
 - Consistency in implementation and adherence to the agreed-upon design are crucial for the project's integrity and functionality.
+- The main node index file is planned to be split into multiple files in future development to handle large numbers of nodes more efficiently.
