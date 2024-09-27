@@ -149,6 +149,149 @@ namespace ReasoningEngineTests
             }
         }
 
+        [Test]
+        public void TestSaveAndLoadNodeWithLargeId()
+        {
+            long largeId = 9223372036854775807; // Max long value
+            var node = new Node(largeId, "Large ID Node");
+            Assert.That(graphFileManager.SaveNode(node), Is.True);
+
+            var loadedNode = graphFileManager.LoadNode(largeId);
+            Assert.That(loadedNode, Is.Not.Null);
+            Assert.That(loadedNode.Id, Is.EqualTo(largeId));
+            Assert.That((loadedNode as dynamic).Content, Is.EqualTo("Large ID Node"));
+        }
+
+        [Test]
+        public void TestSaveAndLoadMultipleNodes()
+        {
+            var nodes = new List<Node>
+            {
+                new Node(1, "Node One"),
+                new Node(2, "Node Two"),
+                new Node(3, "Node Three")
+            };
+
+            foreach (var node in nodes)
+            {
+                Assert.That(graphFileManager.SaveNode(node), Is.True);
+            }
+
+            foreach (var node in nodes)
+            {
+                var loadedNode = graphFileManager.LoadNode(node.Id);
+                Assert.That(loadedNode, Is.Not.Null);
+                Assert.That(loadedNode.Id, Is.EqualTo(node.Id));
+                Assert.That((loadedNode as dynamic).Content, Is.EqualTo((node as dynamic).Content));
+            }
+        }
+
+        [Test]
+        public void TestDeleteNodeWithEdges()
+        {
+            var node1 = new Node(1, "Node One");
+            var node2 = new Node(2, "Node Two");
+            var edge = new Edge(1, 2, 1.0, "Test Edge");
+
+            graphFileManager.SaveNode(node1);
+            graphFileManager.SaveNode(node2);
+            graphFileManager.SaveEdge(edge);
+
+            Assert.That(graphFileManager.DeleteNode(1), Is.True);
+
+            Assert.That(graphFileManager.LoadNode(1), Is.Null);
+            Assert.That(graphFileManager.LoadEdges(1, true), Is.Empty);
+            Assert.That(graphFileManager.LoadEdges(2, false), Is.Empty);
+        }
+
+        [Test]
+        public void TestSaveAndLoadEdgeWithLargeNodeIds()
+        {
+            long largeId1 = 9223372036854775806;
+            long largeId2 = 9223372036854775807;
+
+            var node1 = new Node(largeId1, "Large Node One");
+            var node2 = new Node(largeId2, "Large Node Two");
+            var edge = new Edge(largeId1, largeId2, 1.0, "Large ID Edge");
+
+            graphFileManager.SaveNode(node1);
+            graphFileManager.SaveNode(node2);
+            Assert.That(graphFileManager.SaveEdge(edge), Is.True);
+
+            var loadedEdges = graphFileManager.LoadEdges(largeId1, true);
+            Assert.That(loadedEdges, Has.Count.EqualTo(1));
+            Assert.That(loadedEdges[0].FromNode, Is.EqualTo(largeId1));
+            Assert.That(loadedEdges[0].ToNode, Is.EqualTo(largeId2));
+        }
+
+        [Test]
+        public void TestEdgeConsistencyAfterNodeDeletion()
+        {
+            var node1 = new Node(1, "Node One");
+            var node2 = new Node(2, "Node Two");
+            var edge = new Edge(1, 2, 1.0, "Test Edge");
+
+            graphFileManager.SaveNode(node1);
+            graphFileManager.SaveNode(node2);
+            graphFileManager.SaveEdge(edge);
+
+            graphFileManager.DeleteNode(1);
+
+            var edgesFromNode2 = graphFileManager.LoadEdges(2, false);
+            Assert.That(edgesFromNode2, Is.Empty, "Incoming edges to Node 2 should be empty after deleting Node 1");
+        }
+
+        [Test]
+        public void TestGetAllNodeIds()
+        {
+            var nodes = new List<Node>
+            {
+                new Node(1, "Node One"),
+                new Node(2, "Node Two"),
+                new Node(3, "Node Three")
+            };
+
+            foreach (var node in nodes)
+            {
+                graphFileManager.SaveNode(node);
+            }
+
+            var allNodeIds = graphFileManager.GetAllNodeIds();
+            Assert.That(allNodeIds, Is.EquivalentTo(new List<long> { 1, 2, 3 }));
+
+            graphFileManager.DeleteNode(2);
+
+            allNodeIds = graphFileManager.GetAllNodeIds();
+            Assert.That(allNodeIds, Is.EquivalentTo(new List<long> { 1, 3 }));
+        }
+
+        [Test]
+        public void TestSaveEdgeWithNonExistentNodes()
+        {
+            var edge = new Edge(1, 2, 1.0, "Test Edge");
+            Assert.That(graphFileManager.SaveEdge(edge), Is.False, "Saving an edge with non-existent nodes should fail");
+        }
+
+        [Test]
+        public void TestUpdateEdge()
+        {
+            var node1 = new Node(1, "Node One");
+            var node2 = new Node(2, "Node Two");
+            var edge = new Edge(1, 2, 1.0, "Original Edge");
+
+            graphFileManager.SaveNode(node1);
+            graphFileManager.SaveNode(node2);
+            graphFileManager.SaveEdge(edge);
+
+            var updatedEdge = new Edge(1, 2, 2.0, "Updated Edge");
+            Assert.That(graphFileManager.SaveEdge(updatedEdge), Is.True);
+
+            var loadedEdges = graphFileManager.LoadEdges(1, true);
+            Assert.That(loadedEdges, Has.Count.EqualTo(1));
+            Assert.That((loadedEdges[0] as dynamic).Weight, Is.EqualTo(2.0));
+            Assert.That((loadedEdges[0] as dynamic).EdgeContent, Is.EqualTo("Updated Edge"));
+        }
+
         private IndexFile LoadIndexFile(string indexFilePath)
         {
             string json = File.ReadAllText(indexFilePath);
