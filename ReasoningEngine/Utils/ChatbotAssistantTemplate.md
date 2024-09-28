@@ -38,6 +38,7 @@ The reasoning engine is intended to solve general problems through logical infer
 - Implement hierarchical edge indexing for efficient retrieval of incoming and outgoing edges.
 - Update edge and node directory structures to limit entries per directory.
 - Implement index.json files at each directory level for efficient traversal.
+- Imporove Menu Item handling so that MenuItem encapsulates more of its own logic.
 
 ### **Long Term:**
 - Expand the engine's reasoning capabilities to handle more complex queries and refine its knowledge base dynamically through interaction with LLMs.
