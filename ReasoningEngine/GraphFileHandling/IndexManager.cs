@@ -7,12 +7,13 @@ namespace ReasoningEngine.GraphFileHandling
 {
     public class IndexManager
     {
-        private readonly string indexFilePath;
         private Index indexData;
+        private readonly string indexFilePath;
 
         public IndexManager(string indexFilePath)
         {
             this.indexFilePath = indexFilePath;
+            this.indexData = new Index { Nodes = new List<NodeInfo>() };
             LoadIndex();
         }
 
