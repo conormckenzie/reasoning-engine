@@ -8,54 +8,70 @@ namespace ReasoningEngine
 {
     class Program
     {
+        private static List<MenuItem> mainMenuItems = new List<MenuItem>
+        {
+            new MenuItem("Run Setup", "#RNKA1C#", "setup"),
+            new MenuItem("Graph Operations", "#D7SFN1#", "graph_operations"),
+            new MenuItem("Debug Options", "#E1QTUA#", "debug_options"),
+        };
+
         static void Main(string[] args)
         {
-            // Load environment variables from the .env file
             Env.Load();
 
-            // Get the data folder path from environment variables, or throw an exception if not set
             string dataFolderPath = Environment.GetEnvironmentVariable("DATA_FOLDER_PATH") 
                                     ?? throw new Exception("DATA_FOLDER_PATH is not set in the environment variables.");
 
-            // Create an instance of GraphFileManager with the data folder path
             var graphFileManager = new GraphFileManager(dataFolderPath);
-
-            // Create an instance of CommandProcessor with the GraphFileManager
             var commandProcessor = new CommandProcessor(graphFileManager);
+            var graphOperationsUserMenu = new GraphOperationsUserMenu(commandProcessor);
 
-            // Display the menu and handle user input
-            ShowMenu(commandProcessor);
+            ShowMenu(commandProcessor, graphOperationsUserMenu);
         }
 
-        static void ShowMenu(CommandProcessor commandProcessor)
+        static void ShowMenu(CommandProcessor commandProcessor, GraphOperationsUserMenu graphOperationsUserMenu)
         {
             while (true)
             {
-                DebugWriter.DebugWriteLine("#00D7D1#", "\nMain Menu:");
-                DebugWriter.DebugWriteLine("#00D7D2#", "1. Run Setup");
-                DebugWriter.DebugWriteLine("#00D7D8#", "2. Command Processor Options");
-                DebugWriter.DebugWriteLine("#00D7D9#", "3. Debug Options");
-                DebugWriter.DebugWriteLine("#00D7DA#", "0. Exit");
-                DebugWriter.DebugWrite("#00D7D0#", "Enter option: ");
+                DebugWriter.DebugWriteLine("#0D7D01#", "\nMain Menu:");
 
+                for (int i = 0; i < mainMenuItems.Count; i++)
+                {
+                    DebugWriter.DebugWriteLine(mainMenuItems[i].DebugString, $"{i + 1}. {mainMenuItems[i].DisplayText}");
+                }
+
+                DebugWriter.DebugWriteLine("#0D7D00#", "0. Exit");
+
+                DebugWriter.DebugWrite("#0D7E00#", "Enter option: ");
                 var option = Console.ReadLine();
 
-                switch (option)
+                if (option == "0")
                 {
-                    case "1":
-                        OneTimeSetup.Initialize();
-                        break;
-                    case "2":
-                        commandProcessor.ShowCommandProcessorMenu();
-                        break;
-                    case "3":
-                        DebugOptions.ShowDebugOptionsMenu();
-                        break;
-                    case "0":
-                        return;
-                    default:
-                        DebugWriter.DebugWriteLine("#00INV1#", "Invalid option. Please try again.");
-                        break;
+                    return;
+                }
+                else if (int.TryParse(option, out int selectedOption) && selectedOption > 0 && selectedOption <= mainMenuItems.Count)
+                {
+                    var selectedItem = mainMenuItems[selectedOption - 1];
+
+                    switch (selectedItem.InternalText)
+                    {
+                        case "setup":
+                            OneTimeSetup.Initialize();
+                            break;
+                        case "graph_operations":
+                            graphOperationsUserMenu.ShowMenu();
+                            break;
+                        case "debug_options":
+                            DebugOptions.ShowDebugOptionsMenu();
+                            break;
+                        default:
+                            DebugWriter.DebugWriteLine("#00INV1#", "Invalid option. Please try again.");
+                            break;
+                    }
+                }
+                else
+                {
+                    DebugWriter.DebugWriteLine("#00INV2#", "Invalid option. Please try again.");
                 }
             }
         }
