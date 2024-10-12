@@ -1,3 +1,5 @@
+// File: /home/user/code/reasoning-engine/ReasoningEngine/Core/Node.cs
+
 namespace ReasoningEngine
 {
     public class NodeV1 : NodeBase
@@ -5,14 +7,14 @@ namespace ReasoningEngine
         public override int Version => 1;
         public string Content { get; set; }
 
-        public NodeV1(long id, string content) : base(id)
+        public NodeV1(long id, string content) : base(id, NodeType.Standard)
         {
             Content = content;
         }
 
         public override NodeBase UpgradeToLatest()
         {
-            return new NodeV2(this.Id, this.Content);
+            return new NodeV2(this.Id, this.Content, this.Type);
         }
     }
 
@@ -21,7 +23,7 @@ namespace ReasoningEngine
         public override int Version => 2;
         public string Content { get; set; }
 
-        public NodeV2(long id, string content) : base(id)
+        public NodeV2(long id, string content, NodeType type = NodeType.Standard) : base(id, type)
         {
             Content = content;
         }
@@ -35,6 +37,7 @@ namespace ReasoningEngine
     // Alias the latest version as Node for easier use
     public class Node : NodeV2
     {
-        public Node(long id, string content) : base(id, content) { }
+        public Node(long id, string content, NodeType type = NodeType.Standard) 
+            : base(id, content, type) { }
     }
 }
