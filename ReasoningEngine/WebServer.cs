@@ -48,9 +48,9 @@ namespace ReasoningEngine
             ["node_query"] = "Retrieves detailed node information by its ID.",
             ["outgoing_edge_query"] = "Lists all edges where this node is the source.",
             ["incoming_edge_query"] = "Lists all edges where this node is the destination.",
-            ["add_node"] = "Creates a new node with specified content.",
+            ["add_node"] = "Creates a new node with specified content and optional type.",
             ["delete_node"] = "Permanently removes a node and all its edges.",
-            ["edit_node"] = "Updates an existing node's content.",
+            ["edit_node"] = "Updates an existing node's content and optional type.",
             ["add_edge"] = "Creates a directed edge between two nodes.",
             ["delete_edge"] = "Removes a directed edge between two nodes.",
             ["edit_edge"] = "Updates an existing edge's properties."
@@ -163,12 +163,16 @@ namespace ReasoningEngine
             app.MapPost("/api/nodes/create", async ([FromBody] CommandRequest request) => 
                 await ProcessCommand("add_node", request.Payload))
                 .WithMetadata(new SwaggerOperationAttribute("Create Node", 
-                    "Creates a new node. Payload format: \"nodeId|content\""));
+                    "Creates a new node. Payload format: \"nodeId|content|[nodeType]|[domainInterpretation]\". " +
+                    "nodeType can be Standard, SIMO, or MISO. " +
+                    "domainInterpretation (for SIMO nodes) can be Truth, ContinuousRange, or DiscreteRange."));
 
             app.MapPut("/api/nodes/{id}/update", async (long id, [FromBody] CommandRequest request) => 
                 await ProcessCommand("edit_node", $"{id}|{request.Payload}"))
                 .WithMetadata(new SwaggerOperationAttribute("Update Node", 
-                    "Updates an existing node's content"));
+                    "Updates an existing node's content. Payload format: \"content|[nodeType]|[domainInterpretation]\". " +
+                    "nodeType can be Standard, SIMO, or MISO. " +
+                    "domainInterpretation (for SIMO nodes) can be Truth, ContinuousRange, or DiscreteRange."));
 
             app.MapDelete("/api/nodes/{id}/delete", (long id) => 
                 ProcessCommand("delete_node", id.ToString()))
