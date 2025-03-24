@@ -1,4 +1,5 @@
 using ReasoningEngine;
+using NUnit.Framework;
 
 namespace ReasoningEngineTests {
     [TestFixture]
@@ -160,4 +161,3 @@ namespace ReasoningEngineTests {
         }
     }
 }
-

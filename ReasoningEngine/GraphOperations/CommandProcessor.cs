@@ -85,12 +85,43 @@ namespace ReasoningEngine.GraphAccess
         private string AddNode(string payload)
         {
             string[] parts = payload.Split('|');
-            if (parts.Length != 2 || !long.TryParse(parts[0], out long nodeId))
+            if (parts.Length < 2 || !long.TryParse(parts[0], out long nodeId))
             {
                 return "Invalid payload for adding a node.";
             }
+            
             string content = parts[1];
-            Node newNode = new Node(nodeId, content);
+            NodeType nodeType = NodeType.Standard; // Default
+            
+            // Parse node type if provided
+            if (parts.Length >= 3 && Enum.TryParse<NodeType>(parts[2], true, out NodeType parsedType))
+            {
+                nodeType = parsedType;
+            }
+            
+            // Create the appropriate node type
+            NodeBase newNode;
+            switch (nodeType)
+            {
+                case NodeType.SIMO:
+                    // For SIMO nodes, we need a domain interpretation
+                    DomainInterpretation interpretation = DomainInterpretation.Truth; // Default
+                    if (parts.Length >= 4 && Enum.TryParse<DomainInterpretation>(parts[3], true, out DomainInterpretation parsedInterp))
+                    {
+                        interpretation = parsedInterp;
+                    }
+                    newNode = new SIMONode(nodeId, content, interpretation);
+                    break;
+                    
+                case NodeType.MISO:
+                    newNode = new MISONode(nodeId, content);
+                    break;
+                    
+                default: // Standard
+                    newNode = new Node(nodeId, content);
+                    break;
+            }
+            
             if (graphFileManager.SaveNode(newNode))
             {
                 return $"Node {nodeId} added successfully.";
@@ -117,12 +148,65 @@ namespace ReasoningEngine.GraphAccess
         private string EditNode(string payload)
         {
             string[] parts = payload.Split('|');
-            if (parts.Length != 2 || !long.TryParse(parts[0], out long nodeId))
+            if (parts.Length < 2 || !long.TryParse(parts[0], out long nodeId))
             {
                 return "Invalid payload for editing a node.";
             }
+            
+            // First, load the existing node to preserve its type
+            NodeBase? existingNode = graphFileManager.LoadNode(nodeId);
+            if (existingNode == null)
+            {
+                return $"Node {nodeId} not found.";
+            }
+            
             string newContent = parts[1];
-            Node updatedNode = new Node(nodeId, newContent);
+            NodeType nodeType = existingNode.Type; // Preserve existing type by default
+            
+            // Allow changing node type if specified
+            if (parts.Length >= 3 && Enum.TryParse<NodeType>(parts[2], true, out NodeType parsedType))
+            {
+                nodeType = parsedType;
+            }
+            
+            // Create the appropriate node type
+            NodeBase updatedNode;
+            switch (nodeType)
+            {
+                case NodeType.SIMO:
+                    // For SIMO nodes, we need a domain interpretation
+                    DomainInterpretation interpretation = DomainInterpretation.Truth; // Default
+                    
+                    // If it's already a SIMO node, preserve its interpretation
+                    if (existingNode is SIMONode existingSIMO)
+                    {
+                        interpretation = existingSIMO.Interpretation;
+                    }
+                    
+                    // Allow changing interpretation if specified
+                    if (parts.Length >= 4 && Enum.TryParse<DomainInterpretation>(parts[3], true, out DomainInterpretation parsedInterp))
+                    {
+                        interpretation = parsedInterp;
+                    }
+                    
+                    updatedNode = new SIMONode(nodeId, newContent, interpretation);
+                    break;
+                    
+                case NodeType.MISO:
+                    updatedNode = new MISONode(nodeId, newContent);
+                    
+                    // If it's already a MISO node, preserve its output edge
+                    if (existingNode is MISONode existingMISO && existingMISO.SingleOutputEdgeId.HasValue)
+                    {
+                        ((MISONode)updatedNode).SetSingleOutputEdge(existingMISO.SingleOutputEdgeId.Value);
+                    }
+                    break;
+                    
+                default: // Standard
+                    updatedNode = new Node(nodeId, newContent);
+                    break;
+            }
+            
             if (graphFileManager.SaveNode(updatedNode))
             {
                 return $"Node {nodeId} updated successfully.";
