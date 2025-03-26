@@ -108,9 +108,11 @@ namespace ReasoningEngine
                     // Sort ranges by lower bound
                     var ranges = Distribution.OrderBy(d => d.LowerBound).ToList();
                     // Check for gaps between ranges
+                    // Allow gaps up to 1.9*EPSILON to ensure no point can be "lost" between ranges
+                    // since points within EPSILON of a range boundary are considered part of that range
                     for (int i = 1; i < ranges.Count; i++)
                     {
-                        if (Math.Abs(ranges[i].LowerBound - ranges[i - 1].UpperBound) > EPSILON)
+                        if (Math.Abs(ranges[i].LowerBound - ranges[i - 1].UpperBound) > 1.9 * EPSILON)
                             return false;
                     }
                     return Math.Abs(GetTotalProbability() - 1) < EPSILON;

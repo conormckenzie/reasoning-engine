@@ -48,9 +48,11 @@ namespace ReasoningEngineTests
         public void TestGetQuantization_Continuous()
         {
             var distribution = new ProbabilityDistribution(DomainType.Continuous);
+            // Add ranges with the required gap (> EPSILON) between them
+            double epsilon = 1e-10; // Match the EPSILON constant in ProbabilityDistribution
             distribution.AddRange(0.0, 1.0, 0.3);
-            distribution.AddRange(1.0, 2.0, 0.3);
-            distribution.AddRange(2.0, 3.0, 0.4);
+            distribution.AddRange(1.0 + 2 * epsilon, 2.0, 0.3);
+            distribution.AddRange(2.0 + 2 * epsilon, 3.0, 0.4);
 
             var quantization = distribution.GetQuantization();
             Assert.That(quantization, Has.Count.EqualTo(3));
@@ -58,8 +60,8 @@ namespace ReasoningEngineTests
             Assert.Multiple(() =>
             {
                 Assert.That(quantization[0], Is.EqualTo((0.0, 1.0)));
-                Assert.That(quantization[1], Is.EqualTo((1.0, 2.0)));
-                Assert.That(quantization[2], Is.EqualTo((2.0, 3.0)));
+                Assert.That(quantization[1], Is.EqualTo((1.0 + 2 * epsilon, 2.0)));
+                Assert.That(quantization[2], Is.EqualTo((2.0 + 2 * epsilon, 3.0)));
             });
         }
 
@@ -103,9 +105,11 @@ namespace ReasoningEngineTests
         public void TestGetQuantizationWithProbabilities_Continuous()
         {
             var distribution = new ProbabilityDistribution(DomainType.Continuous);
+            // Add ranges with the required gap (> EPSILON) between them
+            double epsilon = 1e-10; // Match the EPSILON constant in ProbabilityDistribution
             distribution.AddRange(0.0, 1.0, 0.3);
-            distribution.AddRange(1.0, 2.0, 0.3);
-            distribution.AddRange(2.0, 3.0, 0.4);
+            distribution.AddRange(1.0 + 2 * epsilon, 2.0, 0.3);
+            distribution.AddRange(2.0 + 2 * epsilon, 3.0, 0.4);
 
             var quantization = distribution.GetQuantizationWithProbabilities();
             Assert.That(quantization, Has.Count.EqualTo(3));
@@ -113,8 +117,8 @@ namespace ReasoningEngineTests
             Assert.Multiple(() =>
             {
                 Assert.That(quantization[0], Is.EqualTo((0.0, 1.0, 0.3)));
-                Assert.That(quantization[1], Is.EqualTo((1.0, 2.0, 0.3)));
-                Assert.That(quantization[2], Is.EqualTo((2.0, 3.0, 0.4)));
+                Assert.That(quantization[1], Is.EqualTo((1.0 + 2 * epsilon, 2.0, 0.3)));
+                Assert.That(quantization[2], Is.EqualTo((2.0 + 2 * epsilon, 3.0, 0.4)));
             });
         }
 
@@ -243,5 +247,3 @@ namespace ReasoningEngineTests
         }
     }
 }
-
-        
