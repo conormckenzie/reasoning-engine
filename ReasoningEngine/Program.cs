@@ -1,7 +1,8 @@
-﻿using System;
+﻿﻿﻿﻿using System;
 using DotNetEnv;
 using ReasoningEngine.GraphFileHandling;
 using ReasoningEngine.GraphAccess;
+using ReasoningEngine.Utils.Scenarios;
 using DebugUtils;
 using System.IO;
 
@@ -48,7 +49,75 @@ namespace ReasoningEngine
             var commandProcessor = new CommandProcessor(graphFileManager);
             var graphOperationsUserMenu = new GraphOperationsUserMenu(commandProcessor);
 
-            ShowMenu(commandProcessor, graphOperationsUserMenu);
+            // Check for command-line arguments
+            if (args.Length > 0)
+            {
+                ProcessCommandLineArguments(args, commandProcessor, graphFileManager);
+            }
+            else
+            {
+                // No arguments provided, show interactive menu
+                ShowMenu(commandProcessor, graphOperationsUserMenu);
+            }
+        }
+
+        static void ProcessCommandLineArguments(string[] args, CommandProcessor commandProcessor, GraphFileManager graphFileManager)
+        {
+            string command = args[0].ToLower();
+
+            switch (command)
+            {
+                case "--setup":
+                case "-s":
+                    DebugWriter.DebugWriteLine("#CMD001#", "Running setup from command line");
+                    OneTimeSetup.Initialize();
+                    break;
+
+                case "--run-scenario":
+                case "-r":
+                    if (args.Length < 2)
+                    {
+                        Console.WriteLine("Error: Scenario name is required");
+                        Console.WriteLine("Usage: dotnet run --run-scenario <scenario-name>");
+                        return;
+                    }
+
+                    string scenarioName = args[1].ToLower();
+                    var scenarioManager = new ScenarioManager(commandProcessor, graphFileManager);
+                    scenarioManager.RunScenario(scenarioName);
+                    break;
+
+                case "--list-scenarios":
+                case "-l":
+                    var listManager = new ScenarioManager(commandProcessor, graphFileManager);
+                    listManager.ListScenarios();
+                    break;
+
+                case "--help":
+                case "-h":
+                    ShowHelp();
+                    break;
+
+                default:
+                    Console.WriteLine($"Unknown command: {command}");
+                    ShowHelp();
+                    break;
+            }
+        }
+
+        static void ShowHelp()
+        {
+            Console.WriteLine("Reasoning Engine - Command Line Usage");
+            Console.WriteLine("------------------------------------");
+            Console.WriteLine("Usage: dotnet run [options]");
+            Console.WriteLine();
+            Console.WriteLine("Options:");
+            Console.WriteLine("  --setup, -s                Run one-time setup");
+            Console.WriteLine("  --run-scenario, -r <name>  Run a specific scenario");
+            Console.WriteLine("  --list-scenarios, -l       List available scenarios");
+            Console.WriteLine("  --help, -h                 Show this help message");
+            Console.WriteLine();
+            Console.WriteLine("If no options are provided, the interactive menu will be shown.");
         }
 
         static void ShowMenu(CommandProcessor commandProcessor, GraphOperationsUserMenu graphOperationsUserMenu)
