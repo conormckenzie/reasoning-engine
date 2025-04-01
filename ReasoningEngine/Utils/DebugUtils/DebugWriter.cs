@@ -14,8 +14,17 @@ namespace DebugUtils
         /// <param name="regularMessage">The regular message to write.</param>
         /// <param name="inLine">Whether to write the debug message in line with the regular message.</param>
         /// <param name="addNewLine">Whether to add a new line after the regular message.</param>
-        public static void DebugWrite(string debugMessage, string regularMessage, bool inLine = true, bool addNewLine = true)
+        /// <param name="minimumVerbosity">The minimum verbosity level required to display this message. Default is Minimal,
+        /// which means messages will always be shown regardless of the current verbosity setting.
+        /// Set to Normal for standard information, or Detailed for verbose diagnostic information.</param>
+        public static void DebugWrite(string debugMessage, string regularMessage, bool inLine = true, bool addNewLine = true, VerbosityLevel minimumVerbosity = VerbosityLevel.Minimal)
         {
+            // Skip writing if the current verbosity level is lower than the minimum required
+            if (DebugOptions.Verbosity < minimumVerbosity)
+            {
+                return;
+            }
+            
             if (DebugOptions.DebugMode)
             {
                 Console.ForegroundColor = ConsoleColor.Yellow; // Set the color for debug messages
@@ -49,9 +58,12 @@ namespace DebugUtils
         /// <param name="debugMessage">The debug message to write.</param>
         /// <param name="regularMessage">The regular message to write.</param>
         /// <param name="inLine">Whether to write the debug message in line with the regular message.</param>
-        public static void DebugWriteLine(string debugMessage, string regularMessage, bool inLine = true)
+        /// <param name="minimumVerbosity">The minimum verbosity level required to display this message. Default is Minimal,
+        /// which means messages will always be shown regardless of the current verbosity setting.
+        /// Set to Normal for standard information, or Detailed for verbose diagnostic information.</param>
+        public static void DebugWriteLine(string debugMessage, string regularMessage, bool inLine = true, VerbosityLevel minimumVerbosity = VerbosityLevel.Minimal)
         {
-            DebugWrite(debugMessage, regularMessage, inLine, true);
+            DebugWrite(debugMessage, regularMessage, inLine, true, minimumVerbosity);
         }
 
         /// <summary>

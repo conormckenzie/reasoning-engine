@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using System;
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
 using DotNetEnv;
 using ReasoningEngine.GraphFileHandling;
 using ReasoningEngine.GraphAccess;
@@ -77,14 +77,36 @@ namespace ReasoningEngine
                 case "-r":
                     if (args.Length < 2)
                     {
-                        Console.WriteLine("Error: Scenario name is required");
-                        Console.WriteLine("Usage: dotnet run --run-scenario <scenario-name>");
+                        DebugWriter.DebugWriteLine("#CMD003#", "Error: Scenario name is required");
+                        DebugWriter.DebugWriteLine("#CMD004#", "Usage: dotnet run --run-scenario <scenario-name> [--verbosity <level>]");
                         return;
                     }
 
                     string scenarioName = args[1].ToLower();
+                    DebugUtils.VerbosityLevel? verbosity = null;
+                    
+                    // Check for verbosity parameter
+                    for (int i = 2; i < args.Length; i++)
+                    {
+                        if ((args[i] == "--verbosity" || args[i] == "-v") && i + 1 < args.Length)
+                        {
+                            string verbosityArg = args[i + 1];
+                            if (Enum.TryParse<DebugUtils.VerbosityLevel>(verbosityArg, true, out var parsedVerbosity))
+                            {
+                                verbosity = parsedVerbosity;
+                                DebugWriter.DebugWriteLine("#CMD002#", $"Setting verbosity to {verbosity}");
+                            }
+                            else
+                            {
+                                DebugWriter.DebugWriteLine("#CMD005#", $"Invalid verbosity level: {verbosityArg}");
+                                DebugWriter.DebugWriteLine("#CMD006#", "Valid values are: Minimal, Normal, Detailed");
+                            }
+                            break;
+                        }
+                    }
+                    
                     var scenarioManager = new ScenarioManager(commandProcessor, graphFileManager);
-                    scenarioManager.RunScenario(scenarioName);
+                    scenarioManager.RunScenario(scenarioName, verbosity);
                     break;
 
                 case "--list-scenarios":
@@ -99,7 +121,7 @@ namespace ReasoningEngine
                     break;
 
                 default:
-                    Console.WriteLine($"Unknown command: {command}");
+                    DebugWriter.DebugWriteLine("#CMD007#", $"Unknown command: {command}");
                     ShowHelp();
                     break;
             }
@@ -107,17 +129,22 @@ namespace ReasoningEngine
 
         static void ShowHelp()
         {
-            Console.WriteLine("Reasoning Engine - Command Line Usage");
-            Console.WriteLine("------------------------------------");
-            Console.WriteLine("Usage: dotnet run [options]");
-            Console.WriteLine();
-            Console.WriteLine("Options:");
-            Console.WriteLine("  --setup, -s                Run one-time setup");
-            Console.WriteLine("  --run-scenario, -r <name>  Run a specific scenario");
-            Console.WriteLine("  --list-scenarios, -l       List available scenarios");
-            Console.WriteLine("  --help, -h                 Show this help message");
-            Console.WriteLine();
-            Console.WriteLine("If no options are provided, the interactive menu will be shown.");
+            DebugWriter.DebugWriteLine("#CMD008#", "Reasoning Engine - Command Line Usage");
+            DebugWriter.DebugWriteLine("#CMD009#", "------------------------------------");
+            DebugWriter.DebugWriteLine("#CMD010#", "Usage: dotnet run [options]");
+            DebugWriter.DebugWriteLine("#CMD011#", "");
+            DebugWriter.DebugWriteLine("#CMD012#", "Options:");
+            DebugWriter.DebugWriteLine("#CMD013#", "  --setup, -s                      Run one-time setup");
+            DebugWriter.DebugWriteLine("#CMD014#", "  --run-scenario, -r <name>        Run a specific scenario");
+            DebugWriter.DebugWriteLine("#CMD015#", "  --verbosity, -v <level>          Set verbosity level (Minimal, Normal, Detailed)");
+            DebugWriter.DebugWriteLine("#CMD016#", "  --list-scenarios, -l             List available scenarios");
+            DebugWriter.DebugWriteLine("#CMD017#", "  --help, -h                       Show this help message");
+            DebugWriter.DebugWriteLine("#CMD018#", "");
+            DebugWriter.DebugWriteLine("#CMD019#", "Examples:");
+            DebugWriter.DebugWriteLine("#CMD020#", "  dotnet run --run-scenario weather");
+            DebugWriter.DebugWriteLine("#CMD021#", "  dotnet run --run-scenario weather --verbosity Minimal");
+            DebugWriter.DebugWriteLine("#CMD022#", "");
+            DebugWriter.DebugWriteLine("#CMD023#", "If no options are provided, the interactive menu will be shown.");
         }
 
         static void ShowMenu(CommandProcessor commandProcessor, GraphOperationsUserMenu graphOperationsUserMenu)
