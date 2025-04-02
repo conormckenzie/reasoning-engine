@@ -83,7 +83,7 @@ namespace DebugUtils
             }
 
             // Use a regular expression to check the format
-            var regex = new Regex(@"^#.{6}#$");
+            var regex = new Regex(@"^#[A-Z0-9]{6}#$");
             return regex.IsMatch(debugMessage);
         }
 
