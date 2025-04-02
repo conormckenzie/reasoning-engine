@@ -127,5 +127,22 @@ namespace ReasoningEngineTests
             Assert.That(simoNode.Version, Is.EqualTo(2)); // Should inherit Node's version
             Assert.That(misoNode.Version, Is.EqualTo(2)); // Should inherit Node's version
         }
+        
+        [Test]
+        public void TestSIMONodeSerialization()
+        {
+            var simoNode = new SIMONode(1, "Test SIMO Node", DomainInterpretation.Truth);
+            
+            // Serialize to JSON
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(simoNode, Newtonsoft.Json.Formatting.Indented);
+            
+            // Verify string representations are included
+            Assert.That(json, Does.Contain("DomainType_StringRepresentation"));
+            Assert.That(json, Does.Contain("Interpretation_StringRepresentation"));
+            
+            // Verify values are correct
+            Assert.That(json, Does.Contain("\"DomainType_StringRepresentation\": \"Truth\""));
+            Assert.That(json, Does.Contain("\"Interpretation_StringRepresentation\": \"Truth\""));
+        }
     }
 }

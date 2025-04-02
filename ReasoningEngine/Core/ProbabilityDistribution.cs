@@ -7,6 +7,8 @@ namespace ReasoningEngine
     public class ProbabilityDistribution
     {
         public DomainType DomainType { get; private set; }
+        // Add string representation property
+        public string DomainType_StringRepresentation => DomainType.ToString();
         private List<(double LowerBound, double UpperBound, double Probability)> Distribution { get; set; }
         private const double EPSILON = 1e-10; // For floating point comparisons
 

@@ -6,6 +6,8 @@ namespace ReasoningEngine
     {
         public ProbabilityDistribution Distribution { get; private set; }
         public DomainInterpretation Interpretation { get; private set; }
+        // Add string representation property
+        public string Interpretation_StringRepresentation => Interpretation.ToString();
 
         public SIMONode(long id, string content, DomainInterpretation interpretation) 
             : base(id, content, NodeType.SIMO)

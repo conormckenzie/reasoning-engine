@@ -123,7 +123,19 @@ ReasoningEngine/
 
 ## Future Development
 
-The Reasoning Engine is an evolving project, with many exciting features and improvements planned for the future. There's nothing here right now, but filling out this area is in progress—check back soon for updates!
+The Reasoning Engine is an evolving project, with many exciting features and improvements planned for the future:
+
+### Data Import System
+
+The current scenario manager functionality (in `ReasoningEngine/Utils/Scenarios/`) is planned to be developed into a comprehensive data import feature that will:
+
+- Allow users to define scenarios in external files (JSON, XML, YAML) rather than hardcoded C# classes
+- Support importing from various data sources (files, databases, APIs)
+- Provide validation and error handling for imported data
+- Enable non-developers to create and modify scenarios without changing code
+- Facilitate easier testing and demonstration of the reasoning engine with predefined datasets
+
+This evolution will improve flexibility, maintainability, and user-friendliness by separating data from code and providing a standardized way to populate the reasoning graph.
 
 ## License
 
