@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
 using DotNetEnv;
 using ReasoningEngine.GraphFileHandling;
 using ReasoningEngine.GraphAccess;
@@ -69,7 +69,7 @@ namespace ReasoningEngine
             {
                 case "--setup":
                 case "-s":
-                    DebugWriter.DebugWriteLine("#CMD001#", "Running setup from command line");
+                    DebugWriter.DebugWriteLine("#RNFEUV#", "Running setup from command line");
                     OneTimeSetup.Initialize();
                     break;
 
@@ -77,8 +77,8 @@ namespace ReasoningEngine
                 case "-r":
                     if (args.Length < 2)
                     {
-                        DebugWriter.DebugWriteLine("#CMD003#", "Error: Scenario name is required");
-                        DebugWriter.DebugWriteLine("#CMD004#", "Usage: dotnet run --run-scenario <scenario-name> [--verbosity <level>]");
+                        DebugWriter.DebugWriteLine("#PVBY9F#", "Error: Scenario name is required");
+                        DebugWriter.DebugWriteLine("#3DUDG4#", "Usage: dotnet run --run-scenario <scenario-name> [--verbosity <level>]");
                         return;
                     }
 
@@ -94,12 +94,12 @@ namespace ReasoningEngine
                             if (Enum.TryParse<DebugUtils.VerbosityLevel>(verbosityArg, true, out var parsedVerbosity))
                             {
                                 verbosity = parsedVerbosity;
-                                DebugWriter.DebugWriteLine("#CMD002#", $"Setting verbosity to {verbosity}");
+                                DebugWriter.DebugWriteLine("#6BE6ZN#", $"Setting verbosity to {verbosity}");
                             }
                             else
                             {
-                                DebugWriter.DebugWriteLine("#CMD005#", $"Invalid verbosity level: {verbosityArg}");
-                                DebugWriter.DebugWriteLine("#CMD006#", "Valid values are: Minimal, Normal, Detailed");
+                                DebugWriter.DebugWriteLine("#F2B4PH#", $"Invalid verbosity level: {verbosityArg}");
+                                DebugWriter.DebugWriteLine("#M9PEEV#", "Valid values are: Minimal, Normal, Detailed");
                             }
                             break;
                         }
@@ -121,7 +121,7 @@ namespace ReasoningEngine
                     break;
 
                 default:
-                    DebugWriter.DebugWriteLine("#CMD007#", $"Unknown command: {command}");
+                    DebugWriter.DebugWriteLine("#69B28C#", $"Unknown command: {command}");
                     ShowHelp();
                     break;
             }
@@ -129,8 +129,8 @@ namespace ReasoningEngine
 
         static void ShowHelp()
         {
-            DebugWriter.DebugWriteLine("#CMD008#", "Reasoning Engine - Command Line Usage");
-            DebugWriter.DebugWriteLine("#CMD009#", "------------------------------------");
+            DebugWriter.DebugWriteLine("#L9GCJP#", "Reasoning Engine - Command Line Usage");
+            DebugWriter.DebugWriteLine("#FNJOS0#", "------------------------------------");
             DebugWriter.DebugWriteLine("#CMD010#", "Usage: dotnet run [options]");
             DebugWriter.DebugWriteLine("#CMD011#", "");
             DebugWriter.DebugWriteLine("#CMD012#", "Options:");

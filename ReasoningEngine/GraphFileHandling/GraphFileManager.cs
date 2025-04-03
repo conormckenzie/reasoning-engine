@@ -295,7 +295,7 @@ namespace ReasoningEngine.GraphFileHandling
                     
                     if (edgeData == null)
                     {
-                        DebugWriter.DebugWriteLine("#00LOD5#", $"Failed to deserialize edge data from file: {filePath}");
+                        DebugWriter.DebugWriteLine("#XKIRIV#", $"Failed to deserialize edge data from file: {filePath}");
                         continue;
                     }
 
@@ -481,7 +481,7 @@ namespace ReasoningEngine.GraphFileHandling
             List<string> edgeFiles = new List<string>();
             string edgeDir = GetEdgeDirPath(nodeId, outgoing);
 
-            DebugWriter.DebugWriteLine("#00LOD5#", $"Getting all edge files for node {nodeId}, outgoing: {outgoing}");
+            DebugWriter.DebugWriteLine("#NLAIW7#", $"Getting all edge files for node {nodeId}, outgoing: {outgoing}");
             DebugWriter.DebugWriteLine("#00LOD6#", $"Edge directory: {edgeDir}");
 
             if (!Directory.Exists(edgeDir))

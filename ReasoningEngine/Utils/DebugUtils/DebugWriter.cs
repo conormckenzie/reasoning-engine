@@ -72,8 +72,9 @@ namespace DebugUtils
         /// <param name="debugMessage">The debug message to validate.</param>
         /// <returns>True if the debug message is valid; otherwise, false.</returns>
         /// <remarks>
-        /// A valid debug message should be of the form "#XXXXXX#" where XXXXXX is any 6-character string.
-        /// The 6-character string can contain any uppercase letters or digits and should be unique across the whole program.
+        /// A valid debug message should be of the form "#XXXXXX#" where XXXXXX is any 6-character string
+        /// containing uppercase letters or digits. 
+        /// Each debug message should be used only once; it should be unique across the whole program.
         /// </remarks>
         public static bool IsDebugMessageValid(string debugMessage)
         {

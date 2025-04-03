@@ -129,7 +129,7 @@ namespace ReasoningEngine
             // List available commands
             app.MapGet("/api/commands", () =>
             {
-                DebugWriter.DebugWriteLine("#CMD000#", "Listing available commands");
+                DebugWriter.DebugWriteLine("#Y07B6D#", "Listing available commands");
                 return new ApiResponse<string[]> { Success = true, Data = SupportedCommands };
             })
             .WithMetadata(new SwaggerOperationAttribute("List Commands", "Lists all available API commands and operations"));
@@ -146,7 +146,7 @@ namespace ReasoningEngine
                     });
                 }
 
-                DebugWriter.DebugWriteLine("#CMD001#", $"Processing command: {command}, payload: {request.Payload}");
+                DebugWriter.DebugWriteLine("#SS4Z8O#", $"Processing command: {command}, payload: {request.Payload}");
                 var result = await Task.FromResult(commandProcessor.ProcessCommand(command, request.Payload));
                 return Results.Ok(new ApiResponse<string> { Success = true, Data = result });
             })
