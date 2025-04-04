@@ -16,15 +16,15 @@ namespace ReasoningEngine.GraphAccess
 
             menuItems = new List<MenuItem>
             {
-                new MenuItem("Process Node Query", "#CMD001#", "node_query"),
-                new MenuItem("Process Outgoing Edge Query", "#CMD002#", "outgoing_edge_query"),
-                new MenuItem("Process Incoming Edge Query", "#CMD003#", "incoming_edge_query"),
-                new MenuItem("Add Node", "#CMD004#", "add_node"),
-                new MenuItem("Delete Node", "#CMD005#", "delete_node"),
-                new MenuItem("Edit Node", "#CMD006#", "edit_node"),
-                new MenuItem("Add Edge", "#CMD007#", "add_edge"),
-                new MenuItem("Delete Edge", "#CMD008#", "delete_edge"),
-                new MenuItem("Edit Edge", "#CMD009#", "edit_edge"),
+                new MenuItem("Process Node Query", "#9JA6QJ#", "node_query"),
+                new MenuItem("Process Outgoing Edge Query", "#0HB5WR#", "outgoing_edge_query"),
+                new MenuItem("Process Incoming Edge Query", "#0JF46M#", "incoming_edge_query"),
+                new MenuItem("Add Node", "#AIDHN1#", "add_node"),
+                new MenuItem("Delete Node", "#44VK8T#", "delete_node"),
+                new MenuItem("Edit Node", "#49ABKG#", "edit_node"),
+                new MenuItem("Add Edge", "#XXJ4R5#", "add_edge"),
+                new MenuItem("Delete Edge", "#NWBR17#", "delete_edge"),
+                new MenuItem("Edit Edge", "#A2F07N#", "edit_edge"),
             };
         }
 
@@ -32,7 +32,7 @@ namespace ReasoningEngine.GraphAccess
         {
             while (true)
             {
-                DebugWriter.DebugWriteLine("#CMD000#", "\nGraph Operations Menu:");
+                DebugWriter.DebugWriteLine("#1XJSDP#", "\nGraph Operations Menu:");
 
                 for (int i = 0; i < menuItems.Count; i++)
                 {
