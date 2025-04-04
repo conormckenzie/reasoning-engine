@@ -70,20 +70,48 @@ namespace ReasoningEngine.GraphFileHandling
                 }
 
                 int version = (int)nodeData.Version;
-                NodeBase node;
+                NodeBase? node = null; // Initialize as nullable
+
+                // Extract the node part of the JSON to inspect its Type
+                string nodeJson = nodeData.Node.ToString();
+                var nodeObject = JsonConvert.DeserializeObject<dynamic>(nodeJson);
+                
+                if (nodeObject == null)
+                {
+                     DebugWriter.DebugWriteLine("#LOAD_ERR_NODE_OBJ#", $"Failed to deserialize inner node object for node {nodeId}.");
+                     return null;
+                }
+
+                NodeType nodeType = (NodeType)(int)nodeObject.Type; // Get the type
 
                 switch (version)
                 {
                     case 1:
-                        node = JsonConvert.DeserializeObject<NodeV1>(nodeData.Node.ToString());
+                        // Assuming V1 only had Standard nodes, or needs specific handling if not
+                        node = JsonConvert.DeserializeObject<NodeV1>(nodeJson);
                         break;
                     case 2:
-                        node = JsonConvert.DeserializeObject<NodeV2>(nodeData.Node.ToString());
+                        // Deserialize based on Type for V2
+                        switch (nodeType)
+                        {
+                            case NodeType.SIMO:
+                                node = JsonConvert.DeserializeObject<SIMONode>(nodeJson);
+                                break;
+                            case NodeType.MISO:
+                                node = JsonConvert.DeserializeObject<MISONode>(nodeJson);
+                                break;
+                            case NodeType.Standard:
+                            default: // Fallback to standard NodeV2
+                                node = JsonConvert.DeserializeObject<NodeV2>(nodeJson);
+                                break;
+                        }
                         break;
                     default:
+                         DebugWriter.DebugWriteLine("#LOAD_ERR_VERSION#", $"Node version {version} is not supported for node {nodeId}.");
                         throw new NotSupportedException($"Node version {version} is not supported.");
                 }
 
+                // UpgradeToLatest should handle null if deserialization failed
                 return node?.UpgradeToLatest();
             }
             catch (Exception ex)
@@ -147,7 +175,8 @@ namespace ReasoningEngine.GraphFileHandling
         {
             try
             {
-                DebugWriter.DebugWriteLine("#00SAV9#", $"Starting to save edge from {edge.FromNode} to {edge.ToNode}");
+                // Changed to Detailed
+                DebugWriter.DebugWriteLine("#00SAV9#", $"Starting to save edge from {edge.FromNode} to {edge.ToNode}", true, VerbosityLevel.Detailed); 
 
                 // Check if both nodes exist
                 if (!NodeExists(edge.FromNode))
@@ -184,7 +213,8 @@ namespace ReasoningEngine.GraphFileHandling
                     return false;
                 }
 
-                DebugWriter.DebugWriteLine("#O3ULSB#", $"Successfully saved edge from {edge.FromNode} to {edge.ToNode}");
+                // Changed to Detailed
+                DebugWriter.DebugWriteLine("#O3ULSB#", $"Successfully saved edge from {edge.FromNode} to {edge.ToNode}", true, VerbosityLevel.Detailed); 
                 return true;
             }
             catch (Exception ex)
@@ -204,7 +234,8 @@ namespace ReasoningEngine.GraphFileHandling
         {
             try
             {
-                DebugWriter.DebugWriteLine("#R5TZE3#", $"Saving edge to file: {filePath}");
+                // Changed to Detailed
+                DebugWriter.DebugWriteLine("#R5TZE3#", $"Saving edge to file: {filePath}", true, VerbosityLevel.Detailed); 
                 EnsureDirectoryExists(filePath);
                 var edgeData = new
                 {
@@ -216,7 +247,8 @@ namespace ReasoningEngine.GraphFileHandling
 
                 // Update index files
                 bool indexUpdated = UpdateEdgeIndex(filePath, true);
-                DebugWriter.DebugWriteLine("#33RNRG#", $"Index update result for {filePath}: {indexUpdated}");
+                // Changed to Detailed
+                DebugWriter.DebugWriteLine("#33RNRG#", $"Index update result for {filePath}: {indexUpdated}", true, VerbosityLevel.Detailed); 
                 return indexUpdated;
             }
             catch (Exception ex)
@@ -230,7 +262,8 @@ namespace ReasoningEngine.GraphFileHandling
         {
             try
             {
-                DebugWriter.DebugWriteLine("#4SZT2R#", $"Updating edge index for {edgeFilePath}, isAdding: {isAdding}");
+                // Changed to Detailed
+                DebugWriter.DebugWriteLine("#4SZT2R#", $"Updating edge index for {edgeFilePath}, isAdding: {isAdding}", true, VerbosityLevel.Detailed); 
                 string? directoryPath = Path.GetDirectoryName(edgeFilePath);
                 if (string.IsNullOrEmpty(directoryPath))
                 {
@@ -241,7 +274,8 @@ namespace ReasoningEngine.GraphFileHandling
                 EnsureDirectoryExists(indexFilePath);
 
                 IndexFile indexFile = LoadIndexFile(indexFilePath);
-                DebugWriter.DebugWriteLine("#JM16CX#", $"Loaded index file: {indexFilePath}, current edge count: {indexFile.EdgeFiles.Count}");
+                 // Changed to Detailed
+                DebugWriter.DebugWriteLine("#JM16CX#", $"Loaded index file: {indexFilePath}, current edge count: {indexFile.EdgeFiles.Count}", true, VerbosityLevel.Detailed);
 
                 string edgeFileName = Path.GetFileName(edgeFilePath);
 
@@ -250,21 +284,25 @@ namespace ReasoningEngine.GraphFileHandling
                     if (!indexFile.EdgeFiles.Contains(edgeFileName))
                     {
                         indexFile.EdgeFiles.Add(edgeFileName);
-                        DebugWriter.DebugWriteLine("#21YE2B#", $"Added {edgeFileName} to index");
+                         // Changed to Detailed
+                        DebugWriter.DebugWriteLine("#21YE2B#", $"Added {edgeFileName} to index", true, VerbosityLevel.Detailed);
                     }
                     else
                     {
-                        DebugWriter.DebugWriteLine("#C6B5G3#", $"{edgeFileName} already exists in index");
+                         // Changed to Detailed
+                        DebugWriter.DebugWriteLine("#C6B5G3#", $"{edgeFileName} already exists in index", true, VerbosityLevel.Detailed);
                     }
                 }
                 else
                 {
                     indexFile.EdgeFiles.Remove(edgeFileName);
-                    DebugWriter.DebugWriteLine("#50XXE9#", $"Removed {edgeFileName} from index");
+                     // Changed to Detailed
+                    DebugWriter.DebugWriteLine("#50XXE9#", $"Removed {edgeFileName} from index", true, VerbosityLevel.Detailed);
                 }
 
                 SaveIndexFile(indexFilePath, indexFile);
-                DebugWriter.DebugWriteLine("#0LU03E#", $"Saved updated index file: {indexFilePath}, new edge count: {indexFile.EdgeFiles.Count}");
+                 // Changed to Detailed
+                DebugWriter.DebugWriteLine("#0LU03E#", $"Saved updated index file: {indexFilePath}, new edge count: {indexFile.EdgeFiles.Count}", true, VerbosityLevel.Detailed);
                 return true;
             }
             catch (Exception ex)
@@ -481,26 +519,31 @@ namespace ReasoningEngine.GraphFileHandling
             List<string> edgeFiles = new List<string>();
             string edgeDir = GetEdgeDirPath(nodeId, outgoing);
 
-            DebugWriter.DebugWriteLine("#NLAIW7#", $"Getting all edge files for node {nodeId}, outgoing: {outgoing}");
-            DebugWriter.DebugWriteLine("#00LOD6#", $"Edge directory: {edgeDir}");
+             // Changed to Detailed
+            DebugWriter.DebugWriteLine("#NLAIW7#", $"Getting all edge files for node {nodeId}, outgoing: {outgoing}", true, VerbosityLevel.Detailed);
+             // Changed to Detailed
+            DebugWriter.DebugWriteLine("#00LOD6#", $"Edge directory: {edgeDir}", true, VerbosityLevel.Detailed);
 
             if (!Directory.Exists(edgeDir))
             {
-                DebugWriter.DebugWriteLine("#00LOD7#", $"Edge directory does not exist: {edgeDir}");
+                 // Changed to Detailed
+                DebugWriter.DebugWriteLine("#00LOD7#", $"Edge directory does not exist: {edgeDir}", true, VerbosityLevel.Detailed);
                 return edgeFiles;
             }
 
             // Recursively search for index files
             SearchDirectoryForEdges(edgeDir, edgeFiles);
 
-            DebugWriter.DebugWriteLine("#QSI0XM#", $"Total edge files found: {edgeFiles.Count}");
+             // Changed to Detailed
+            DebugWriter.DebugWriteLine("#QSI0XM#", $"Total edge files found: {edgeFiles.Count}", true, VerbosityLevel.Detailed);
             return edgeFiles;
         }
 
         private void SearchDirectoryForEdges(string directory, List<string> edgeFiles)
         {
             string indexFilePath = Path.Combine(directory, "index.json");
-            DebugWriter.DebugWriteLine("#00LOD8#", $"Checking index file: {indexFilePath}");
+             // Changed to Detailed
+            DebugWriter.DebugWriteLine("#00LOD8#", $"Checking index file: {indexFilePath}", true, VerbosityLevel.Detailed);
 
             if (File.Exists(indexFilePath))
             {
@@ -511,12 +554,14 @@ namespace ReasoningEngine.GraphFileHandling
                 {
                     string fullPath = Path.Combine(directory, fileName);
                     edgeFiles.Add(fullPath);
-                    DebugWriter.DebugWriteLine("#00LOD9#", $"Added edge file: {fullPath}");
+                     // Changed to Detailed
+                    DebugWriter.DebugWriteLine("#00LOD9#", $"Added edge file: {fullPath}", true, VerbosityLevel.Detailed);
                 }
             }
             else
             {
-                DebugWriter.DebugWriteLine("#BCWITX#", $"Index file not found: {indexFilePath}");
+                 // Changed to Detailed
+                DebugWriter.DebugWriteLine("#BCWITX#", $"Index file not found: {indexFilePath}", true, VerbosityLevel.Detailed);
             }
 
             // Recursively search subdirectories

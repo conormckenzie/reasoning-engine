@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
 using DotNetEnv;
 using ReasoningEngine.GraphFileHandling;
 using ReasoningEngine.GraphAccess;
@@ -143,8 +143,9 @@ namespace ReasoningEngine
             DebugWriter.DebugWriteLine("#CMD019#", "Examples:");
             DebugWriter.DebugWriteLine("#CMD020#", "  dotnet run --run-scenario weather");
             DebugWriter.DebugWriteLine("#CMD021#", "  dotnet run --run-scenario weather --verbosity Minimal");
-            DebugWriter.DebugWriteLine("#CMD022#", "");
-            DebugWriter.DebugWriteLine("#CMD023#", "If no options are provided, the interactive menu will be shown.");
+            DebugWriter.DebugWriteLine("#CMD022#", "  (Recommended: Use --verbosity Minimal for scenarios to reduce output)");
+            DebugWriter.DebugWriteLine("#CMD023#", "");
+            DebugWriter.DebugWriteLine("#CMD024#", "If no options are provided, the interactive menu will be shown.");
         }
 
         static void ShowMenu(CommandProcessor commandProcessor, GraphOperationsUserMenu graphOperationsUserMenu)

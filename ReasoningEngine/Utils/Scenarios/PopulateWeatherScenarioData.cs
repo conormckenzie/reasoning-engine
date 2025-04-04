@@ -14,10 +14,12 @@ namespace ReasoningEngine.Utils.Scenarios
     public class PopulateWeatherScenarioData
     {
         private readonly CommandProcessor _commandProcessor;
+        private readonly GraphFileManager _graphFileManager; // Added
 
-        public PopulateWeatherScenarioData(CommandProcessor commandProcessor)
+        public PopulateWeatherScenarioData(CommandProcessor commandProcessor, GraphFileManager graphFileManager) // Modified
         {
             _commandProcessor = commandProcessor;
+            _graphFileManager = graphFileManager; // Added
         }
 
         public void PopulateData()
@@ -249,75 +251,104 @@ namespace ReasoningEngine.Utils.Scenarios
                 // Add probability distributions to each node based on its ID
                 foreach (var node in nodes)
                 {
+                    bool nodeModified = false; // Flag to track if node was modified
                     switch (node.Id)
                     {
                         case 1: // Proposition A: It is raining
                             AddTruthDistribution(node, 0.7);
+                            nodeModified = true;
                             break;
                             
                         case 2: // Proposition B: The ground is wet
                             AddTruthDistribution(node, 0.8);
+                            nodeModified = true;
                             break;
                             
                         case 4: // Result of AND
                             AddTruthDistribution(node, 0.56);
+                            nodeModified = true;
                             break;
                             
                         case 6: // Result of OR
                             AddTruthDistribution(node, 0.94);
+                            nodeModified = true;
                             break;
                             
                         case 8: // Result of NOT
                             AddTruthDistribution(node, 0.3);
+                            nodeModified = true;
                             break;
                             
                         case 9: // Causal Strength of Rain → Wet Ground
                             AddCausalStrengthDistribution(node);
+                            nodeModified = true;
                             break;
                             
                         case 11: // Result of Implication
                             AddTruthDistribution(node, 0.85);
+                            nodeModified = true;
                             break;
                             
                         case 12: // Rain Intensity
                             AddRainIntensityDistribution(node);
+                            nodeModified = true;
                             break;
                             
                         case 13: // Wind Force
                             AddWindForceDistribution(node);
+                            nodeModified = true;
                             break;
                             
                         case 15: // Puddle Formation Likelihood
                             AddTruthDistribution(node, 0.3);
+                            nodeModified = true;
                             break;
                             
                         case 17: // Wind Impact on Umbrella
                             AddTruthDistribution(node, 0.35);
+                            nodeModified = true;
                             break;
                             
                         case 19: // Is it raining heavily?
                             AddTruthDistribution(node, 0.1);
+                            nodeModified = true;
                             break;
                             
                         case 21: // Is an umbrella usable?
                             AddTruthDistribution(node, 0.65);
+                            nodeModified = true;
                             break;
                             
                         case 23: // Need for Umbrella
                             AddTruthDistribution(node, 0.455);
+                            nodeModified = true;
                             break;
                             
                         case 25: // Ground wet because of rain
                             AddTruthDistribution(node, 0.65);
+                            nodeModified = true;
                             break;
                             
                         default:
                             DebugUtils.DebugWriter.DebugWriteLine("#X78PHM#", $"No distribution defined for node {node.Id}", true, DebugUtils.VerbosityLevel.Detailed);
                             break;
                     }
+
+                    // Save the node if it was modified
+                    if (nodeModified)
+                    {
+                        if (_graphFileManager.SaveNode(node))
+                        {
+                            DebugUtils.DebugWriter.DebugWriteLine("#SAVE_OK#", $"Node {node.Id} saved successfully after adding distribution.", true, DebugUtils.VerbosityLevel.Detailed);
+                        }
+                        else
+                        {
+                            DebugUtils.DebugWriter.DebugWriteLine("#SAVE_ERR#", $"Failed to save node {node.Id} after adding distribution.", true, DebugUtils.VerbosityLevel.Minimal);
+                        }
+                    }
                 }
                 
-                DebugUtils.DebugWriter.DebugWriteLine("#I3R80X#", "Probability distributions added successfully.", true, DebugUtils.VerbosityLevel.Normal);
+                DebugUtils.DebugWriter.DebugWriteLine("#I3R80X#", "Finished attempting to add probability distributions.", true, DebugUtils.VerbosityLevel.Normal);
             }
             catch (Exception ex)
             {
@@ -328,63 +359,85 @@ namespace ReasoningEngine.Utils.Scenarios
         
         private List<SIMONode> LoadSIMONodes()
         {
-            var result = new List<SIMONode>();
+            var simoNodes = new List<SIMONode>();
+            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO#", "Loading SIMO nodes...", true, DebugUtils.VerbosityLevel.Normal);
             
-            // This is a placeholder. In a real implementation, we would:
-            // 1. Get all node IDs from the graph file manager
-            // 2. Load each node
-            // 3. Filter for SIMO nodes
-            // 4. Return the list of SIMO nodes
+            try
+            {
+                List<long> allNodeIds = _graphFileManager.GetAllNodeIds();
+                DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_IDS#", $"Found {allNodeIds.Count} total node IDs.", true, DebugUtils.VerbosityLevel.Detailed);
+
+                foreach (long nodeId in allNodeIds)
+                {
+                    NodeBase? node = _graphFileManager.LoadNode(nodeId);
+                    if (node is SIMONode simoNode)
+                    {
+                        simoNodes.Add(simoNode);
+                        DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_NODE#", $"Loaded SIMO node {nodeId}.", true, DebugUtils.VerbosityLevel.Detailed);
+                    }
+                    else if (node == null)
+                    {
+                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_ERR#", $"Failed to load node {nodeId}.", true, DebugUtils.VerbosityLevel.Minimal);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_EX#", $"Error loading nodes: {ex.Message}", true, DebugUtils.VerbosityLevel.Minimal);
+                DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_STACK#", ex.StackTrace, true, DebugUtils.VerbosityLevel.Detailed);
+            }
             
-            DebugUtils.DebugWriter.DebugWriteLine("#VIGJBX#", "Note: LoadSIMONodes is a placeholder. In a real implementation, we would load nodes from the graph file manager.", true, DebugUtils.VerbosityLevel.Normal);
-            
-            return result;
+            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_DONE#", $"Loaded {simoNodes.Count} SIMO nodes.", true, DebugUtils.VerbosityLevel.Normal);
+            return simoNodes;
         }
         
         private void AddTruthDistribution(SIMONode node, double trueValue)
         {
             DebugUtils.DebugWriter.DebugWriteLine("#SQ9FO2#", $"Adding Truth distribution to node {node.Id}: True={trueValue}, False={1-trueValue}", true, DebugUtils.VerbosityLevel.Detailed);
             
-            // In a real implementation, we would:
-            // node.AddDistributionPoint(1.0, trueValue);
-            // node.AddDistributionPoint(0.0, 1.0 - trueValue);
+            // Uncommented:
+            node.AddDistributionPoint(1.0, trueValue);
+            node.AddDistributionPoint(0.0, 1.0 - trueValue);
         }
         
         private void AddCausalStrengthDistribution(SIMONode node)
         {
             DebugUtils.DebugWriter.DebugWriteLine("#R1RH7B#", $"Adding Causal Strength distribution to node {node.Id}", true, DebugUtils.VerbosityLevel.Detailed);
             
-            // In a real implementation, we would:
-            // node.AddDistributionRange(0.7, 0.9, 0.6);  // Strong causation
-            // node.AddDistributionRange(0.4, 0.7, 0.3);  // Moderate causation
-            // node.AddDistributionRange(0.0, 0.4, 0.1);  // Weak causation
+            // Uncommented:
+            node.AddDistributionRange(0.7, 0.9, 0.6);  // Strong causation
+            node.AddDistributionRange(0.4, 0.7, 0.3);  // Moderate causation
+            node.AddDistributionRange(0.0, 0.4, 0.1);  // Weak causation
         }
         
         private void AddRainIntensityDistribution(SIMONode node)
         {
             DebugUtils.DebugWriter.DebugWriteLine("#7W0XRH#", $"Adding Rain Intensity distribution to node {node.Id}", true, DebugUtils.VerbosityLevel.Detailed);
             
-            // In a real implementation, we would:
-            // node.AddDistributionRange(0.0, 1.0, 0.3);   // No/trace rain
-            // node.AddDistributionRange(1.0, 5.0, 0.4);   // Light rain
-            // node.AddDistributionRange(5.0, 15.0, 0.2);  // Moderate rain
-            // node.AddDistributionRange(15.0, 50.0, 0.1); // Heavy rain
+            // Uncommented:
+            node.AddDistributionRange(0.0, 1.0, 0.3);   // No/trace rain
+            node.AddDistributionRange(1.0, 5.0, 0.4);   // Light rain
+            node.AddDistributionRange(5.0, 15.0, 0.2);  // Moderate rain
+            node.AddDistributionRange(15.0, 50.0, 0.1); // Heavy rain
         }
         
         private void AddWindForceDistribution(SIMONode node)
         {
             DebugUtils.DebugWriter.DebugWriteLine("#M26F8E#", $"Adding Wind Force distribution to node {node.Id}", true, DebugUtils.VerbosityLevel.Detailed);
             
-            // In a real implementation, we would:
-            // node.AddDistributionPoint(0, 0.05); // Calm
-            // node.AddDistributionPoint(1, 0.10); // Light air
-            // node.AddDistributionPoint(2, 0.20); // Light breeze
-            // node.AddDistributionPoint(3, 0.30); // Gentle breeze
-            // node.AddDistributionPoint(4, 0.20); // Moderate breeze
-            // node.AddDistributionPoint(5, 0.10); // Fresh breeze
-            // node.AddDistributionPoint(6, 0.05); // Strong breeze
+            // Uncommented:
+            node.AddDistributionPoint(0, 0.05); // Calm
+            node.AddDistributionPoint(1, 0.10); // Light air
+            node.AddDistributionPoint(2, 0.20); // Light breeze
+            node.AddDistributionPoint(3, 0.30); // Gentle breeze
+            node.AddDistributionPoint(4, 0.20); // Moderate breeze
+            node.AddDistributionPoint(5, 0.10); // Fresh breeze
+            node.AddDistributionPoint(6, 0.05); // Strong breeze
         }
 
+        // Note: This Main method allows running the populator directly.
+        // However, it's recommended to run scenarios via the main program:
+        // `dotnet run --project ReasoningEngine/ReasoningEngine.csproj --run-scenario weather --verbosity Minimal`
         public static void Main(string[] args)
         {
             try
@@ -404,7 +457,7 @@ namespace ReasoningEngine.Utils.Scenarios
                 OneTimeSetup.Initialize();
                 
                 // Create and run the data populator
-                var populator = new PopulateWeatherScenarioData(commandProcessor);
+                var populator = new PopulateWeatherScenarioData(commandProcessor, graphFileManager); // Modified
                 populator.PopulateData();
                 
                 DebugUtils.DebugWriter.DebugWriteLine("#ZLUMLC#", "Weather scenario data population completed successfully.", true, DebugUtils.VerbosityLevel.Minimal);
