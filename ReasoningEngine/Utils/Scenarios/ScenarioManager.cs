@@ -26,7 +26,7 @@ namespace ReasoningEngine.Utils.Scenarios
         public void ListScenarios()
         {
             DebugUtils.DebugWriter.DebugWriteLine("#SCN004#", "Available scenarios:");
-            DebugUtils.DebugWriter.DebugWriteLine("#SCN005#", "  weather    - Populate the graph with weather scenario data");
+            DebugUtils.DebugWriter.DebugWriteLine("#SCN005#", "  weather    - Populate the graph with weather scenario data (Recommend running with --verbosity Minimal)");
             // Add more scenarios here as they are created
             DebugUtils.DebugWriter.DebugWriteLine("#SCN006#", "");
         }
@@ -57,7 +57,8 @@ namespace ReasoningEngine.Utils.Scenarios
                 {
                     case "weather":
                         DebugUtils.DebugWriter.DebugWriteLine("#SCN007#", "Running Weather Scenario");
-                        var weatherScenario = new PopulateWeatherScenarioData(_commandProcessor);
+                        // Pass both commandProcessor and graphFileManager
+                        var weatherScenario = new PopulateWeatherScenarioData(_commandProcessor, _graphFileManager); 
                         weatherScenario.PopulateData();
                         return true;
 
