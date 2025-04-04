@@ -152,12 +152,12 @@ namespace ReasoningEngine.GraphFileHandling
                 // Check if both nodes exist
                 if (!NodeExists(edge.FromNode))
                 {
-                    DebugWriter.DebugWriteLine("#00SAV19#", $"Cannot save edge: source node {edge.FromNode} does not exist.");
+                    DebugWriter.DebugWriteLine("#30QLDO#", $"Cannot save edge: source node {edge.FromNode} does not exist.");
                     return false;
                 }
                 if (!NodeExists(edge.ToNode))
                 {
-                    DebugWriter.DebugWriteLine("#00SAV20#", $"Cannot save edge: destination node {edge.ToNode} does not exist.");
+                    DebugWriter.DebugWriteLine("#B830YV#", $"Cannot save edge: destination node {edge.ToNode} does not exist.");
                     return false;
                 }
 
@@ -184,7 +184,7 @@ namespace ReasoningEngine.GraphFileHandling
                     return false;
                 }
 
-                DebugWriter.DebugWriteLine("#00SAV10#", $"Successfully saved edge from {edge.FromNode} to {edge.ToNode}");
+                DebugWriter.DebugWriteLine("#O3ULSB#", $"Successfully saved edge from {edge.FromNode} to {edge.ToNode}");
                 return true;
             }
             catch (Exception ex)
@@ -204,7 +204,7 @@ namespace ReasoningEngine.GraphFileHandling
         {
             try
             {
-                DebugWriter.DebugWriteLine("#00SAV11#", $"Saving edge to file: {filePath}");
+                DebugWriter.DebugWriteLine("#R5TZE3#", $"Saving edge to file: {filePath}");
                 EnsureDirectoryExists(filePath);
                 var edgeData = new
                 {
@@ -216,7 +216,7 @@ namespace ReasoningEngine.GraphFileHandling
 
                 // Update index files
                 bool indexUpdated = UpdateEdgeIndex(filePath, true);
-                DebugWriter.DebugWriteLine("#00SAV12#", $"Index update result for {filePath}: {indexUpdated}");
+                DebugWriter.DebugWriteLine("#33RNRG#", $"Index update result for {filePath}: {indexUpdated}");
                 return indexUpdated;
             }
             catch (Exception ex)
@@ -230,7 +230,7 @@ namespace ReasoningEngine.GraphFileHandling
         {
             try
             {
-                DebugWriter.DebugWriteLine("#00SAV13#", $"Updating edge index for {edgeFilePath}, isAdding: {isAdding}");
+                DebugWriter.DebugWriteLine("#4SZT2R#", $"Updating edge index for {edgeFilePath}, isAdding: {isAdding}");
                 string? directoryPath = Path.GetDirectoryName(edgeFilePath);
                 if (string.IsNullOrEmpty(directoryPath))
                 {
@@ -241,7 +241,7 @@ namespace ReasoningEngine.GraphFileHandling
                 EnsureDirectoryExists(indexFilePath);
 
                 IndexFile indexFile = LoadIndexFile(indexFilePath);
-                DebugWriter.DebugWriteLine("#00SAV14#", $"Loaded index file: {indexFilePath}, current edge count: {indexFile.EdgeFiles.Count}");
+                DebugWriter.DebugWriteLine("#JM16CX#", $"Loaded index file: {indexFilePath}, current edge count: {indexFile.EdgeFiles.Count}");
 
                 string edgeFileName = Path.GetFileName(edgeFilePath);
 
@@ -250,21 +250,21 @@ namespace ReasoningEngine.GraphFileHandling
                     if (!indexFile.EdgeFiles.Contains(edgeFileName))
                     {
                         indexFile.EdgeFiles.Add(edgeFileName);
-                        DebugWriter.DebugWriteLine("#00SAV15#", $"Added {edgeFileName} to index");
+                        DebugWriter.DebugWriteLine("#21YE2B#", $"Added {edgeFileName} to index");
                     }
                     else
                     {
-                        DebugWriter.DebugWriteLine("#00SAV16#", $"{edgeFileName} already exists in index");
+                        DebugWriter.DebugWriteLine("#C6B5G3#", $"{edgeFileName} already exists in index");
                     }
                 }
                 else
                 {
                     indexFile.EdgeFiles.Remove(edgeFileName);
-                    DebugWriter.DebugWriteLine("#00SAV17#", $"Removed {edgeFileName} from index");
+                    DebugWriter.DebugWriteLine("#50XXE9#", $"Removed {edgeFileName} from index");
                 }
 
                 SaveIndexFile(indexFilePath, indexFile);
-                DebugWriter.DebugWriteLine("#00SAV18#", $"Saved updated index file: {indexFilePath}, new edge count: {indexFile.EdgeFiles.Count}");
+                DebugWriter.DebugWriteLine("#0LU03E#", $"Saved updated index file: {indexFilePath}, new edge count: {indexFile.EdgeFiles.Count}");
                 return true;
             }
             catch (Exception ex)
@@ -493,7 +493,7 @@ namespace ReasoningEngine.GraphFileHandling
             // Recursively search for index files
             SearchDirectoryForEdges(edgeDir, edgeFiles);
 
-            DebugWriter.DebugWriteLine("#00LOD12#", $"Total edge files found: {edgeFiles.Count}");
+            DebugWriter.DebugWriteLine("#QSI0XM#", $"Total edge files found: {edgeFiles.Count}");
             return edgeFiles;
         }
 
@@ -516,7 +516,7 @@ namespace ReasoningEngine.GraphFileHandling
             }
             else
             {
-                DebugWriter.DebugWriteLine("#00LOD11#", $"Index file not found: {indexFilePath}");
+                DebugWriter.DebugWriteLine("#BCWITX#", $"Index file not found: {indexFilePath}");
             }
 
             // Recursively search subdirectories

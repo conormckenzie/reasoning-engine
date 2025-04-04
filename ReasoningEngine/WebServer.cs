@@ -208,7 +208,7 @@ namespace ReasoningEngine
             // Health check endpoint
             app.MapGet("/api/health", () =>
             {
-                DebugWriter.DebugWriteLine("#HC001#", "Health check requested");
+                DebugWriter.DebugWriteLine("#7GLNZY#", "Health check requested");
                 return Results.Ok(new ApiResponse<string> { Success = true, Data = "OK" });
             })
             .WithMetadata(new SwaggerOperationAttribute("Health Check", "Returns OK if the service is healthy"));
