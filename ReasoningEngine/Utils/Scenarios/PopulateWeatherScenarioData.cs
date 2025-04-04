@@ -239,10 +239,10 @@ namespace ReasoningEngine.Utils.Scenarios
             
             try
             {
-                // Load nodes from the graph file manager
-                var nodes = LoadSIMONodes();
+                // Load Variable nodes from the graph file manager
+                var nodes = LoadVariableNodes(); // Updated method call
                 
-                if (nodes.Count == 0)
+                if (nodes.Count == 0) // This check should still be valid
                 {
                     DebugUtils.DebugWriter.DebugWriteLine("#3M802W#", "No SIMO nodes found. Make sure to add nodes first.", true, DebugUtils.VerbosityLevel.Minimal);
                     return;
@@ -357,10 +357,11 @@ namespace ReasoningEngine.Utils.Scenarios
             }
         }
         
-        private List<SIMONode> LoadSIMONodes()
+        // Method now loads Variable nodes
+        private List<Node> LoadVariableNodes() 
         {
-            var simoNodes = new List<SIMONode>();
-            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO#", "Loading SIMO nodes...", true, DebugUtils.VerbosityLevel.Normal);
+            var variableNodes = new List<Node>(); // Changed type to Node
+            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_NODES#", "Loading Variable nodes...", true, DebugUtils.VerbosityLevel.Normal); // Updated message
             
             try
             {
@@ -369,70 +370,99 @@ namespace ReasoningEngine.Utils.Scenarios
 
                 foreach (long nodeId in allNodeIds)
                 {
-                    NodeBase? node = _graphFileManager.LoadNode(nodeId);
-                    if (node is SIMONode simoNode)
+                    NodeBase? nodeBase = _graphFileManager.LoadNode(nodeId);
+                    // Check if it's the correct type (Node alias for NodeV3) and has the Variable role
+                    if (nodeBase is Node node && node.Role == NodeRole.Variable) 
                     {
-                        simoNodes.Add(simoNode);
-                        DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_NODE#", $"Loaded SIMO node {nodeId}.", true, DebugUtils.VerbosityLevel.Detailed);
+                        variableNodes.Add(node); // Add the Node object
+                        DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_NODE#", $"Loaded Variable node {nodeId}.", true, DebugUtils.VerbosityLevel.Detailed); // Updated message
                     }
-                    else if (node == null)
+                    else if (nodeBase == null)
                     {
-                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_ERR#", $"Failed to load node {nodeId}.", true, DebugUtils.VerbosityLevel.Minimal);
+                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_ERR#", $"Failed to load node {nodeId}.", true, DebugUtils.VerbosityLevel.Minimal); // Updated message
+                    }
+                    // Optionally log if a node was loaded but wasn't a Variable node
+                    else if (nodeBase is Node nodeNonVar) {
+                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_NONVAR_NODE#", $"Loaded node {nodeId} but it has role {nodeNonVar.Role}, expected Variable.", true, DebugUtils.VerbosityLevel.Detailed);
                     }
                 }
             }
             catch (Exception ex)
             {
-                DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_EX#", $"Error loading nodes: {ex.Message}", true, DebugUtils.VerbosityLevel.Minimal);
-                DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_STACK#", ex.StackTrace, true, DebugUtils.VerbosityLevel.Detailed);
+                DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_EX#", $"Error loading nodes: {ex.Message}", true, DebugUtils.VerbosityLevel.Minimal); // Updated message
+                DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_STACK#", ex.StackTrace, true, DebugUtils.VerbosityLevel.Detailed); // Updated message
             }
             
-            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_DONE#", $"Loaded {simoNodes.Count} SIMO nodes.", true, DebugUtils.VerbosityLevel.Normal);
-            return simoNodes;
+            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_DONE#", $"Loaded {variableNodes.Count} Variable nodes.", true, DebugUtils.VerbosityLevel.Normal); // Updated message
+            return variableNodes; // Return list of Node
         }
         
-        private void AddTruthDistribution(SIMONode node, double trueValue)
+        // Parameter type changed to Node
+        private void AddTruthDistribution(Node node, double trueValue) 
         {
+            // Ensure the node is a Variable node and has a distribution
+            if (node.Role != NodeRole.Variable || node.Distribution == null) {
+                 DebugUtils.DebugWriter.DebugWriteLine("#TRUTH_DIST_ERR#", $"Node {node.Id} is not a Variable node or has no distribution. Cannot add Truth distribution.", true, DebugUtils.VerbosityLevel.Minimal);
+                 return;
+            }
             DebugUtils.DebugWriter.DebugWriteLine("#SQ9FO2#", $"Adding Truth distribution to node {node.Id}: True={trueValue}, False={1-trueValue}", true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Uncommented:
-            node.AddDistributionPoint(1.0, trueValue);
-            node.AddDistributionPoint(0.0, 1.0 - trueValue);
+            // Add points to the existing distribution object
+            node.Distribution.AddPoint(1.0, trueValue); 
+            node.Distribution.AddPoint(0.0, 1.0 - trueValue);
         }
         
-        private void AddCausalStrengthDistribution(SIMONode node)
+        // Parameter type changed to Node
+        private void AddCausalStrengthDistribution(Node node) 
         {
+             // Ensure the node is a Variable node and has a distribution
+            if (node.Role != NodeRole.Variable || node.Distribution == null) {
+                 DebugUtils.DebugWriter.DebugWriteLine("#CAUSAL_DIST_ERR#", $"Node {node.Id} is not a Variable node or has no distribution. Cannot add Causal Strength distribution.", true, DebugUtils.VerbosityLevel.Minimal);
+                 return;
+            }
             DebugUtils.DebugWriter.DebugWriteLine("#R1RH7B#", $"Adding Causal Strength distribution to node {node.Id}", true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Uncommented:
-            node.AddDistributionRange(0.7, 0.9, 0.6);  // Strong causation
-            node.AddDistributionRange(0.4, 0.7, 0.3);  // Moderate causation
-            node.AddDistributionRange(0.0, 0.4, 0.1);  // Weak causation
+            // Add ranges to the existing distribution object
+            node.Distribution.AddRange(0.7, 0.9, 0.6);  
+            node.Distribution.AddRange(0.4, 0.7, 0.3);  
+            node.Distribution.AddRange(0.0, 0.4, 0.1);  
         }
         
-        private void AddRainIntensityDistribution(SIMONode node)
+        // Parameter type changed to Node
+        private void AddRainIntensityDistribution(Node node) 
         {
+             // Ensure the node is a Variable node and has a distribution
+            if (node.Role != NodeRole.Variable || node.Distribution == null) {
+                 DebugUtils.DebugWriter.DebugWriteLine("#RAIN_DIST_ERR#", $"Node {node.Id} is not a Variable node or has no distribution. Cannot add Rain Intensity distribution.", true, DebugUtils.VerbosityLevel.Minimal);
+                 return;
+            }
             DebugUtils.DebugWriter.DebugWriteLine("#7W0XRH#", $"Adding Rain Intensity distribution to node {node.Id}", true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Uncommented:
-            node.AddDistributionRange(0.0, 1.0, 0.3);   // No/trace rain
-            node.AddDistributionRange(1.0, 5.0, 0.4);   // Light rain
-            node.AddDistributionRange(5.0, 15.0, 0.2);  // Moderate rain
-            node.AddDistributionRange(15.0, 50.0, 0.1); // Heavy rain
+             // Add ranges to the existing distribution object
+            node.Distribution.AddRange(0.0, 1.0, 0.3);   
+            node.Distribution.AddRange(1.0, 5.0, 0.4);   
+            node.Distribution.AddRange(5.0, 15.0, 0.2);  
+            node.Distribution.AddRange(15.0, 50.0, 0.1); 
         }
         
-        private void AddWindForceDistribution(SIMONode node)
+         // Parameter type changed to Node
+        private void AddWindForceDistribution(Node node)
         {
+             // Ensure the node is a Variable node and has a distribution
+            if (node.Role != NodeRole.Variable || node.Distribution == null) {
+                 DebugUtils.DebugWriter.DebugWriteLine("#WIND_DIST_ERR#", $"Node {node.Id} is not a Variable node or has no distribution. Cannot add Wind Force distribution.", true, DebugUtils.VerbosityLevel.Minimal);
+                 return;
+            }
             DebugUtils.DebugWriter.DebugWriteLine("#M26F8E#", $"Adding Wind Force distribution to node {node.Id}", true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Uncommented:
-            node.AddDistributionPoint(0, 0.05); // Calm
-            node.AddDistributionPoint(1, 0.10); // Light air
-            node.AddDistributionPoint(2, 0.20); // Light breeze
-            node.AddDistributionPoint(3, 0.30); // Gentle breeze
-            node.AddDistributionPoint(4, 0.20); // Moderate breeze
-            node.AddDistributionPoint(5, 0.10); // Fresh breeze
-            node.AddDistributionPoint(6, 0.05); // Strong breeze
+             // Add points to the existing distribution object
+            node.Distribution.AddPoint(0, 0.05); 
+            node.Distribution.AddPoint(1, 0.10); 
+            node.Distribution.AddPoint(2, 0.20); 
+            node.Distribution.AddPoint(3, 0.30); 
+            node.Distribution.AddPoint(4, 0.20); 
+            node.Distribution.AddPoint(5, 0.10); 
+            node.Distribution.AddPoint(6, 0.05); 
         }
 
         // Note: This Main method allows running the populator directly.

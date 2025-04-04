@@ -34,9 +34,9 @@ namespace ReasoningEngineTests
         {
             var edge = new Edge(1234567890123456, 6543210987654321, 1.5, "Test Edge");
 
-            // Create nodes first
-            graphFileManager.SaveNode(new Node(edge.FromNode, "From Node"));
-            graphFileManager.SaveNode(new Node(edge.ToNode, "To Node"));
+            // Create nodes first - Use V3 Variable constructor with default DomainType
+            graphFileManager.SaveNode(new Node(edge.FromNode, "From Node", DomainType.Truth));
+            graphFileManager.SaveNode(new Node(edge.ToNode, "To Node", DomainType.Truth));
 
             Assert.That(graphFileManager.SaveEdge(edge), Is.True);
 
@@ -75,9 +75,9 @@ namespace ReasoningEngineTests
         {
             var edge = new Edge(1234567890123456, 6543210987654321, 1.5, "Test Edge");
     
-            // Create nodes first
-            graphFileManager.SaveNode(new Node(edge.FromNode, "From Node"));
-            graphFileManager.SaveNode(new Node(edge.ToNode, "To Node"));
+            // Create nodes first - Use V3 Variable constructor with default DomainType
+            graphFileManager.SaveNode(new Node(edge.FromNode, "From Node", DomainType.Truth));
+            graphFileManager.SaveNode(new Node(edge.ToNode, "To Node", DomainType.Truth));
     
             Assert.That(graphFileManager.SaveEdge(edge), Is.True);
 
@@ -117,11 +117,11 @@ namespace ReasoningEngineTests
             var edge2 = new Edge(1234567890123456, 7654321098765432, 2.0, "Edge 2");
             var edge3 = new Edge(1234567890123456, 8765432109876543, 3.0, "Edge 3");
 
-            // Create nodes first
-            graphFileManager.SaveNode(new Node(1234567890123456, "Source Node"));
-            graphFileManager.SaveNode(new Node(6543210987654321, "Dest Node 1"));
-            graphFileManager.SaveNode(new Node(7654321098765432, "Dest Node 2"));
-            graphFileManager.SaveNode(new Node(8765432109876543, "Dest Node 3"));
+            // Create nodes first - Use V3 Variable constructor with default DomainType
+            graphFileManager.SaveNode(new Node(1234567890123456, "Source Node", DomainType.Truth));
+            graphFileManager.SaveNode(new Node(6543210987654321, "Dest Node 1", DomainType.Truth));
+            graphFileManager.SaveNode(new Node(7654321098765432, "Dest Node 2", DomainType.Truth));
+            graphFileManager.SaveNode(new Node(8765432109876543, "Dest Node 3", DomainType.Truth));
 
             graphFileManager.SaveEdge(edge1);
             graphFileManager.SaveEdge(edge2);
@@ -153,7 +153,8 @@ namespace ReasoningEngineTests
         public void TestSaveAndLoadNodeWithLargeId()
         {
             long largeId = 9223372036854775807; // Max long value
-            var node = new Node(largeId, "Large ID Node");
+            // Use V3 Variable constructor with default DomainType
+            var node = new Node(largeId, "Large ID Node", DomainType.Truth); 
             Assert.That(graphFileManager.SaveNode(node), Is.True);
 
             var loadedNode = graphFileManager.LoadNode(largeId);
@@ -165,11 +166,12 @@ namespace ReasoningEngineTests
         [Test]
         public void TestSaveAndLoadMultipleNodes()
         {
-            var nodes = new List<Node>
+            // Use V3 Variable constructor with default DomainType
+            var nodes = new List<Node> 
             {
-                new Node(1, "Node One"),
-                new Node(2, "Node Two"),
-                new Node(3, "Node Three")
+                new Node(1, "Node One", DomainType.Truth),
+                new Node(2, "Node Two", DomainType.Truth),
+                new Node(3, "Node Three", DomainType.Truth)
             };
 
             foreach (var node in nodes)
@@ -189,8 +191,9 @@ namespace ReasoningEngineTests
         [Test]
         public void TestDeleteNodeWithEdges()
         {
-            var node1 = new Node(1, "Node One");
-            var node2 = new Node(2, "Node Two");
+             // Use V3 Variable constructor with default DomainType
+            var node1 = new Node(1, "Node One", DomainType.Truth);
+            var node2 = new Node(2, "Node Two", DomainType.Truth);
             var edge = new Edge(1, 2, 1.0, "Test Edge");
 
             graphFileManager.SaveNode(node1);
@@ -210,8 +213,9 @@ namespace ReasoningEngineTests
             long largeId1 = 9223372036854775806;
             long largeId2 = 9223372036854775807;
 
-            var node1 = new Node(largeId1, "Large Node One");
-            var node2 = new Node(largeId2, "Large Node Two");
+             // Use V3 Variable constructor with default DomainType
+            var node1 = new Node(largeId1, "Large Node One", DomainType.Truth);
+            var node2 = new Node(largeId2, "Large Node Two", DomainType.Truth);
             var edge = new Edge(largeId1, largeId2, 1.0, "Large ID Edge");
 
             graphFileManager.SaveNode(node1);
@@ -227,8 +231,9 @@ namespace ReasoningEngineTests
         [Test]
         public void TestEdgeConsistencyAfterNodeDeletion()
         {
-            var node1 = new Node(1, "Node One");
-            var node2 = new Node(2, "Node Two");
+             // Use V3 Variable constructor with default DomainType
+            var node1 = new Node(1, "Node One", DomainType.Truth);
+            var node2 = new Node(2, "Node Two", DomainType.Truth);
             var edge = new Edge(1, 2, 1.0, "Test Edge");
 
             graphFileManager.SaveNode(node1);
@@ -244,11 +249,12 @@ namespace ReasoningEngineTests
         [Test]
         public void TestGetAllNodeIds()
         {
-            var nodes = new List<Node>
+             // Use V3 Variable constructor with default DomainType
+            var nodes = new List<Node> 
             {
-                new Node(1, "Node One"),
-                new Node(2, "Node Two"),
-                new Node(3, "Node Three")
+                new Node(1, "Node One", DomainType.Truth),
+                new Node(2, "Node Two", DomainType.Truth),
+                new Node(3, "Node Three", DomainType.Truth)
             };
 
             foreach (var node in nodes)
@@ -275,8 +281,9 @@ namespace ReasoningEngineTests
         [Test]
         public void TestUpdateEdge()
         {
-            var node1 = new Node(1, "Node One");
-            var node2 = new Node(2, "Node Two");
+             // Use V3 Variable constructor with default DomainType
+            var node1 = new Node(1, "Node One", DomainType.Truth);
+            var node2 = new Node(2, "Node Two", DomainType.Truth);
             var edge = new Edge(1, 2, 1.0, "Original Edge");
 
             graphFileManager.SaveNode(node1);

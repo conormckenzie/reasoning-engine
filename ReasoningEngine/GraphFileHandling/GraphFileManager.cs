@@ -69,8 +69,8 @@ namespace ReasoningEngine.GraphFileHandling
                     return null;
                 }
 
-                int version = (int)nodeData.Version;
-                NodeBase? node = null; // Initialize as nullable
+                // int version = (int)nodeData.Version; // Moved down
+                // NodeBase? node = null; // Removed unused variable declaration
 
                 // Extract the node part of the JSON to inspect its Type
                 string nodeJson = nodeData.Node.ToString();
@@ -82,37 +82,47 @@ namespace ReasoningEngine.GraphFileHandling
                      return null;
                 }
 
-                NodeType nodeType = (NodeType)(int)nodeObject.Type; // Get the type
-
-                switch (version)
+                // --- Simplified V3 Loading ---
+                // Since V1/V2 are removed, we only expect V3+
+                int loadedVersion = (int)nodeData.Version; // Renamed variable to avoid conflict
+                if (loadedVersion != 3) // Or check for >= 3 if future versions exist
                 {
-                    case 1:
-                        // Assuming V1 only had Standard nodes, or needs specific handling if not
-                        node = JsonConvert.DeserializeObject<NodeV1>(nodeJson);
-                        break;
-                    case 2:
-                        // Deserialize based on Type for V2
-                        switch (nodeType)
-                        {
-                            case NodeType.SIMO:
-                                node = JsonConvert.DeserializeObject<SIMONode>(nodeJson);
-                                break;
-                            case NodeType.MISO:
-                                node = JsonConvert.DeserializeObject<MISONode>(nodeJson);
-                                break;
-                            case NodeType.Standard:
-                            default: // Fallback to standard NodeV2
-                                node = JsonConvert.DeserializeObject<NodeV2>(nodeJson);
-                                break;
-                        }
-                        break;
-                    default:
-                         DebugWriter.DebugWriteLine("#LOAD_ERR_VERSION#", $"Node version {version} is not supported for node {nodeId}.");
-                        throw new NotSupportedException($"Node version {version} is not supported.");
+                     DebugWriter.DebugWriteLine("#LOAD_ERR_VERSION#", $"Unsupported node version {loadedVersion} encountered for node {nodeId}. Only V3 is supported.");
+                     // Optionally attempt migration or throw specific error
+                     // For now, return null or throw
+                     return null; 
+                     // throw new NotSupportedException($"Node version {version} is not supported. Only V3+ is expected.");
                 }
 
-                // UpgradeToLatest should handle null if deserialization failed
-                return node?.UpgradeToLatest();
+                // Deserialize V3 based on Role
+                NodeRole roleV3 = (NodeRole)(int)nodeObject.Role;
+                NodeV3? nodeV3 = null; // Use NodeV3 explicitly
+
+                switch (roleV3)
+                {
+                    case NodeRole.Variable:
+                        // Use NodeV3 constructor that takes DomainType
+                        // We need DomainType from the JSON's Distribution object
+                        DomainType domainType = (DomainType)(int)nodeObject.Distribution.DomainType; 
+                        nodeV3 = JsonConvert.DeserializeObject<NodeV3>(nodeJson); 
+                        // Ensure distribution is correctly deserialized by Newtonsoft.Json
+                        break;
+                    case NodeRole.Function:
+                         // Use NodeV3 constructor that takes FunctionType
+                        FunctionType functionType = (FunctionType)(int)nodeObject.Function;
+                        nodeV3 = JsonConvert.DeserializeObject<NodeV3>(nodeJson);
+                         // Ensure FunctionParams are correctly deserialized
+                        break;
+                    // Add cases for other roles if needed
+                    default:
+                        DebugWriter.DebugWriteLine("#LOAD_ERR_ROLE#", $"Node role {roleV3} is not supported during V3 deserialization for node {nodeId}.");
+                         // Decide how to handle unsupported roles - throw or return null?
+                        return null; 
+                        // throw new NotSupportedException($"Node role {roleV3} is not supported.");
+                }
+
+                // No UpgradeToLatest needed as we are loading V3 directly
+                return nodeV3; 
             }
             catch (Exception ex)
             {
@@ -340,13 +350,14 @@ namespace ReasoningEngine.GraphFileHandling
                     int version = (int)edgeData.Version;
                     EdgeBase? edge;
 
-                    switch (version)
+                    // Since EdgeV1 is removed, we only expect V2+ for edges
+                    switch (version) 
                     {
-                        case 1:
-                            edge = JsonConvert.DeserializeObject<EdgeV1>(edgeData.Edge.ToString());
-                            break;
+                        // case 1: // Removed V1 handling
+                        //    edge = JsonConvert.DeserializeObject<EdgeV1>(edgeData.Edge.ToString());
+                        //    break; 
                         case 2:
-                            edge = JsonConvert.DeserializeObject<EdgeV2>(edgeData.Edge.ToString());
+                            edge = JsonConvert.DeserializeObject<EdgeV2>(edgeData.Edge.ToString()); // Assumes EdgeV2 is still the latest edge version
                             break;
                         default:
                             throw new NotSupportedException($"Edge version {version} is not supported.");

@@ -91,42 +91,30 @@ namespace ReasoningEngine.GraphAccess
             }
             
             string content = parts[1];
-            NodeType nodeType = NodeType.Standard; // Default
-            
-            // Parse node type if provided
-            if (parts.Length >= 3 && Enum.TryParse<NodeType>(parts[2], true, out NodeType parsedType))
+            // Remaining parts define the role and subtype info (index 2 onwards)
+            string[] rolePayloadParts = parts.Skip(2).ToArray(); 
+
+            try 
             {
-                nodeType = parsedType;
+                // Delegate creation to NodeFactory
+                NodeV3 newNode = NodeFactory.CreateNodeFromPayload(nodeId, content, rolePayloadParts);
+                
+                if (graphFileManager.SaveNode(newNode)) // Save the NodeV3 object
+                {
+                    return $"Node {nodeId} added successfully.";
+                }
+                // If SaveNode fails, return specific message
+                return $"Failed to save node {nodeId} after creation."; 
             }
-            
-            // Create the appropriate node type
-            NodeBase newNode;
-            switch (nodeType)
+            catch (ArgumentException ex) // Catch errors from NodeFactory payload parsing
             {
-                case NodeType.SIMO:
-                    // For SIMO nodes, we need a domain interpretation
-                    DomainInterpretation interpretation = DomainInterpretation.Truth; // Default
-                    if (parts.Length >= 4 && Enum.TryParse<DomainInterpretation>(parts[3], true, out DomainInterpretation parsedInterp))
-                    {
-                        interpretation = parsedInterp;
-                    }
-                    newNode = new SIMONode(nodeId, content, interpretation);
-                    break;
-                    
-                case NodeType.MISO:
-                    newNode = new MISONode(nodeId, content);
-                    break;
-                    
-                default: // Standard
-                    newNode = new Node(nodeId, content);
-                    break;
+                return $"Failed to add node {nodeId}: {ex.Message}";
             }
-            
-            if (graphFileManager.SaveNode(newNode))
+            catch (Exception ex) // Catch other potential errors during creation/saving
             {
-                return $"Node {nodeId} added successfully.";
+                 DebugWriter.DebugWriteLine("#ADD_NODE_ERR#", $"Unexpected error adding node {nodeId}: {ex.Message}");
+                 return $"Failed to add node {nodeId} due to an unexpected error.";
             }
-            return $"Failed to add node {nodeId}.";
         }
 
         private string DeleteNode(string payload)
@@ -160,59 +148,41 @@ namespace ReasoningEngine.GraphAccess
                 return $"Node {nodeId} not found.";
             }
             
+            // Cast directly to Node (which is NodeV3) since V1/V2 are removed
+            if (!(existingNode is Node currentNode)) // Use the Node alias
+            {
+                 // This should ideally not happen if LoadNode only returns V3 or null
+                 return $"Node {nodeId} is not of the expected type (NodeV3). Edit failed.";
+            }
+
             string newContent = parts[1];
-            NodeType nodeType = existingNode.Type; // Preserve existing type by default
-            
-            // Allow changing node type if specified
-            if (parts.Length >= 3 && Enum.TryParse<NodeType>(parts[2], true, out NodeType parsedType))
+            // Remaining parts define the potential new role and subtype info (index 2 onwards)
+            string[] rolePayloadParts = parts.Skip(2).ToArray(); 
+
+            try
             {
-                nodeType = parsedType;
+                // Delegate update logic to NodeFactory, passing the Node object
+                Node updatedNode = NodeFactory.UpdateNodeFromPayload(currentNode, newContent, rolePayloadParts); // Pass Node alias type
+
+                if (graphFileManager.SaveNode(updatedNode)) // Save the updated Node object
+                {
+                    return $"Node {nodeId} updated successfully.";
+                }
+                 // If SaveNode fails, return specific message
+                return $"Failed to save node {nodeId} after update.";
             }
-            
-            // Create the appropriate node type
-            NodeBase updatedNode;
-            switch (nodeType)
+            catch (ArgumentException ex) // Catch errors from NodeFactory payload parsing/update logic
             {
-                case NodeType.SIMO:
-                    // For SIMO nodes, we need a domain interpretation
-                    DomainInterpretation interpretation = DomainInterpretation.Truth; // Default
-                    
-                    // If it's already a SIMO node, preserve its interpretation
-                    if (existingNode is SIMONode existingSIMO)
-                    {
-                        interpretation = existingSIMO.Interpretation;
-                    }
-                    
-                    // Allow changing interpretation if specified
-                    if (parts.Length >= 4 && Enum.TryParse<DomainInterpretation>(parts[3], true, out DomainInterpretation parsedInterp))
-                    {
-                        interpretation = parsedInterp;
-                    }
-                    
-                    updatedNode = new SIMONode(nodeId, newContent, interpretation);
-                    break;
-                    
-                case NodeType.MISO:
-                    updatedNode = new MISONode(nodeId, newContent);
-                    
-                    // If it's already a MISO node, preserve its output edge
-                    if (existingNode is MISONode existingMISO && existingMISO.SingleOutputEdgeId.HasValue)
-                    {
-                        ((MISONode)updatedNode).SetSingleOutputEdge(existingMISO.SingleOutputEdgeId.Value);
-                    }
-                    break;
-                    
-                default: // Standard
-                    updatedNode = new Node(nodeId, newContent);
-                    break;
+                return $"Failed to update node {nodeId}: {ex.Message}";
             }
-            
-            if (graphFileManager.SaveNode(updatedNode))
+            catch (Exception ex) // Catch other potential errors during update/saving
             {
-                return $"Node {nodeId} updated successfully.";
+                 DebugWriter.DebugWriteLine("#EDIT_NODE_ERR#", $"Unexpected error editing node {nodeId}: {ex.Message}");
+                 return $"Failed to update node {nodeId} due to an unexpected error.";
             }
-            return $"Failed to update node {nodeId}.";
         }
+
+        // Removed duplicated AddEdge definition and extra braces
 
         private string AddEdge(string payload)
         {
