@@ -2,19 +2,28 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using ReasoningEngine.GraphFileHandling;
+using ReasoningEngine; // Corrected namespace for Core classes
 using DebugUtils;
 
 namespace ReasoningEngine.GraphAccess
 {
     public class CommandProcessor
     {
-        private readonly GraphFileManager graphFileManager;
+        // Inject GraphObjectMapper which handles interaction with the storage provider
+        private readonly GraphObjectMapper graphObjectMapper; 
 
-        public CommandProcessor(GraphFileManager graphFileManager)
+        public CommandProcessor(GraphObjectMapper graphObjectMapper) // Updated constructor parameter
         {
-            this.graphFileManager = graphFileManager;
+            this.graphObjectMapper = graphObjectMapper ?? throw new ArgumentNullException(nameof(graphObjectMapper));
         }
 
+        /// <summary>
+        /// Processes a command with its payload.
+        /// Payloads are generally pipe-delimited strings.
+        /// For AddNode/EditNode, the format after id|content is key=value pairs, also pipe-delimited.
+        /// Example AddNode: "1|Node A|Role=Variable|VariableDomainType=Truth"
+        /// Example EditNode: "1|New Content|FunctionType=Linear|FunctionParams=Weights=[0.5];Bias=0.1" 
+        /// </summary>
         public virtual string ProcessCommand(string command, string payload)
         {
             switch (command.ToLower())
@@ -51,10 +60,12 @@ namespace ReasoningEngine.GraphAccess
         {
             if (long.TryParse(payload, out long nodeId))
             {
-                NodeBase? node = graphFileManager.LoadNode(nodeId);
+                // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
+                Node? node = graphObjectMapper.GetNodeAsync(nodeId).Result; 
                 if (node != null)
                 {
-                    return $"Node {nodeId}: Version {node.Version}, Content: {(node as dynamic).Content}";
+                    // Basic formatting, might need more detail depending on node Role
+                    return $"Node {nodeId}: Version={node.Version}, Role={node.Role}, Content='{node.Content}'";
                 }
                 return $"Node {nodeId} not found.";
             }
@@ -65,17 +76,23 @@ namespace ReasoningEngine.GraphAccess
         {
             if (long.TryParse(payload, out long nodeId))
             {
-                List<EdgeBase> edges = graphFileManager.LoadEdges(nodeId, outgoing);
+                 // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
+                 List<Edge> edges = outgoing 
+                                    ? graphObjectMapper.GetOutgoingEdgesAsync(nodeId).Result 
+                                    : graphObjectMapper.GetIncomingEdgesAsync(nodeId).Result;
+
                 if (edges.Count > 0)
                 {
                     string direction = outgoing ? "Outgoing" : "Incoming";
-                    string result = $"{direction} edges for node {nodeId}:\n";
+                    // Use System.Text.StringBuilder for better performance with string concatenation
+                    var resultBuilder = new System.Text.StringBuilder($"{direction} edges for node {nodeId}:\n"); 
                     foreach (var edge in edges)
                     {
                         string connectedNode = outgoing ? edge.ToNode.ToString() : edge.FromNode.ToString();
-                        result += $"Connected Node: {connectedNode}, Version: {edge.Version}, Weight: {(edge as dynamic).Weight}, Content: {(edge as dynamic).EdgeContent}\n";
+                        // Access EdgeContent property on the Edge object (alias for EdgeV2)
+                        resultBuilder.AppendLine($"  -> Connected Node: {connectedNode}, EdgeId: {edge.EdgeId}, Version: {edge.Version}, Weight: {edge.Weight}, Content: '{edge.EdgeContent}'"); 
                     }
-                    return result;
+                    return resultBuilder.ToString();
                 }
                 return $"No {(outgoing ? "outgoing" : "incoming")} edges found for node {nodeId}.";
             }
@@ -96,15 +113,22 @@ namespace ReasoningEngine.GraphAccess
 
             try 
             {
-                // Delegate creation to NodeFactory
-                NodeV3 newNode = NodeFactory.CreateNodeFromPayload(nodeId, content, rolePayloadParts);
+                // Parse payload parts into dictionary
+                var parameters = ParsePayloadDictionary(rolePayloadParts);
+                // Delegate creation to NodeFactory using the dictionary
+                Node newNode = NodeFactory.CreateNodeFromPayload(nodeId, content, parameters); // Use Node alias
                 
-                if (graphFileManager.SaveNode(newNode)) // Save the NodeV3 object
+                // TODO: Implement using GraphObjectMapper layer (to serialize newNode and call SaveNodeDataAsync)
+                // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
+                bool success = graphObjectMapper.SaveNodeAsync(newNode).Result;
+                if (success)
                 {
-                    return $"Node {nodeId} added successfully.";
+                     return $"Node {nodeId} added successfully.";
                 }
-                // If SaveNode fails, return specific message
-                return $"Failed to save node {nodeId} after creation."; 
+                else 
+                {
+                    return $"Failed to save node {nodeId}.";
+                }
             }
             catch (ArgumentException ex) // Catch errors from NodeFactory payload parsing
             {
@@ -121,14 +145,18 @@ namespace ReasoningEngine.GraphAccess
         {
             if (long.TryParse(payload, out long nodeId))
             {
-                if (graphFileManager.DeleteNode(nodeId))
-                {
-                    return $"Node {nodeId} and all its associated edges have been deleted successfully.";
-                }
-                else
-                {
-                    return $"Failed to delete node {nodeId}. It may not exist or an error occurred.";
-                }
+                 // TODO: Implement using GraphObjectMapper layer (to call DeleteNodeDataAsync and handle edges)
+                 // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
+                 bool success = graphObjectMapper.DeleteNodeAsync(nodeId).Result;
+                 if (success)
+                 {
+                    // Note: Mapper currently warns that edges are not deleted.
+                    return $"Node {nodeId} data deleted. (Associated edges might still exist).";
+                 }
+                 else
+                 {
+                    return $"Failed to delete node {nodeId}. It might not exist or an error occurred.";
+                 }
             }
             return "Invalid node ID.";
         }
@@ -141,19 +169,21 @@ namespace ReasoningEngine.GraphAccess
                 return "Invalid payload for editing a node.";
             }
             
-            // First, load the existing node to preserve its type
-            NodeBase? existingNode = graphFileManager.LoadNode(nodeId);
+            // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
+            Node? existingNode = graphObjectMapper.GetNodeAsync(nodeId).Result;
             if (existingNode == null)
             {
                 return $"Node {nodeId} not found.";
             }
-            
-            // Cast directly to Node (which is NodeV3) since V1/V2 are removed
-            if (!(existingNode is Node currentNode)) // Use the Node alias
-            {
-                 // This should ideally not happen if LoadNode only returns V3 or null
-                 return $"Node {nodeId} is not of the expected type (NodeV3). Edit failed.";
-            }
+
+            // Node alias is NodeV3, so this cast should be safe if GetNodeAsync works correctly
+             if (!(existingNode is Node currentNode)) 
+             {
+                  // This path indicates an issue with GetNodeAsync or the stored data type
+                  DebugWriter.DebugWriteLine("#EDIT_NODE_TYPE_ERR#", $"Loaded node {nodeId} is not of expected type Node/NodeV3.");
+                  return $"Node {nodeId} is not of the expected type (NodeV3). Edit failed.";
+             }
+
 
             string newContent = parts[1];
             // Remaining parts define the potential new role and subtype info (index 2 onwards)
@@ -161,15 +191,21 @@ namespace ReasoningEngine.GraphAccess
 
             try
             {
-                // Delegate update logic to NodeFactory, passing the Node object
-                Node updatedNode = NodeFactory.UpdateNodeFromPayload(currentNode, newContent, rolePayloadParts); // Pass Node alias type
+                // Parse payload parts into dictionary
+                var updateParameters = ParsePayloadDictionary(rolePayloadParts);
+                // Delegate update logic to NodeFactory, passing the dictionary
+                Node updatedNode = NodeFactory.UpdateNodeFromPayload(currentNode, newContent, updateParameters); 
 
-                if (graphFileManager.SaveNode(updatedNode)) // Save the updated Node object
+                // Save the updated node
+                bool success = graphObjectMapper.SaveNodeAsync(updatedNode).Result; 
+                if (success)
                 {
                     return $"Node {nodeId} updated successfully.";
                 }
-                 // If SaveNode fails, return specific message
-                return $"Failed to save node {nodeId} after update.";
+                else 
+                {
+                    return $"Failed to save updated node {nodeId}.";
+                }
             }
             catch (ArgumentException ex) // Catch errors from NodeFactory payload parsing/update logic
             {
@@ -182,8 +218,6 @@ namespace ReasoningEngine.GraphAccess
             }
         }
 
-        // Removed duplicated AddEdge definition and extra braces
-
         private string AddEdge(string payload)
         {
             string[] parts = payload.Split('|');
@@ -193,12 +227,19 @@ namespace ReasoningEngine.GraphAccess
                 return "Invalid payload for adding an edge.";
             }
             string content = parts[3];
-            Edge newEdge = new Edge(fromNodeId, toNodeId, weight, content);
-            if (graphFileManager.SaveEdge(newEdge))
+            Edge newEdge = new Edge(fromNodeId, toNodeId, weight, content); // Edge alias is EdgeV2
+            
+            // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
+            bool success = graphObjectMapper.SaveEdgeAsync(newEdge).Result;
+            if (success)
             {
                 return $"Edge from {fromNodeId} to {toNodeId} added successfully.";
             }
-            return $"Failed to add edge from {fromNodeId} to {toNodeId}. One or both nodes may not exist.";
+            else
+            {
+                // The mapper or provider should log specific errors
+                return $"Failed to add edge from {fromNodeId} to {toNodeId}. Check logs for details.";
+            }
         }
 
         private string DeleteEdge(string payload)
@@ -209,13 +250,17 @@ namespace ReasoningEngine.GraphAccess
             {
                 return "Invalid payload for deleting an edge.";
             }
-            if (graphFileManager.DeleteEdge(sourceNodeId, destNodeId))
+
+            // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
+            bool success = graphObjectMapper.DeleteEdgeAsync(sourceNodeId, destNodeId).Result;
+            if (success)
             {
-                return $"Edge from node {sourceNodeId} to node {destNodeId} has been deleted successfully.";
+                return $"Edge from node {sourceNodeId} to node {destNodeId} deleted successfully.";
             }
             else
             {
-                return $"Failed to delete edge from node {sourceNodeId} to node {destNodeId}. It may not exist or an error occurred.";
+                // The mapper or provider should log specific errors
+                return $"Failed to delete edge from node {sourceNodeId} to node {destNodeId}. It might not exist or an error occurred.";
             }
         }
 
@@ -228,12 +273,42 @@ namespace ReasoningEngine.GraphAccess
                 return "Invalid payload for editing an edge.";
             }
             string newContent = parts[3];
-            Edge updatedEdge = new Edge(sourceNodeId, destNodeId, newWeight, newContent);
-            if (graphFileManager.SaveEdge(updatedEdge))
+            Edge updatedEdge = new Edge(sourceNodeId, destNodeId, newWeight, newContent); // Edge alias is EdgeV2
+            
+            // TODO: Add logic to actually *load* the existing edge first if needed for validation/merging?
+            // For now, just overwrite by saving the new edge data.
+            // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
+            bool success = graphObjectMapper.SaveEdgeAsync(updatedEdge).Result;
+            if (success)
             {
-                return $"Edge from {sourceNodeId} to {destNodeId} updated successfully.";
+                 return $"Edge from {sourceNodeId} to {destNodeId} updated successfully.";
             }
-            return $"Failed to update edge from {sourceNodeId} to {destNodeId}.";
+            else
+            {
+                 // The mapper or provider should log specific errors
+                 return $"Failed to update edge from {sourceNodeId} to {destNodeId}. Check logs for details.";
+            }
+        }
+
+        // Helper method to parse payload parts (key=value pairs) into a dictionary
+        private Dictionary<string, object> ParsePayloadDictionary(IEnumerable<string> payloadParts)
+        {
+            var parameters = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase); // Case-insensitive keys
+            foreach (var part in payloadParts)
+            {
+                var keyValue = part.Split('=', 2); // Split only on the first '='
+                if (keyValue.Length == 2)
+                {
+                    // Store value as string for now, NodeFactory will handle type conversion
+                    parameters[keyValue[0].Trim()] = keyValue[1].Trim(); 
+                }
+                else if (!string.IsNullOrWhiteSpace(part))
+                {
+                    // Handle potential flags or parts without '=' if needed, or log warning
+                     DebugWriter.DebugWriteLine("#PAYLOAD_WARN#", $"Ignoring payload part without '=': '{part}'");
+                }
+            }
+            return parameters;
         }
     }
 }
