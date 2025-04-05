@@ -4,125 +4,69 @@ using Newtonsoft.Json;
 using DebugUtils;
 using System.Collections.Concurrent;
 
+using System.Threading.Tasks; // Added for Task
+
 namespace ReasoningEngine.GraphFileHandling
 {
-    public class GraphFileManager
+    // Renamed and now implements IGraphStorageProvider
+    public class FileGraphStorageProvider : IGraphStorageProvider 
     {
         private readonly string baseDir;
-        private readonly IndexManager indexManager;
+        // IndexManager might still be needed here for file-based indexing
+        private readonly IndexManager indexManager; 
 
-        public GraphFileManager(string baseDir)
+        public FileGraphStorageProvider(string baseDir) // Renamed constructor
         {
             this.baseDir = baseDir;
             string indexFilePath = Path.Combine(baseDir, "index.json");
-            this.indexManager = new IndexManager(indexFilePath);
+            this.indexManager = new IndexManager(indexFilePath); // Keep index manager for file provider
         }
 
-        public List<long> GetAllNodeIds()
+        // --- IGraphStorageProvider Implementation ---
+
+        public Task<List<long>> GetAllNodeIdsAsync()
         {
-            return indexManager.GetNodeIds();
+            // IndexManager provides this synchronously for the file system
+            return Task.FromResult(indexManager.GetNodeIds()); 
         }
 
-        public bool SaveNode(NodeBase node)
+        public Task<bool> SaveNodeDataAsync(long nodeId, string nodeData)
         {
-            try
+             try
             {
-                string nodeFilePath = GetNodeFilePath(node.Id);
-                EnsureDirectoryExists(nodeFilePath);
+                string nodeFilePath = GetNodeFilePath(nodeId); // Use helper
+                EnsureDirectoryExists(nodeFilePath); // Use helper
 
-                var nodeData = new
-                {
-                    Version = node.Version,
-                    Node = node
-                };
+                // Directly write the provided string data
+                File.WriteAllText(nodeFilePath, nodeData); 
 
-                string jsonData = JsonConvert.SerializeObject(nodeData, Formatting.Indented);
-                File.WriteAllText(nodeFilePath, jsonData);
-                indexManager.AddOrUpdateNode(node.Id, nodeFilePath, 0);
-                return true;
+                // Update index (assuming index stores file paths, not edge counts directly now)
+                // TODO: Revisit IndexManager logic - does it still need edge count?
+                indexManager.AddOrUpdateNode(nodeId, nodeFilePath, 0); 
+                return Task.FromResult(true);
             }
             catch (Exception ex)
             {
-                DebugWriter.DebugWriteLine("#00SAV1#", $"Error saving node {node.Id}: {ex.Message}");
-                return false;
+                DebugWriter.DebugWriteLine("#00SAV1#", $"Error saving node data for {nodeId}: {ex.Message}");
+                return Task.FromResult(false);
             }
         }
 
-        public NodeBase? LoadNode(long nodeId)
+       public Task<string?> GetNodeDataAsync(long nodeId)
         {
-            try
+             try
             {
-                string nodeFilePath = GetNodeFilePath(nodeId);
+                string nodeFilePath = GetNodeFilePath(nodeId); // Use helper
 
                 if (!File.Exists(nodeFilePath))
                 {
                     DebugWriter.DebugWriteLine("#00LOD1#", $"Node file {nodeFilePath} does not exist.");
-                    return null;
+                    return Task.FromResult<string?>(null);
                 }
 
-                string jsonData = File.ReadAllText(nodeFilePath);
-                var nodeData = JsonConvert.DeserializeObject<dynamic>(jsonData);
-
-                if (nodeData == null)
-                {
-                    DebugWriter.DebugWriteLine("#00LOD3#", $"Failed to deserialize node data for node {nodeId}.");
-                    return null;
-                }
-
-                // int version = (int)nodeData.Version; // Moved down
-                // NodeBase? node = null; // Removed unused variable declaration
-
-                // Extract the node part of the JSON to inspect its Type
-                string nodeJson = nodeData.Node.ToString();
-                var nodeObject = JsonConvert.DeserializeObject<dynamic>(nodeJson);
-                
-                if (nodeObject == null)
-                {
-                     DebugWriter.DebugWriteLine("#LOAD_ERR_NODE_OBJ#", $"Failed to deserialize inner node object for node {nodeId}.");
-                     return null;
-                }
-
-                // --- Simplified V3 Loading ---
-                // Since V1/V2 are removed, we only expect V3+
-                int loadedVersion = (int)nodeData.Version; // Renamed variable to avoid conflict
-                if (loadedVersion != 3) // Or check for >= 3 if future versions exist
-                {
-                     DebugWriter.DebugWriteLine("#LOAD_ERR_VERSION#", $"Unsupported node version {loadedVersion} encountered for node {nodeId}. Only V3 is supported.");
-                     // Optionally attempt migration or throw specific error
-                     // For now, return null or throw
-                     return null; 
-                     // throw new NotSupportedException($"Node version {version} is not supported. Only V3+ is expected.");
-                }
-
-                // Deserialize V3 based on Role
-                NodeRole roleV3 = (NodeRole)(int)nodeObject.Role;
-                NodeV3? nodeV3 = null; // Use NodeV3 explicitly
-
-                switch (roleV3)
-                {
-                    case NodeRole.Variable:
-                        // Use NodeV3 constructor that takes DomainType
-                        // We need DomainType from the JSON's Distribution object
-                        DomainType domainType = (DomainType)(int)nodeObject.Distribution.DomainType; 
-                        nodeV3 = JsonConvert.DeserializeObject<NodeV3>(nodeJson); 
-                        // Ensure distribution is correctly deserialized by Newtonsoft.Json
-                        break;
-                    case NodeRole.Function:
-                         // Use NodeV3 constructor that takes FunctionType
-                        FunctionType functionType = (FunctionType)(int)nodeObject.Function;
-                        nodeV3 = JsonConvert.DeserializeObject<NodeV3>(nodeJson);
-                         // Ensure FunctionParams are correctly deserialized
-                        break;
-                    // Add cases for other roles if needed
-                    default:
-                        DebugWriter.DebugWriteLine("#LOAD_ERR_ROLE#", $"Node role {roleV3} is not supported during V3 deserialization for node {nodeId}.");
-                         // Decide how to handle unsupported roles - throw or return null?
-                        return null; 
-                        // throw new NotSupportedException($"Node role {roleV3} is not supported.");
-                }
-
-                // No UpgradeToLatest needed as we are loading V3 directly
-                return nodeV3; 
+                // Read the raw JSON data as a string
+                string jsonData = File.ReadAllText(nodeFilePath); 
+                return Task.FromResult<string?>(jsonData);
             }
             catch (Exception ex)
             {
@@ -131,108 +75,203 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
-        public bool DeleteNode(long nodeId)
+        // --- IGraphStorageProvider Implementation (Continued) ---
+
+        public Task<bool> DeleteNodeDataAsync(long nodeId)
         {
-            try
+             try
             {
                 string nodeFilePath = GetNodeFilePath(nodeId);
                 if (File.Exists(nodeFilePath))
                 {
-                    // Delete the node file
                     File.Delete(nodeFilePath);
-
-                    // Delete outgoing edges
-                    DeleteEdgesForNode(nodeId, true);
-
-                    // Delete incoming edges
-                    DeleteEdgesForNode(nodeId, false);
-
-                    // Remove the node from the index
                     indexManager.RemoveNode(nodeId);
 
-                    return true;
+                    // Also remove the potentially large edge directories for this node
+                    // Note: This assumes edges related ONLY to this node are stored here.
+                    // A more robust system might require iterating edges first.
+                    string outgoingEdgeDir = GetEdgeDirPath(nodeId, true);
+                    if (Directory.Exists(outgoingEdgeDir)) Directory.Delete(outgoingEdgeDir, true);
+                    string incomingEdgeDir = GetEdgeDirPath(nodeId, false);
+                    if (Directory.Exists(incomingEdgeDir)) Directory.Delete(incomingEdgeDir, true);
+
+                    return Task.FromResult(true);
                 }
-                DebugWriter.DebugWriteLine("#00DEL1#", $"Node file {nodeFilePath} does not exist.");
-                return false;
+                DebugWriter.DebugWriteLine("#00DEL1#", $"Node file {nodeFilePath} does not exist for deletion.");
+                return Task.FromResult(false);
             }
             catch (Exception ex)
             {
-                DebugWriter.DebugWriteLine("#00DEL2#", $"Error deleting node {nodeId}: {ex.Message}");
-                return false;
+                DebugWriter.DebugWriteLine("#00DEL2#", $"Error deleting node data for {nodeId}: {ex.Message}");
+                return Task.FromResult(false);
             }
         }
 
-        private void DeleteEdgesForNode(long nodeId, bool outgoing)
+        // --- Stubs for remaining IGraphStorageProvider methods ---
+        // TODO: Implement these methods properly using file system logic
+
+        public Task<string?> GetEdgeDataAsync(Guid edgeId)
         {
-            var edges = LoadEdges(nodeId, outgoing);
-            foreach (var edge in edges)
+            // Need a way to map Guid back to file path (e.g., an index or naming convention)
+            DebugWriter.DebugWriteLine("#EDGE_TODO#", $"GetEdgeDataAsync(Guid) not implemented for file storage.");
+            return Task.FromResult<string?>(null); 
+        }
+        
+        public Task<string?> GetEdgeDataAsync(long fromNodeId, long toNodeId)
+        {
+             try
             {
-                long fromNodeId = outgoing ? nodeId : edge.FromNode;
-                long toNodeId = outgoing ? edge.ToNode : nodeId;
-                DeleteEdge(fromNodeId, toNodeId);
+                string edgeFilePath = GetEdgeFilePath(fromNodeId, toNodeId, true); // Check outgoing path
+                if (!File.Exists(edgeFilePath))
+                {
+                    // Maybe check incoming path too? Or assume caller knows direction?
+                    // For now, just check outgoing.
+                    DebugWriter.DebugWriteLine("#GET_EDGE_FNF#", $"Edge file {edgeFilePath} does not exist.");
+                    return Task.FromResult<string?>(null);
+                }
+                string jsonData = File.ReadAllText(edgeFilePath); 
+                return Task.FromResult<string?>(jsonData);
             }
-
-            // Clear the index file for this node's edges
-            string edgeDirPath = GetEdgeDirPath(nodeId, outgoing);
-            string indexFilePath = Path.Combine(edgeDirPath, "index.json");
-            if (File.Exists(indexFilePath))
+            catch (Exception ex)
             {
-                File.Delete(indexFilePath);
+                 DebugWriter.DebugWriteLine("#GET_EDGE_ERR#", $"Error loading edge data for {fromNodeId}->{toNodeId}: {ex.Message}");
+                 return Task.FromResult<string?>(null);
             }
         }
 
-        public bool SaveEdge(EdgeBase edge)
+        public Task<bool> SaveEdgeDataAsync(Guid edgeId, long fromNodeId, long toNodeId, string edgeData)
+        {
+            // Need to save based on from/to for directory structure, potentially store Guid in JSON?
+             try
+            {
+                // Save outgoing representation
+                string outgoingEdgeFilePath = GetEdgeFilePath(fromNodeId, toNodeId, true);
+                EnsureDirectoryExists(outgoingEdgeFilePath);
+                File.WriteAllText(outgoingEdgeFilePath, edgeData);
+                UpdateEdgeIndex(outgoingEdgeFilePath, true); // Update outgoing index
+
+                // Save incoming representation
+                string incomingEdgeFilePath = GetEdgeFilePath(toNodeId, fromNodeId, false);
+                 EnsureDirectoryExists(incomingEdgeFilePath);
+                File.WriteAllText(incomingEdgeFilePath, edgeData); // Save same data
+                UpdateEdgeIndex(incomingEdgeFilePath, true); // Update incoming index
+
+                // TODO: Update node edge counts? IndexManager needs rework.
+                // UpdateNodeEdgeCount(fromNodeId, true);
+                // UpdateNodeEdgeCount(toNodeId, false);
+
+                return Task.FromResult(true);
+            }
+            catch (Exception ex)
+            {
+                DebugWriter.DebugWriteLine("#SAVE_EDGE_ERR#", $"Error saving edge data for {edgeId} ({fromNodeId}->{toNodeId}): {ex.Message}");
+                return Task.FromResult(false);
+            }
+        }
+
+        public Task<bool> DeleteEdgeDataAsync(Guid edgeId)
+        {
+             // Need a way to map Guid back to file path(s)
+             DebugWriter.DebugWriteLine("#EDGE_TODO#", $"DeleteEdgeDataAsync(Guid) not implemented for file storage.");
+             return Task.FromResult(false);
+        }
+
+        public Task<bool> DeleteEdgeDataAsync(long fromNodeId, long toNodeId)
         {
             try
             {
-                // Changed to Detailed
-                DebugWriter.DebugWriteLine("#00SAV9#", $"Starting to save edge from {edge.FromNode} to {edge.ToNode}", true, VerbosityLevel.Detailed); 
+                bool deletedOutgoing = false;
+                bool deletedIncoming = false;
 
-                // Check if both nodes exist
-                if (!NodeExists(edge.FromNode))
+                // Delete from outgoing edges
+                string outgoingEdgeFilePath = GetEdgeFilePath(fromNodeId, toNodeId, true);
+                if (File.Exists(outgoingEdgeFilePath))
                 {
-                    DebugWriter.DebugWriteLine("#30QLDO#", $"Cannot save edge: source node {edge.FromNode} does not exist.");
-                    return false;
-                }
-                if (!NodeExists(edge.ToNode))
-                {
-                    DebugWriter.DebugWriteLine("#B830YV#", $"Cannot save edge: destination node {edge.ToNode} does not exist.");
-                    return false;
+                    File.Delete(outgoingEdgeFilePath);
+                    RemoveEdgeFromIndex(outgoingEdgeFilePath); // Update index
+                    deletedOutgoing = true;
                 }
 
-                // Save outgoing edge
-                string outgoingEdgeFilePath = GetEdgeFilePath(edge.FromNode, edge.ToNode, true);
-                if (!SaveEdgeToFile(edge, outgoingEdgeFilePath))
+                // Delete from incoming edges
+                string incomingEdgeFilePath = GetEdgeFilePath(toNodeId, fromNodeId, false);
+                if (File.Exists(incomingEdgeFilePath))
                 {
-                    DebugWriter.DebugWriteLine("#00SAV3#", $"Failed to save outgoing edge file: {outgoingEdgeFilePath}");
-                    return false;
+                    File.Delete(incomingEdgeFilePath);
+                    RemoveEdgeFromIndex(incomingEdgeFilePath); // Update index
+                    deletedIncoming = true;
                 }
 
-                // Save incoming edge
-                string incomingEdgeFilePath = GetEdgeFilePath(edge.ToNode, edge.FromNode, false);
-                if (!SaveEdgeToFile(edge, incomingEdgeFilePath))
-                {
-                    DebugWriter.DebugWriteLine("#00SAV4#", $"Failed to save incoming edge file: {incomingEdgeFilePath}");
-                    return false;
-                }
+                // TODO: Update node edge counts? IndexManager needs rework.
+                // UpdateNodeEdgeCount(fromNodeId, true);
+                // UpdateNodeEdgeCount(toNodeId, false);
 
-                // Update edge counts for nodes
-                if (!UpdateNodeEdgeCount(edge.FromNode, true) || !UpdateNodeEdgeCount(edge.ToNode, false))
-                {
-                    DebugWriter.DebugWriteLine("#00SAV5#", $"Failed to update node edge counts for edge: {edge.FromNode} -> {edge.ToNode}");
-                    return false;
-                }
-
-                // Changed to Detailed
-                DebugWriter.DebugWriteLine("#O3ULSB#", $"Successfully saved edge from {edge.FromNode} to {edge.ToNode}", true, VerbosityLevel.Detailed); 
-                return true;
+                return Task.FromResult(deletedOutgoing || deletedIncoming); // Return true if at least one file was deleted
             }
             catch (Exception ex)
             {
-                DebugWriter.DebugWriteLine("#00SAV2#", $"Error saving edge from {edge.FromNode} to {edge.ToNode}: {ex.Message}");
-                return false;
+                DebugWriter.DebugWriteLine("#DEL_EDGE_ERR#", $"Error deleting edge data for {fromNodeId}->{toNodeId}: {ex.Message}");
+                return Task.FromResult(false);
             }
         }
+
+        public Task<List<Guid>> GetOutgoingEdgeIdsAsync(long nodeId)
+        {
+            // Implementation uses existing LoadEdges which reads all edge files for the node.
+            // This is potentially inefficient for large numbers of edges but fulfills the interface contract.
+            // A more efficient implementation would require changes to the indexing or file storage structure.
+            var edges = LoadEdges(nodeId, true); // Load all outgoing EdgeBase objects
+            var edgeIds = edges.Select(e => e.EdgeId).ToList(); // Extract Guids
+            return Task.FromResult(edgeIds);
+        }
+
+        public Task<List<Guid>> GetIncomingEdgeIdsAsync(long nodeId)
+        {
+             DebugWriter.DebugWriteLine("#EDGE_TODO#", $"GetIncomingEdgeIdsAsync not efficiently implemented for file storage.");
+             // Placeholder: Load edges and extract Guids (inefficient)
+             var edges = LoadEdges(nodeId, false);
+             return Task.FromResult(edges.Select(e => e.EdgeId).ToList());
+        }
+
+
+        // --- Existing Methods (May need removal/refactoring) ---
+
+        // LoadNode is now replaced by GetNodeDataAsync + deserialization layer above
+        /*
+        public NodeBase? LoadNode(long nodeId) { ... } 
+        */
+
+        // SaveNode is now replaced by serialization layer above + SaveNodeDataAsync
+        /*
+        public bool SaveNode(NodeBase node) { ... }
+        */
+
+        // DeleteNode is now replaced by DeleteNodeDataAsync + logic layer above
+        /*
+        public bool DeleteNode(long nodeId) { ... }
+        */
+
+        // DeleteEdgesForNode logic moved/commented out
+        /*
+        private void DeleteEdgesForNode(long nodeId, bool outgoing) { ... }
+        */
+
+        // SaveEdge is now replaced by serialization layer above + SaveEdgeDataAsync
+        /*
+        public bool SaveEdge(EdgeBase edge) { ... }
+        */
+
+        // LoadEdges is now replaced by GetEdgeIdsAsync + GetEdgeDataAsync + deserialization layer above
+        /*
+        public List<EdgeBase> LoadEdges(long nodeId, bool outgoing = true) { ... }
+        */
+
+        // DeleteEdge is now replaced by DeleteEdgeDataAsync
+        /*
+        public bool DeleteEdge(long fromNodeId, long toNodeId) { ... }
+        */
+
+
+        // --- Helper methods used by the interface implementations ---
 
         private bool NodeExists(long nodeId)
         {
