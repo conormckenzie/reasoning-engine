@@ -71,7 +71,7 @@ namespace ReasoningEngine.GraphFileHandling
             catch (Exception ex)
             {
                 DebugWriter.DebugWriteLine("#00LOD2#", $"Error loading node {nodeId}: {ex.Message}");
-                return null;
+                return Task.FromResult<string?>(null); // Corrected return type
             }
         }
 

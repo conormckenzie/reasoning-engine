@@ -356,7 +356,7 @@ namespace ReasoningEngine.Utils.Scenarios
             catch (Exception ex)
             {
                 DebugUtils.DebugWriter.DebugWriteLine("#NM5HED#", $"Error adding probability distributions: {ex.Message}", true, DebugUtils.VerbosityLevel.Minimal);
-                DebugUtils.DebugWriter.DebugWriteLine("#2IAIKF#", ex.StackTrace, true, DebugUtils.VerbosityLevel.Detailed);
+                DebugUtils.DebugWriter.DebugWriteLine("#2IAIKF#", ex.StackTrace ?? "<No stack trace>", true, DebugUtils.VerbosityLevel.Detailed); // Added null check
             }
         }
         
@@ -396,7 +396,7 @@ namespace ReasoningEngine.Utils.Scenarios
             catch (Exception ex)
             {
                 DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_EX#", $"Error loading nodes: {ex.Message}", true, DebugUtils.VerbosityLevel.Minimal); // Updated message
-                DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_STACK#", ex.StackTrace, true, DebugUtils.VerbosityLevel.Detailed); // Updated message
+                DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_STACK#", ex.StackTrace ?? "<No stack trace>", true, DebugUtils.VerbosityLevel.Detailed); // Added null check
             }
             
             DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_DONE#", $"Loaded {variableNodes.Count} Variable nodes.", true, DebugUtils.VerbosityLevel.Normal); // Updated message
@@ -502,7 +502,7 @@ namespace ReasoningEngine.Utils.Scenarios
             catch (Exception ex)
             {
                 DebugUtils.DebugWriter.DebugWriteLine("#9KOY9E#", $"Error in Main: {ex.Message}", true, DebugUtils.VerbosityLevel.Minimal);
-                DebugUtils.DebugWriter.DebugWriteLine("#W154KN#", ex.StackTrace, true, DebugUtils.VerbosityLevel.Detailed);
+                DebugUtils.DebugWriter.DebugWriteLine("#W154KN#", ex.StackTrace ?? "<No stack trace>", true, DebugUtils.VerbosityLevel.Detailed); // Added null check
             }
         }
     }
