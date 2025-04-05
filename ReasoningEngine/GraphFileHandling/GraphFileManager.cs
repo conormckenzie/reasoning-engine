@@ -112,10 +112,53 @@ namespace ReasoningEngine.GraphFileHandling
 
         public Task<string?> GetEdgeDataAsync(Guid edgeId)
         {
-            // Need a way to map Guid back to file path (e.g., an index or naming convention)
-            DebugWriter.DebugWriteLine("#EDGE_TODO#", $"GetEdgeDataAsync(Guid) not implemented for file storage.");
-            return Task.FromResult<string?>(null); 
+            // Inefficient implementation: Scan all edge files.
+            // TODO: Implement a more efficient lookup mechanism (e.g., Guid index).
+            DebugWriter.DebugWriteLine("#GET_EDGE_GUID_SCAN#", $"Performing inefficient scan for Edge Guid {edgeId}.", true, VerbosityLevel.Normal);
+            try
+            {
+                string edgesBasePath = Path.Combine(baseDir, "edges");
+                if (!Directory.Exists(edgesBasePath)) return Task.FromResult<string?>(null);
+
+                // Scan both outgoing and incoming directories
+                foreach (var directionDir in Directory.GetDirectories(edgesBasePath)) // outgoing, incoming
+                {
+                    foreach (var nodeDir in Directory.GetDirectories(directionDir, "*", SearchOption.AllDirectories))
+                    {
+                        string indexFilePath = Path.Combine(nodeDir, "index.json");
+                        if (File.Exists(indexFilePath))
+                        {
+                            IndexFile indexFile = LoadIndexFile(indexFilePath);
+                            foreach (var edgeFileName in indexFile.EdgeFiles)
+                            {
+                                string edgeFilePath = Path.Combine(nodeDir, edgeFileName);
+                                if (File.Exists(edgeFilePath))
+                                {
+                                    string jsonData = File.ReadAllText(edgeFilePath);
+                                    // Partially deserialize to check Guid without loading the full object
+                                    // Assuming EdgeId is directly on the serialized object (might need adjustment if nested)
+                                    var edgeInfo = JsonConvert.DeserializeObject<EdgeIdHelper>(jsonData); 
+                                    if (edgeInfo?.EdgeId == edgeId)
+                                    {
+                                         DebugWriter.DebugWriteLine("#GET_EDGE_GUID_FOUND#", $"Found edge file {edgeFilePath} for Guid {edgeId}.", true, VerbosityLevel.Detailed);
+                                         return Task.FromResult<string?>(jsonData);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                 DebugWriter.DebugWriteLine("#GET_EDGE_GUID_NOTFOUND#", $"Edge Guid {edgeId} not found after scan.", true, VerbosityLevel.Normal);
+                 return Task.FromResult<string?>(null); // Not found
+            }
+            catch (Exception ex)
+            {
+                 DebugWriter.DebugWriteLine("#GET_EDGE_GUID_ERR#", $"Error scanning for edge Guid {edgeId}: {ex.Message}");
+                 return Task.FromResult<string?>(null);
+            }
         }
+        // Helper class for partial deserialization
+        private class EdgeIdHelper { public Guid EdgeId { get; set; } }
         
         public Task<string?> GetEdgeDataAsync(long fromNodeId, long toNodeId)
         {
@@ -169,12 +212,37 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
-        public Task<bool> DeleteEdgeDataAsync(Guid edgeId)
+        public async Task<bool> DeleteEdgeDataAsync(Guid edgeId)
         {
-             // Need a way to map Guid back to file path(s)
-             DebugWriter.DebugWriteLine("#EDGE_TODO#", $"DeleteEdgeDataAsync(Guid) not implemented for file storage.");
-             return Task.FromResult(false);
+            // Inefficient implementation: Scan to find the edge, then delete both representations.
+            // TODO: Implement a more efficient lookup mechanism (e.g., Guid index).
+             DebugWriter.DebugWriteLine("#DEL_EDGE_GUID_SCAN#", $"Performing inefficient scan to delete Edge Guid {edgeId}.", true, VerbosityLevel.Normal);
+            try
+            {
+                string? edgeData = await GetEdgeDataAsync(edgeId); // Use the scan method above to find the data first
+                if (edgeData == null) {
+                     DebugWriter.DebugWriteLine("#DEL_EDGE_GUID_NOTFOUND#", $"Edge Guid {edgeId} not found for deletion.", true, VerbosityLevel.Normal);
+                    return false; // Edge not found
+                }
+
+                // Deserialize to get FromNode and ToNode to delete both files
+                 var edgeInfo = JsonConvert.DeserializeObject<EdgeFromToHelper>(edgeData);
+                 if (edgeInfo == null) {
+                     DebugWriter.DebugWriteLine("#DEL_EDGE_GUID_DESER_ERR#", $"Could not deserialize From/To nodes from edge data for Guid {edgeId}.", true, VerbosityLevel.Minimal);
+                     return false; // Could not determine file paths
+                 }
+
+                // Use the existing DeleteEdgeDataAsync(from, to) which handles both files and index updates
+                return await DeleteEdgeDataAsync(edgeInfo.FromNode, edgeInfo.ToNode);
+            }
+            catch (Exception ex)
+            {
+                 DebugWriter.DebugWriteLine("#DEL_EDGE_GUID_ERR#", $"Error deleting edge Guid {edgeId}: {ex.Message}");
+                 return false;
+            }
         }
+        // Helper class for partial deserialization
+        private class EdgeFromToHelper { public long FromNode { get; set; } public long ToNode { get; set; } }
 
         public Task<bool> DeleteEdgeDataAsync(long fromNodeId, long toNodeId)
         {
