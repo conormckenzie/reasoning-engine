@@ -73,11 +73,48 @@ namespace ReasoningEngine.GraphFileHandling
 
         public async Task<bool> DeleteNodeAsync(long nodeId)
         {
-            // TODO: Need to handle deletion of associated edges. 
-            // This might involve getting edge IDs first, then deleting edge data, then node data.
-            // For now, just deletes the node data itself via the provider.
-            DebugWriter.DebugWriteLine("#MAP_DELNODE_WARN#", $"DeleteNodeAsync in Mapper currently only deletes node data, not associated edges for node {nodeId}.");
-            return await storageProvider.DeleteNodeDataAsync(nodeId);
+            bool success = true;
+            List<Guid> edgeIdsToDelete = new List<Guid>();
+
+            try
+            {
+                // Get all edge IDs associated with the node
+                var outgoingEdgeIds = await storageProvider.GetOutgoingEdgeIdsAsync(nodeId);
+                var incomingEdgeIds = await storageProvider.GetIncomingEdgeIdsAsync(nodeId);
+                edgeIdsToDelete.AddRange(outgoingEdgeIds);
+                // Add incoming only if not already present from outgoing (avoid double delete attempts)
+                edgeIdsToDelete.AddRange(incomingEdgeIds.Where(id => !edgeIdsToDelete.Contains(id))); 
+
+                DebugWriter.DebugWriteLine("#MAP_DELNODE_EDGES#", $"Found {edgeIdsToDelete.Count} unique edges associated with node {nodeId} for deletion.", true, VerbosityLevel.Detailed);
+
+                // Attempt to delete each associated edge
+                // Note: This relies on the provider's DeleteEdgeDataAsync(Guid) which might be a stub.
+                foreach (var edgeId in edgeIdsToDelete)
+                {
+                    bool edgeDeleted = await storageProvider.DeleteEdgeDataAsync(edgeId);
+                    if (!edgeDeleted)
+                    {
+                        // Log warning but continue trying to delete others and the node
+                        DebugWriter.DebugWriteLine("#MAP_DELNODE_EDGEFAIL#", $"Failed to delete associated edge {edgeId} for node {nodeId}. Provider returned false.", true, VerbosityLevel.Minimal);
+                        success = false; // Mark overall operation as potentially incomplete
+                    } else {
+                         DebugWriter.DebugWriteLine("#MAP_DELNODE_EDGEDEL#", $"Deleted associated edge {edgeId} for node {nodeId}.", true, VerbosityLevel.Detailed);
+                    }
+                }
+
+                // Finally, delete the node data itself
+                bool nodeDeleted = await storageProvider.DeleteNodeDataAsync(nodeId);
+                if (!nodeDeleted) {
+                    DebugWriter.DebugWriteLine("#MAP_DELNODE_NODEFAIL#", $"Provider failed to delete node data for {nodeId} after attempting edge deletion.", true, VerbosityLevel.Minimal);
+                    success = false; // Node deletion failed
+                }
+                 return success && nodeDeleted; // Return true only if node deletion itself succeeded
+            }
+            catch (Exception ex)
+            {
+                 DebugWriter.DebugWriteLine("#MAP_DELNODE_ERR#", $"Unexpected error deleting node {nodeId} and associated edges: {ex.Message}");
+                 return false; // Or throw
+            }
         }
 
         // --- Edge Operations ---
