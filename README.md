@@ -8,7 +8,7 @@ An AI system designed to exceed human-level problem-solving in general contexts 
 4. Enhancing knowledge accuracy and predictive power through refinement algorithms.
 
 ## Status
-This project is still in development and has no current releases.
+This project is under active development and currently undergoing a major refactoring towards a V3 knowledge representation framework (see `docs/KnowledgeRepresentationV3.md`). There are no stable releases yet.
 
 ## Configuration
 - **Environment Variables**: The application relies on the following environment variable, which should be set in the `.env` file:
@@ -33,8 +33,22 @@ This project is still in development and has no current releases.
 
 3. Run the project:
    ```bash
-   dotnet run --project reasoningEngine
+   dotnet run --project ReasoningEngine/ReasoningEngine.csproj
    ```
+   (This starts the interactive console menu).
+
+4. **Run Scenarios (Optional):**
+   ```bash
+   # Example: Run the weather scenario with minimal output
+   dotnet run --project ReasoningEngine/ReasoningEngine.csproj --run-scenario weather --verbosity Minimal 
+   ```
+   (See `dotnet run --project ReasoningEngine/ReasoningEngine.csproj --help` for more options).
+
+5. **Run Tests:**
+   ```bash
+   dotnet test
+   ```
+   (Note: Tests may be broken during active refactoring).
 
 ### For Developers
 Welcome to the Reasoning Engine project! To get started with contributing to or reviewing the project, please check out the [`dev`](https://github.com/conormckenzie/reasoning-engine/tree/dev) branch.
@@ -77,43 +91,56 @@ The Reasoning Engine project is organized into several key directories and files
 ```
 ReasoningEngine/
 │
-├── Core/
-│   ├── Edge.cs              # Defines the Edge class representing connections in the graph
-│   └── Node.cs              # Defines the Node class representing nodes in the graph
+├── Core/                     # Core data structures (Nodes, Edges, Probabilities)
+│   ├── NodeBase.cs           # Abstract base class for nodes
+│   ├── Node.cs               # Defines NodeV3 and the Node alias
+│   ├── EdgeBase.cs           # Abstract base class for edges
+│   ├── Edge.cs               # Defines EdgeV2 and the Edge alias
+│   ├── ProbabilityDistribution.cs # Class for handling probability distributions
+│   ├── NodeRoles.cs          # Enum for NodeRole (Variable, Function)
+│   ├── FunctionTypes.cs      # Enum for FunctionType (Linear, DefinedOp, NeuralNet)
+│   ├── DomainTypes.cs        # Enums for DomainType, DomainInterpretation
+│   ├── NodeFactory.cs        # Creates/updates Node objects from parameters
+│   └── IVersioned.cs         # Interface for versioned elements
 │
-├── GraphFileHandling/
-│   ├── GraphFileManager.cs   # Manages file operations related to nodes and edges
-│   ├── IndexManager.cs       # Handles the index of nodes and edges
-│   └── OneTimeSetup.cs       # Performs one-time setup tasks like creating directories
+├── GraphFileHandling/        # Persistence layer
+│   ├── IGraphStorageProvider.cs # Interface for raw data storage
+│   ├── GraphFileManager.cs   # File-based implementation of IGraphStorageProvider (soon to be GraphObjectMapper)
+│   └── IndexManager.cs       # Handles file-based indexing (part of FileGraphStorageProvider)
 │
-├── Utils/
-│   ├── DebugUtils/
-│   │   ├── DebugOptions.cs   # Provides options for debug settings
-│   │   └── DebugWriter.cs    # Provides methods for writing debug and regular messages
-│   └── AI Template.md        # Template for AI chatbots interaction prompts
+├── GraphOperations/          # High-level API and UI
+│   ├── CommandProcessor.cs   # Processes string commands to manipulate the graph
+│   └── ConsoleMenu.cs        # Interactive console UI
 │
-├── Program.cs                # The main entry point of the application
-├── ReasoningEngine.csproj    # Project file defining dependencies and build settings
-└── .env                      # Environment variables configuration file
+├── GraphAlgorithms/          # Reasoning algorithms (currently stub)
+│   ├── GraphAlgorithmsStub.cs
+│   └── VersionCompatibility... # Version checking for algorithms
+│
+├── Utils/                    # Utility classes
+│   ├── DebugUtils/           # Debugging helpers
+│   └── Scenarios/            # Scenario loading/management (to be replaced by Data Import)
+│
+├── Program.cs                # Main application entry point (CLI args, Menu)
+├── WebServer.cs              # ASP.NET Core web API (optional entry point)
+├── ReasoningEngine.csproj    # Project file
+└── .env                      # Environment variables (requires .env file based on .env.example)
+
+ReasoningEngineTests/         # Unit and integration tests
+│   └── ...
 ```
 
-### Core Components
+### Core Components (V3 Framework - In Progress)
 
-- **Node.cs**: Defines the `Node` class, which represents individual nodes within the graph. Each node has an ID and associated content.
-  
-- **Edge.cs**: Defines the `Edge` class, which represents connections between nodes in the graph. Each edge has a source node, a destination node, a weight, and additional content.
+See `docs/KnowledgeRepresentationV3.md` for full details.
 
-- **GraphFileManager.cs**: Responsible for managing file operations related to nodes and edges. This includes saving and loading nodes and edges from disk.
-
-- **IndexManager.cs**: Manages the index of nodes and edges, keeping track of where each node and edge is stored on disk.
-
-- **OneTimeSetup.cs**: Handles initial setup tasks that need to be performed before the application starts, such as creating necessary directories and files.
-
-- **DebugOptions.cs**: Provides options for enabling or disabling debug mode in the application.
-
-- **DebugWriter.cs**: Utility class for writing debug and regular messages to the console, with options for inline or newline output.
-
-- **Program.cs**: The main entry point of the application. It handles environment variable loading, initializing core components, and providing a user interface through a menu.
+- **Nodes (`Node.cs`, `NodeBase.cs`, `NodeRoles.cs`):** Nodes represent variables or functions. `NodeRole` determines behavior. `Variable` nodes hold a `ProbabilityDistribution`.
+- **Edges (`Edge.cs`, `EdgeBase.cs`):** Represent dependencies. Now include a `Guid EdgeId`.
+- **Probability (`ProbabilityDistribution.cs`):** Handles uncertainty representation for Variables.
+- **Functions (`FunctionTypes.cs`):** Define operations (`Linear`, `DefinedOp`, `NeuralNet`) performed by `Function` nodes.
+- **Node Factory (`NodeFactory.cs`):** Creates/updates `Node` objects based on input parameters (currently `Dictionary<string, object>`).
+- **Persistence (`GraphFileHandling/`):** An `IGraphStorageProvider` interface defines raw data access. `FileGraphStorageProvider` (formerly `GraphFileManager`) implements file-based storage. A future `GraphObjectMapper` layer will handle serialization/deserialization using the storage provider.
+- **Command Processor (`GraphOperations/CommandProcessor.cs`):** Provides a string-based API for graph manipulation, using `NodeFactory` and `GraphFileManager` (soon `GraphObjectMapper`). The payload format is typically `id|content|param1=value1|param2=value2...`.
+- **Entry Points (`Program.cs`, `WebServer.cs`):** Provide console and web API access.
 
 ### Additional Components
 

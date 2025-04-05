@@ -15,70 +15,72 @@ namespace ReasoningEngine
         /// </summary>
         /// <param name="id">Node ID.</param>
         /// <param name="content">Node content.</param>
-        /// <param name="payloadParts">Payload parts starting from the Role definition.</param>
+        /// <param name="parameters">Dictionary containing node role and role-specific parameters.
+        /// Expected keys:
+        ///   - "Role" (string, required): "Variable" or "Function".
+        ///   - "VariableDomainType" (string, optional, for Variable role): Name of the DomainType enum (e.g., "Truth", "Continuous"). Defaults to Truth.
+        ///   - "FunctionType" (string, required for Function role): Name of the FunctionType enum (e.g., "Linear", "DefinedOp").
+        ///   - "FunctionParams" (Dictionary<string, object>, optional, for Function role): Parameters specific to the FunctionType. 
+        ///     - For DefinedOp: Expected key "Operation" with value like "Multiply", "Add", "Sigmoid".
+        ///     - For Linear: Expected keys "Weights" (List<double> or comma-separated string), "Bias" (double or string).
+        ///     - TODO: Define parameters for NeuralNet.
+        /// </param>
         /// <returns>A new Node instance (which is NodeV3).</returns>
-        /// <exception cref="ArgumentException">Thrown if the payload is invalid.</exception>
-        public static Node CreateNodeFromPayload(long id, string content, string[] payloadParts) // Return type changed to Node
+        /// <exception cref="ArgumentException">Thrown if the parameters are invalid.</exception>
+        public static Node CreateNodeFromPayload(long id, string content, Dictionary<string, object> parameters) 
         {
-            // Payload format assumption: Role[|SubTypeSpecificInfo...]
-            // Variable: Variable[|DomainType] 
-            // Function: Function|FunctionType[|param1=val1;param2=val2...]
+            // Expected keys in parameters dictionary:
+            // "Role" (string, required)
+            // "VariableDomainType" (string, optional, for Variable role)
+            // "FunctionType" (string, required for Function role)
+            // "FunctionParams" (Dictionary<string, object>, optional, for Function role)
 
-            if (payloadParts == null || payloadParts.Length == 0)
+            if (!parameters.TryGetValue("Role", out object? roleObj) || !(roleObj is string roleStr))
             {
-                // Default to Variable if no role specified? Or throw? Let's throw for now.
-                throw new ArgumentException("Node role must be specified in the payload.");
+                throw new ArgumentException("Node 'Role' must be specified as a string in parameters.");
             }
 
-            if (!Enum.TryParse<NodeRole>(payloadParts[0], true, out NodeRole role))
+            if (!Enum.TryParse<NodeRole>(roleStr, true, out NodeRole role))
             {
-                 throw new ArgumentException($"Invalid NodeRole specified: '{payloadParts[0]}'.");
+                 throw new ArgumentException($"Invalid NodeRole specified: '{roleStr}'.");
             }
 
-            // Create the appropriate V3 node (using Node alias)
             Node newNode; 
             switch (role)
             {
                 case NodeRole.Variable:
-                    DomainType domainType = DomainType.Truth; // Default for Variable
-                    if (payloadParts.Length >= 2 && !string.IsNullOrEmpty(payloadParts[1]))
+                    DomainType domainType = DomainType.Truth; // Default
+                    if (parameters.TryGetValue("VariableDomainType", out object? domainObj) && domainObj is string domainStr)
                     {
-                         if (!Enum.TryParse<DomainType>(payloadParts[1], true, out DomainType parsedDomain))
+                         if (!Enum.TryParse<DomainType>(domainStr, true, out DomainType parsedDomain))
                          {
-                             throw new ArgumentException($"Invalid DomainType specified for Variable node: '{payloadParts[1]}'.");
+                             throw new ArgumentException($"Invalid DomainType specified for Variable node: '{domainStr}'.");
                          }
                          domainType = parsedDomain;
-                    }
-                    // Use the correct Node constructor for Variable role
+                    } // If key not present or wrong type, use default
+                    
                     newNode = new Node(id, content, domainType); 
                     return newNode;
 
                 case NodeRole.Function:
-                    if (payloadParts.Length < 2 || !Enum.TryParse<FunctionType>(payloadParts[1], true, out FunctionType functionType))
+                    if (!parameters.TryGetValue("FunctionType", out object? funcTypeObj) || !(funcTypeObj is string funcTypeStr))
                     {
-                         throw new ArgumentException("Function node requires a valid FunctionType as the second payload part.");
+                         throw new ArgumentException("Function node requires 'FunctionType' string parameter.");
+                    }
+                    if (!Enum.TryParse<FunctionType>(funcTypeStr, true, out FunctionType functionType))
+                    {
+                         throw new ArgumentException($"Invalid FunctionType specified: '{funcTypeStr}'.");
                     }
                     
-                    var functionParams = new Dictionary<string, object>();
-                    if (payloadParts.Length >= 3 && !string.IsNullOrEmpty(payloadParts[2]))
+                    Dictionary<string, object>? functionParams = null;
+                    if (parameters.TryGetValue("FunctionParams", out object? funcParamsObj) && funcParamsObj is Dictionary<string, object> parsedParams)
                     {
-                        // TODO: Implement robust parameter parsing logic here
-                        // Example simple parsing: "key1=value1;key2=value2"
-                        try
-                        {
-                            functionParams = payloadParts[2].Split(';')
-                                .Select(part => part.Split('='))
-                                .Where(split => split.Length == 2)
-                                .ToDictionary(split => split[0].Trim(), split => (object)split[1].Trim()); // Store values as string initially
-                             DebugWriter.DebugWriteLine("#FUNC_PARAM_PARSE#", $"Parsed {functionParams.Count} function parameters for node {id}.", true, VerbosityLevel.Detailed);
-                        }
-                        catch (Exception ex)
-                        {
-                             throw new ArgumentException($"Error parsing function parameters '{payloadParts[2]}': {ex.Message}");
-                         }
+                        functionParams = parsedParams;
+                        // TODO: Add validation/conversion for specific parameter types based on functionType
+                        DebugWriter.DebugWriteLine("#FUNC_PARAM_PARSE#", $"Received {functionParams.Count} function parameters for node {id}.", true, VerbosityLevel.Detailed);
                     }
-                     // Use the correct Node constructor for Function role
-                    newNode = new Node(id, content, functionType, functionParams);
+                    
+                    newNode = new Node(id, content, functionType, functionParams); // Pass potentially null params dict
                     return newNode;
 
                 // Add cases for other roles as needed
@@ -89,110 +91,111 @@ namespace ReasoningEngine
         }
 
         /// <summary>
-        /// Creates an updated NodeV3 instance based on an existing node and payload parts.
+        /// Creates an updated Node instance based on an existing node and update parameters.
         /// </summary>
-        /// <param name="existingNodeV3">The current NodeV3 object.</param>
-        /// <param name="newContent">The new content for the node.</param>
-        /// <param name="payloadParts">Payload parts starting from the potential new Role definition.</param>
-        /// <returns>A new, updated Node instance (which is NodeV3).</returns>
-        /// <exception cref="ArgumentException">Thrown if the payload is invalid.</exception>
-        public static Node UpdateNodeFromPayload(Node existingNode, string newContent, string[] payloadParts) // Parameter and Return type changed to Node
+        /// <param name="existingNode">The current Node object.</param>
+        /// <param name="newContent">The new content for the node (required).</param>
+        /// <param name="updateParameters">Dictionary containing optional parameters to update. 
+        /// Keys match CreateNodeFromPayload. Only provided keys are considered for update.
+        ///   - "Role": If provided and different, resets role-specific properties (Distribution or Function/Params).
+        ///   - "VariableDomainType": Only used if Role is changed to Variable. Ignored otherwise.
+        ///   - "FunctionType": If provided and different, resets FunctionParams.
+        ///   - "FunctionParams": Replaces existing parameters if provided (and FunctionType didn't change). Can be set to null to clear.
+        /// </param>
+        /// <returns>A new, updated Node instance.</returns>
+        /// <exception cref="ArgumentException">Thrown if the parameters are invalid.</exception>
+        public static Node UpdateNodeFromPayload(Node existingNode, string newContent, Dictionary<string, object> updateParameters) 
         {
-             // Payload format assumption: [NewRole][|SubTypeSpecificInfo...]
-             // If NewRole is omitted, role is unchanged.
-             // If Role is Variable: [Variable][|NewDomainType] (Only changes domain if distribution is reset)
-             // If Role is Function: [Function][|NewFunctionType][|params...]
+            // Parameters that can be updated: "Role", "VariableDomainType", "FunctionType", "FunctionParams"
+            // If "Role" is provided and different, other relevant properties might be reset.
 
-            NodeRole targetRole = existingNode.Role; // Use existingNode
-            int payloadStartIndex = 0;
+            NodeRole targetRole = existingNode.Role;
+            bool roleChanged = false;
 
-            // Check if the first part specifies a new role
-            if (payloadParts != null && payloadParts.Length > 0 && Enum.TryParse<NodeRole>(payloadParts[0], true, out NodeRole parsedRole))
+            // Check if Role is being updated
+            if (updateParameters.TryGetValue("Role", out object? roleObj) && roleObj is string roleStr)
             {
-                targetRole = parsedRole;
-                payloadStartIndex = 1; // Start parsing subtype info from the next part
+                 if (!Enum.TryParse<NodeRole>(roleStr, true, out NodeRole parsedRole))
+                 {
+                      throw new ArgumentException($"Invalid NodeRole specified for update: '{roleStr}'.");
+                 }
+                 if (parsedRole != targetRole) {
+                     targetRole = parsedRole;
+                     roleChanged = true;
+                 }
             }
-            
-            // Get remaining parts for subtype parsing
-            string[] subTypePayload = payloadParts?.Skip(payloadStartIndex).ToArray() ?? Array.Empty<string>();
 
             switch (targetRole)
             {
                 case NodeRole.Variable:
-                    // Preserve existing distribution if role hasn't changed, otherwise start fresh
-                    ProbabilityDistribution? dist = (targetRole == existingNode.Role) ? existingNode.Distribution : null; // Use existingNode
-                    DomainType domainType = dist?.DomainType ?? DomainType.Truth; // Default if creating new
+                    // Start with existing distribution if role didn't change, else null
+                    ProbabilityDistribution? dist = !roleChanged ? existingNode.Distribution : null;
+                    DomainType domainType = dist?.DomainType ?? DomainType.Truth; // Use existing or default
 
-                    // Allow changing domain type only if distribution is being reset (role changed or was null)
-                     if (subTypePayload.Length >= 1 && !string.IsNullOrEmpty(subTypePayload[0]))
-                     {
-                         if (!Enum.TryParse<DomainType>(subTypePayload[0], true, out DomainType parsedDomain))
+                    // Check if DomainType is specified *and* we are changing role (resetting dist)
+                    if (roleChanged && updateParameters.TryGetValue("VariableDomainType", out object? domainObj) && domainObj is string domainStr)
+                    {
+                         if (!Enum.TryParse<DomainType>(domainStr, true, out DomainType parsedDomain))
                          {
-                             throw new ArgumentException($"Invalid DomainType specified for Variable node update: '{subTypePayload[0]}'.");
+                             throw new ArgumentException($"Invalid DomainType specified for Variable node update: '{domainStr}'.");
                          }
-                         if (dist == null || targetRole != existingNode.Role) { // Use existingNode
-                            domainType = parsedDomain;
-                         } else if (domainType != parsedDomain) {
-                             // Optionally warn: Cannot change DomainType of existing distribution via edit.
-                              DebugWriter.DebugWriteLine("#EDIT_WARN_DOMAIN#", $"Attempted to change DomainType for existing distribution on node {existingNode.Id}. Domain not changed."); // Use existingNode
-                         }
-                     }
+                         domainType = parsedDomain; // Set domain for the new distribution
+                    }
+                    else if (updateParameters.ContainsKey("VariableDomainType") && !roleChanged)
+                    {
+                         // Warn if trying to change domain without changing role
+                         DebugWriter.DebugWriteLine("#EDIT_WARN_DOMAIN#", $"Attempted to change DomainType for existing distribution on node {existingNode.Id}. Domain not changed.");
+                    }
                      
-                    // Create new Variable node using appropriate constructor
-                    // Note: We create a new distribution if role changed or didn't exist, 
-                    // but the constructor *always* creates one. We need to assign the old one back if preserved.
+                    // Create the new node (constructor creates distribution if needed)
                     var updatedVarNode = new Node(existingNode.Id, newContent, domainType); 
-                    if (dist != null && targetRole == existingNode.Role) {
-                        updatedVarNode.Distribution = dist; // Re-assign preserved distribution
+                    // If role didn't change and distribution existed, copy it back
+                    if (!roleChanged && dist != null) { 
+                        updatedVarNode.Distribution = dist; 
                     }
                     return updatedVarNode;
                     
                 case NodeRole.Function:
-                     FunctionType funcType = existingNode.Function ?? FunctionType.Linear; // Use existingNode, Default if changing role
-                     Dictionary<string, object>? funcParams = (targetRole == existingNode.Role) ? existingNode.FunctionParams : null; // Use existingNode
+                     // Start with existing function info if role didn't change
+                     FunctionType funcType = !roleChanged ? (existingNode.Function ?? FunctionType.Linear) : FunctionType.Linear; // Default if changing role
+                     Dictionary<string, object>? funcParams = !roleChanged ? existingNode.FunctionParams : null; 
                      bool functionTypeChanged = false;
 
-                     // Allow changing function type if specified
-                     if (subTypePayload.Length >= 1 && !string.IsNullOrEmpty(subTypePayload[0]))
+                     // Check if FunctionType is being updated
+                     if (updateParameters.TryGetValue("FunctionType", out object? funcTypeObj) && funcTypeObj is string funcTypeStr)
                      {
-                          if (!Enum.TryParse<FunctionType>(subTypePayload[0], true, out FunctionType parsedFuncType))
+                          if (!Enum.TryParse<FunctionType>(funcTypeStr, true, out FunctionType parsedFuncType))
                           {
-                               throw new ArgumentException($"Invalid FunctionType specified for Function node update: '{subTypePayload[0]}'.");
+                               throw new ArgumentException($"Invalid FunctionType specified for Function node update: '{funcTypeStr}'.");
                           }
-                          // Check if the type actually changed from the existing node's function type
-                          if (existingNode.Function != parsedFuncType) { 
+                          if (parsedFuncType != funcType) {
                               funcType = parsedFuncType;
                               functionTypeChanged = true;
                               funcParams = null; // Reset params if type changes
                           }
                      }
 
-                     // Parse new parameters if provided (and function type didn't just change)
-                     if (!functionTypeChanged && subTypePayload.Length >= 2 && !string.IsNullOrEmpty(subTypePayload[1]))
+                     // Check if FunctionParams are being updated (only if type didn't just change)
+                     if (!functionTypeChanged && updateParameters.TryGetValue("FunctionParams", out object? funcParamsObj))
                      {
-                         // TODO: Implement robust parameter parsing logic here
-                         try
-                         {
-                             funcParams = subTypePayload[1].Split(';')
-                                 .Select(part => part.Split('='))
-                                 .Where(split => split.Length == 2)
-                                 .ToDictionary(split => split[0].Trim(), split => (object)split[1].Trim()); // Store as string initially
-                              DebugWriter.DebugWriteLine("#FUNC_PARAM_PARSE_EDIT#", $"Parsed {funcParams.Count} new function parameters for node {existingNode.Id}.", true, VerbosityLevel.Detailed); // Use existingNode
-                         }
-                         catch (Exception ex)
-                         {
-                              throw new ArgumentException($"Error parsing function parameters '{subTypePayload[1]}': {ex.Message}");
+                         if (funcParamsObj is Dictionary<string, object> parsedParams) {
+                             funcParams = parsedParams; // Replace existing params
+                             DebugWriter.DebugWriteLine("#FUNC_PARAM_PARSE_EDIT#", $"Updated function parameters for node {existingNode.Id}.", true, VerbosityLevel.Detailed);
+                         } else if (funcParamsObj == null) {
+                             funcParams = null; // Clear parameters
+                             DebugWriter.DebugWriteLine("#FUNC_PARAM_CLEAR_EDIT#", $"Cleared function parameters for node {existingNode.Id}.", true, VerbosityLevel.Detailed);
+                         } else {
+                             throw new ArgumentException("'FunctionParams' must be a Dictionary<string, object> or null.");
                          }
                      }
-                     funcParams ??= new Dictionary<string, object>(); // Ensure not null
+                     funcParams ??= new Dictionary<string, object>(); // Ensure not null if function role
 
-                    // Use the correct Node constructor for Function role
                     return new Node(existingNode.Id, newContent, funcType, funcParams); 
 
                 default:
                      throw new ArgumentException($"Unsupported NodeRole '{targetRole}' for node update.");
             }
-            // TODO: Copy ExtendedProperties from existingNode if needed (or handle in NodeBase/V3 constructor)
+            // TODO: Copy ExtendedProperties from existingNode if needed
         }
     }
 }
