@@ -21,6 +21,15 @@ Context: Issues identified during scenario data population and review of probabi
 9.  **`CommandProcessor`: `edit_node` Behavior:** Review `NodeFactory.UpdateNodeFromPayload` logic to ensure it correctly preserves state (like `Distribution` or `FunctionParams`) when only content is changed vs. when Role/FunctionType changes.
 10. **Build & Test:** Perform a full build and run existing tests (updating them as necessary for V3) to catch compilation errors and regressions.
 
+## General Future Improvements
+
+- **API Enhancements (if WebServer is used):**
+    - Add API rate limiting.
+    - Add authentication/authorization.
+- **Performance:** Implement response caching (e.g., in `GraphObjectMapper` or application layer) for frequently accessed nodes and edges.
+- **Indexing:** Improve indexing in `FileGraphStorageProvider` for efficient Guid lookups and edge retrieval by node.
+- **Data Import:** Develop the planned Data Import System to replace `ScenarioManager`. (See `README.md`)
+
 ---
 *Completed during refactoring (2025-04-04):*
 *   *`GraphFileManager`: `LoadNode` Fix:* Partially updated `LoadNode` to recognize V3 structure based on Role. Needs further refinement for parameter/distribution deserialization.

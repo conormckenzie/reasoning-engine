@@ -3,7 +3,7 @@
 ## Overview
 An AI system designed to exceed human-level problem-solving in general contexts by:
 1. Encoding knowledge in a human-readable graph,
-2. Performing explicit and auditable reasoning,
+2. Performing explicit and auditable reasoning, focusing on logical inference with transparency and auditability,
 3. Incorporating new information via data ingestion algorithms assisted by LLMs, and
 4. Enhancing knowledge accuracy and predictive power through refinement algorithms.
 
@@ -101,20 +101,22 @@ ReasoningEngine/
 │   ├── FunctionTypes.cs      # Enum for FunctionType (Linear, DefinedOp, NeuralNet)
 │   ├── DomainTypes.cs        # Enums for DomainType, DomainInterpretation
 │   ├── NodeFactory.cs        # Creates/updates Node objects from parameters
-│   └── IVersioned.cs         # Interface for versioned elements
+│   ├── IVersioned.cs         # Interface for versioned elements
+│   ├── VersionCompatibilityAttribute.cs # Attribute for algorithm compatibility
+│   └── VersionCompatibilityChecker.cs # Checks algorithm compatibility
 │
 ├── GraphFileHandling/        # Persistence layer
 │   ├── IGraphStorageProvider.cs # Interface for raw data storage
-│   ├── GraphFileManager.cs   # File-based implementation of IGraphStorageProvider (soon to be GraphObjectMapper)
-│   └── IndexManager.cs       # Handles file-based indexing (part of FileGraphStorageProvider)
+│   ├── GraphFileManager.cs   # File-based implementation of IGraphStorageProvider
+│   ├── GraphObjectMapper.cs  # Handles object mapping & serialization using IGraphStorageProvider
+│   └── IndexManager.cs       # (Potentially outdated/unused) Handles file-based indexing
 │
 ├── GraphOperations/          # High-level API and UI
 │   ├── CommandProcessor.cs   # Processes string commands to manipulate the graph
 │   └── ConsoleMenu.cs        # Interactive console UI
 │
 ├── GraphAlgorithms/          # Reasoning algorithms (currently stub)
-│   ├── GraphAlgorithmsStub.cs
-│   └── VersionCompatibility... # Version checking for algorithms
+│   └── GraphAlgorithmsStub.cs
 │
 ├── Utils/                    # Utility classes
 │   ├── DebugUtils/           # Debugging helpers
@@ -133,14 +135,19 @@ ReasoningEngineTests/         # Unit and integration tests
 
 See `docs/KnowledgeRepresentationV3.md` for full details.
 
-- **Nodes (`Node.cs`, `NodeBase.cs`, `NodeRoles.cs`):** Nodes represent variables or functions. `NodeRole` determines behavior. `Variable` nodes hold a `ProbabilityDistribution`.
-- **Edges (`Edge.cs`, `EdgeBase.cs`):** Represent dependencies. Now include a `Guid EdgeId`.
-- **Probability (`ProbabilityDistribution.cs`):** Handles uncertainty representation for Variables.
+- **Nodes (`Node.cs`, `NodeBase.cs`, `NodeRoles.cs`):** Nodes represent variables or functions. `NodeRole` determines behavior. `Variable` nodes hold a `ProbabilityDistribution`. Inherit from `NodeBase`.
+- **Edges (`Edge.cs`, `EdgeBase.cs`):** Represent dependencies. Now include a `Guid EdgeId`. Inherit from `EdgeBase`.
+- **Versioning (`IVersioned.cs`, `VersionCompatibility...`):** Core elements implement `IVersioned`. `VersionCompatibilityChecker` and `VersionCompatibilityAttribute` manage algorithm compatibility with different data versions.
+- **Probability (`ProbabilityDistribution.cs`):** Handles uncertainty representation for `Variable` nodes using concepts like `EPSILON` uncertainty, specific domain types (`Continuous`, `DiscreteInteger`, `Truth`), and defined range/point operations. See `ReasoningEngine/Core/ProbabilityDistributions.md` for details.
 - **Functions (`FunctionTypes.cs`):** Define operations (`Linear`, `DefinedOp`, `NeuralNet`) performed by `Function` nodes.
 - **Node Factory (`NodeFactory.cs`):** Creates/updates `Node` objects based on input parameters (currently `Dictionary<string, object>`).
-- **Persistence (`GraphFileHandling/`):** An `IGraphStorageProvider` interface defines raw data access. `FileGraphStorageProvider` (formerly `GraphFileManager`) implements file-based storage. A future `GraphObjectMapper` layer will handle serialization/deserialization using the storage provider.
-- **Command Processor (`GraphOperations/CommandProcessor.cs`):** Provides a string-based API for graph manipulation, using `NodeFactory` and `GraphFileManager` (soon `GraphObjectMapper`). The payload format is typically `id|content|param1=value1|param2=value2...`.
+- **Persistence (`GraphFileHandling/`):** Decoupled persistence layer.
+    - `IGraphStorageProvider`: Interface defining raw data storage operations.
+    - `GraphFileManager.cs`: Implements `IGraphStorageProvider` using the file system (see `ReasoningEngine/GraphFileHandling/FileManagement.md` for file structure details).
+    - `GraphObjectMapper`: Handles serialization/deserialization and mapping between domain objects (`Node`, `Edge`) and the storage provider.
+- **Command Processor (`GraphOperations/CommandProcessor.cs`):** Provides a string-based API for graph manipulation, using `NodeFactory` and `GraphObjectMapper`. The payload format is typically `id|content|param1=value1|param2=value2...`.
 - **Entry Points (`Program.cs`, `WebServer.cs`):** Provide console and web API access.
+    - `WebServer.cs` (Optional): Exposes functionality via an ASP.NET Core RESTful API. Uses `ApiResponse<T>` for consistent responses and explicit operation names in endpoints (e.g., `/api/nodes/{id}/update`). Includes OpenAPI/Swagger documentation.
 
 ### Additional Components
 
@@ -163,6 +170,14 @@ The current scenario manager functionality (in `ReasoningEngine/Utils/Scenarios/
 - Facilitate easier testing and demonstration of the reasoning engine with predefined datasets
 
 This evolution will improve flexibility, maintainability, and user-friendliness by separating data from code and providing a standardized way to populate the reasoning graph.
+
+### Long-Term Goals
+- Expand the engine's reasoning capabilities to handle more complex queries.
+- Refine the knowledge base dynamically through interaction with LLMs.
+- Consider performance optimizations (e.g., caching, indexing improvements, alternative storage backends) and integration with large language models.
+- Address concurrency and consistency concerns as the system scales.
+- Implement comprehensive test coverage for both unit and integration tests.
+- Develop API documentation and interactive exploration tools (especially if the Web API becomes a primary interface).
 
 ## License
 

@@ -1,207 +1,150 @@
-# Reasoning Engine File Management System Documentation
+# Reasoning Engine Persistence Layer Documentation (V3 Architecture)
 
 ## Table of Contents
 1. [High-Level Overview](#1-high-level-overview)
 2. [System Architecture](#2-system-architecture)
-3. [Design Philosophy and Implementation Guidelines](#3-design-philosophy-and-implementation-guidelines)
-4. [Detailed Procedures](#4-detailed-procedures)
-5. [File and Directory Structure](#5-file-and-directory-structure)
+3. [File Path Generation Philosophy](#3-file-path-generation-philosophy)
+4. [Interaction Model](#4-interaction-model)
+5. [File and Directory Structure (FileGraphStorageProvider)](#5-file-and-directory-structure-filegraphstorageprovider)
 6. [Performance Considerations](#6-performance-considerations)
 7. [Future Improvements](#7-future-improvements)
 
 ## 1. High-Level Overview
 
-The Reasoning Engine uses a file-based storage system to persist graph data. This system is designed to efficiently store and retrieve nodes and edges while maintaining the graph's structure and relationships. The file management system is built with scalability in mind, using a hierarchical directory structure to organize data and prevent performance degradation as the graph grows.
+The Reasoning Engine uses a decoupled persistence layer to store and retrieve graph data (Nodes and Edges). This system is designed to be flexible, allowing different storage backends while maintaining a consistent interface for the rest of the application. The default implementation uses a file-based storage system.
 
-Key components of the file management system:
-1. Node Storage
-2. Edge Storage
-3. Indexing System
-4. File Paths Generation
+Key components of the persistence layer:
+1. **`IGraphStorageProvider` Interface:** Defines the contract for raw data storage operations (CRUD for node/edge data).
+2. **`FileGraphStorageProvider` (in `GraphFileManager.cs`):** The default implementation of `IGraphStorageProvider`, using a hierarchical file system structure to store node and edge data as JSON files.
+3. **`GraphObjectMapper`:** Acts as a layer between the application logic (e.g., `CommandProcessor`) and the storage provider. It handles object serialization/deserialization, mapping between domain objects (`Node`, `Edge`) and raw data, and orchestrates calls to the `IGraphStorageProvider`.
 
 ## 2. System Architecture
 
-### 2.1 Node Storage
-Nodes are stored as individual JSON files in a hierarchical directory structure based on their IDs. This structure helps in efficiently locating and managing nodes, even as the graph grows to contain millions of nodes.
+### 2.1 `IGraphStorageProvider` Interface
+This interface (`ReasoningEngine/GraphFileHandling/IGraphStorageProvider.cs`) defines methods for basic data operations like:
+- `GetNodeDataAsync(long nodeId)`
+- `SaveNodeDataAsync(long nodeId, string data)`
+- `DeleteNodeDataAsync(long nodeId)`
+- `NodeExistsAsync(long nodeId)`
+- `GetEdgeDataAsync(Guid edgeId)`
+- `SaveEdgeDataAsync(Guid edgeId, string data)`
+- `DeleteEdgeDataAsync(Guid edgeId)`
+- `GetOutgoingEdgeIdsAsync(long fromNodeId)`
+- `GetIncomingEdgeIdsAsync(long toNodeId)`
+- `GetAllNodeIdsAsync()`
 
-### 2.2 Edge Storage
-Edges are stored bidirectionally, meaning each edge is represented twice in the file system:
-1. As an outgoing edge from its source node
-2. As an incoming edge to its destination node
+Implementations of this interface handle the specifics of the storage mechanism (e.g., file system, database).
 
-This bidirectional storage allows for efficient querying of both incoming and outgoing edges for any given node.
+### 2.2 `FileGraphStorageProvider` Implementation
+Located in `ReasoningEngine/GraphFileHandling/GraphFileManager.cs`, this class implements `IGraphStorageProvider` using the local file system.
+- **Node Storage:** Stores individual nodes as JSON files in a hierarchical directory structure based on their IDs (see Section 5).
+- **Edge Storage:** Stores individual edges as JSON files, potentially using a bidirectional structure (see Section 5). Relies on scanning directories for retrieving edge lists by node ID and currently uses inefficient scanning for Guid-based lookups.
+- **Indexing:** Currently relies on directory structure and file existence checks. A more robust indexing mechanism (e.g., for Guid lookups) is a potential future improvement.
 
-### 2.3 Indexing System
-An indexing system is used to keep track of nodes and edges. This system consists of:
-1. A main index file for nodes (to be split into multiple index files in future development, to handle large numbers of nodes)
-2. Multiple index files for edges, distributed across the directory structure
+### 2.3 `GraphObjectMapper`
+Located in `ReasoningEngine/GraphFileHandling/GraphObjectMapper.cs`, this class uses an instance of `IGraphStorageProvider` to perform higher-level operations:
+- Takes domain objects (`Node`, `Edge`) as input.
+- Serializes objects to JSON strings.
+- Calls the appropriate `IGraphStorageProvider` methods to save/delete raw data.
+- Retrieves raw data using `IGraphStorageProvider`.
+- Deserializes JSON strings back into domain objects.
+- Handles logic like ensuring nodes exist before adding edges, deleting associated edges when deleting a node (partially implemented).
 
-### 2.4 File Paths Generation
-The system uses deterministic algorithms to generate file paths for nodes and edges based on their IDs. This ensures consistent and efficient access to data.
+## 3. File Path Generation Philosophy (FileGraphStorageProvider)
 
-## 3. Design Philosophy and Implementation Guidelines
+The `FileGraphStorageProvider` uses a specific file system structure designed with the following principles in mind:
 
-### 3.1 Core Principles
+1.  **Self-documentation**: Each directory in the path should contain enough information to identify its exact position in the hierarchy, even when viewed in isolation. This uses cumulative prefixes of IDs.
+2.  **Error resistance**: The redundancy in the path makes it immediately obvious if a file or directory is misplaced.
+3.  **Consistency**: The same logic is applied to both node and edge structures (where applicable).
 
-The file system structure is designed with the following principles in mind:
-1. **Self-documentation**: Each directory in the path should contain enough information to identify its exact position in the hierarchy, even when viewed in isolation.
-2. **Error resistance**: The redundancy in the path makes it immediately obvious if a file or directory is misplaced.
-3. **Consistency**: The same logic is applied to both node and edge structures.
+### 3.1 Implementation Guidelines
 
-### 3.2 Implementation Guidelines
+When generating paths, the `FileGraphStorageProvider` should always use the full prefix of the ID for each directory level, not just the incremental part. This approach enhances the self-documenting nature of the file structure and improves error resistance.
 
-When generating paths, always use the full prefix of the ID for each directory level, not just the incremental part. This approach enhances the self-documenting nature of the file structure and improves error resistance.
+*(See Section 5 for specific structure examples)*
 
-### 3.3 Correct Implementation Examples
+## 4. Interaction Model
 
-#### 3.3.1 Node Example
-For a node with ID "0000000000000001":
-```
-Base Directory/0000/00000000/000000000000/0000000000000001.json
-```
+Application components (like `CommandProcessor` or `ScenarioManager`) interact with the persistence layer primarily through the `GraphObjectMapper`.
 
-#### 3.3.2 Edge Example
-For an outgoing edge from "0000000000000001" to "0000000000000002":
-```
-Base Directory/edges/outgoing/0000/00000000/000000000000/0000000000000001/0000000000000001-0000/0000000000000001-00000000/0000000000000001-000000000000/0000000000000001-0000000000000002.json
-```
+1.  **Adding/Updating Nodes/Edges:**
+    *   The application creates or modifies a `Node` or `Edge` object.
+    *   It calls a method on `GraphObjectMapper` (e.g., `SaveNodeAsync`, `SaveEdgeAsync`).
+    *   `GraphObjectMapper` serializes the object to JSON.
+    *   `GraphObjectMapper` calls the corresponding method on the injected `IGraphStorageProvider` (e.g., `SaveNodeDataAsync`, `SaveEdgeDataAsync`) with the ID and JSON data.
+    *   The `IGraphStorageProvider` implementation handles writing the data to the underlying storage (e.g., creating/updating files).
+2.  **Retrieving Nodes/Edges:**
+    *   The application requests a node or edge via `GraphObjectMapper` (e.g., `GetNodeAsync`, `GetEdgeAsync`, `GetOutgoingEdgesAsync`).
+    *   `GraphObjectMapper` calls the appropriate method(s) on `IGraphStorageProvider` to fetch the raw data (e.g., `GetNodeDataAsync`, `GetOutgoingEdgeIdsAsync` followed by `GetEdgeDataAsync`).
+    *   The `IGraphStorageProvider` retrieves the data from storage.
+    *   `GraphObjectMapper` deserializes the raw JSON data into `Node` or `Edge` objects and returns them.
+3.  **Deleting Nodes/Edges:**
+    *   The application calls a deletion method on `GraphObjectMapper` (e.g., `DeleteNodeAsync`, `DeleteEdgeAsync`).
+    *   `GraphObjectMapper` may perform related actions (like finding associated edges when deleting a node).
+    *   `GraphObjectMapper` calls the corresponding deletion method(s) on `IGraphStorageProvider` (e.g., `DeleteNodeDataAsync`, `DeleteEdgeDataAsync`).
+    *   The `IGraphStorageProvider` removes the data from storage.
 
-### 3.4 Common Incorrect Implementations
+## 5. File and Directory Structure (FileGraphStorageProvider)
 
-Implementers often make the following mistakes:
+This section details the specific file and directory structures used by the default `FileGraphStorageProvider` implementation, following the philosophy described in [Section 3](#3-file-path-generation-philosophy).
 
-#### 3.4.1 Incorrect Node Structure
-```
-Base Directory/0000/0000/0000/0001/0000000000000001.json
-```
-This is incorrect because each directory should contain the cumulative prefix of the node ID, not just the next 4 digits.
-
-#### 3.4.2 Incorrect Edge Structure
-```
-Base Directory/edges/outgoing/0000/0000/0000/0001/0000000000000001-0000/0000000000000001-0000/0000000000000001-0000/0000000000000001-0000000000000002.json
-```
-This is incorrect for two reasons:
-a) The initial directories don't contain the cumulative prefix of the FromNodeID.
-b) The latter directories don't properly build up the ToNodeID prefix.
-
-Always ensure that each directory in the path contains the maximum available information about its position in the overall structure.
-
-## 4. Detailed Procedures
-
-### 4.1 Adding a Node
-1. Generate the node's file path based on its ID (see [Section 5.1](#51-node-file-structure))
-2. Create the necessary directory structure
-3. Serialize the node data to JSON
-4. Write the JSON data to the file
-5. Update the main node index with the new node's information
-
-### 4.2 Retrieving a Node
-1. Generate the node's file path based on its ID
-2. Check if the file exists
-3. If it exists, read and deserialize the JSON data
-4. Convert the deserialized data to the appropriate node object based on its version
-
-### 4.3 Adding an Edge
-1. Check if both the source and destination nodes exist
-2. Generate file paths for both the outgoing and incoming representations of the edge (see [Section 5.2](#52-edge-file-structure))
-3. Create the necessary directory structures
-4. Serialize the edge data to JSON
-5. Write the JSON data to both the outgoing and incoming edge files
-6. Update the edge index files for both the outgoing and incoming directories
-7. Update the edge counts for both the source and destination nodes in the main node index
-
-### 4.4 Retrieving Edges
-1. Generate the directory path for the node's edges (either outgoing or incoming)
-2. Recursively search for index files in the directory structure
-3. For each index file found, read the list of edge files
-4. For each edge file, read and deserialize the JSON data
-5. Convert the deserialized data to the appropriate edge object based on its version
-
-### 4.5 Deleting an Edge
-1. Generate file paths for both the outgoing and incoming representations of the edge
-2. Delete both edge files if they exist
-3. Update the edge index files for both the outgoing and incoming directories, removing references to the deleted edge files
-4. Update the edge counts for both the source and destination nodes in the main node index
-
-### 4.6 Deleting a Node
-1. Generate the node's file path based on its ID
-2. Delete the node file if it exists
-3. Delete all outgoing edges associated with the node
-    a. Generate the outgoing edges directory path
-    b. Recursively delete all edge files and their corresponding incoming representations
-    c. Update affected edge index files
-4. Delete all incoming edges associated with the node
-    a. Generate the incoming edges directory path
-    b. Recursively delete all edge files and their corresponding outgoing representations
-    c. Update affected edge index files
-5. Remove the node from the main node index
-
-## 5. File and Directory Structure
-
-This section details the specific file and directory structures used for nodes and edges, implementing the design philosophy described in [Section 3](#3-design-philosophy-and-implementation-guidelines).
+*(Note: This reflects the intended design; the actual implementation in GraphFileManager.cs should be verified against this.)*
 
 ### 5.1 Node File Structure
 ```
 Base Directory/
-  - 0000/
-    - 00000000/
-      - 000000000000/
-        - 0000000000000000.json
+  - {nodeId_part1}/
+    - {nodeId_part1}{nodeId_part2}/
+      - {nodeId_part1}{nodeId_part2}{nodeId_part3}/
+        - {nodeId_full}.json
+```
+*Example for Node ID "1234567890123456":*
+```
+Base Directory/
+  - 1234/
+    - 12345678/
+      - 123456789012/
+        - 1234567890123456.json
 ```
 
 ### 5.2 Edge File Structure
 
-#### 5.2.1 Outgoing Edge File Structure
+The original design specified a complex bidirectional structure. The current `FileGraphStorageProvider` implementation might store edges differently or only partially implement this. A simplified view might be:
+
 ```
 Base Directory/
   - edges/
-    - outgoing/
-      - 0000/ (first 4 digits of FromNodeID)
-        - 00000000/ (first 8 digits of FromNodeID)
-          - 000000000000/ (first 12 digits of FromNodeID)
-            - 0000000000000000/ (full FromNodeID)
-              - 0000000000000000-0000/ (FromNodeID-first 4 digits of ToNodeID)
-                - 0000000000000000-00000000/ (FromNodeID-first 8 digits of ToNodeID)
-                  - 0000000000000000-000000000000/ (FromNodeID-first 12 digits of ToNodeID)
-                    - 0000000000000000-0000000000000000.json (FromNodeID-ToNodeID.json)
+    - {edgeId}.json
 ```
-
-#### 5.2.2 Incoming Edge File Structure
+Or potentially organized by node:
 ```
 Base Directory/
-  - edges/
-    - incoming/
-      - 0000/ (first 4 digits of ToNodeID)
-        - 00000000/ (first 8 digits of ToNodeID)
-          - 000000000000/ (first 12 digits of ToNodeID)
-            - 0000000000000000/ (full ToNodeID)
-              - 0000-0000000000000000/ (first 4 digits of FromNodeID-ToNodeID)
-                - 00000000-0000000000000000/ (first 8 digits of FromNodeID-ToNodeID)
-                  - 000000000000-0000000000000000/ (first 12 digits of FromNodeID-ToNodeID)
-                    - 0000000000000000-0000000000000000.json (FromNodeID-ToNodeID.json)
+  - nodes/
+    - {nodeId_part1}/
+      - {nodeId_part1}{nodeId_part2}/
+        - {nodeId_part1}{nodeId_part2}{nodeId_part3}/
+          - {nodeId_full}/
+            - edges/
+              - outgoing/
+                - {edgeId}.json
+              - incoming/
+                - {edgeId}.json
 ```
-
-#### 5.2.3 Key Difference in Edge Structures
-The key difference between outgoing and incoming edge structures is in the deeper levels of the directory structure:
-- For outgoing edges, the FromNodeID comes first in the directory names.
-- For incoming edges, the ToNodeID comes first in the directory names.
-
-This structure allows for efficient retrieval of both outgoing and incoming edges for any given node.
-
-### 5.3 Index File Structure
-- Main node index: `index.json` in the base directory
-- Edge index files: `index.json` in each subdirectory of the edge structure
+**Verification Needed:** The exact structure used by the current `GraphFileManager.cs` for storing edges and enabling `GetOutgoingEdgeIdsAsync`/`GetIncomingEdgeIdsAsync` needs verification and documentation here. The use of `Guid` for Edge IDs also impacts the path generation compared to the original numeric ID assumption.
 
 ## 6. Performance Considerations
 
-- The hierarchical structure limits the number of files/directories in each directory, preventing filesystem limitations and performance degradation.
-- Bidirectional edge storage allows for efficient querying of both incoming and outgoing edges.
-- Distributed index files prevent any single index file from becoming too large and slow to process.
-- The deterministic file path generation allows for direct access to files without needing to search through the directory structure.
+- **Hierarchical Structure:** Limits the number of files/directories per level, potentially avoiding filesystem performance issues with very large numbers of nodes/edges.
+- **Direct Access:** Deterministic file path generation (for nodes, at least) allows direct access without scanning, assuming the path structure is known.
+- **Edge Retrieval:** Retrieving edges by Node ID (`GetOutgoingEdgeIdsAsync`, `GetIncomingEdgeIdsAsync`) currently relies on directory scanning in `FileGraphStorageProvider`, which can be inefficient for nodes with many edges.
+- **Guid Lookups:** Retrieving or deleting edges by `Guid` (`GetEdgeDataAsync(Guid)`, `DeleteEdgeDataAsync(Guid)`) is currently highly inefficient in `FileGraphStorageProvider`, requiring a full scan.
+- **Serialization Overhead:** JSON serialization/deserialization adds overhead compared to binary formats.
 
 ## 7. Future Improvements
 
-- Implement caching mechanisms to reduce disk I/O for frequently accessed nodes and edges.
-- Consider using a database for indexing instead of file-based indexes for improved performance with very large graphs.
-- Implement compression techniques for edge and node data to reduce disk usage.
-- Develop a system for managing graph versions or snapshots.
+- Implement efficient indexing for edge retrieval by Node ID and Edge Guid within `FileGraphStorageProvider`.
+- Consider alternative `IGraphStorageProvider` implementations (e.g., using a database like SQLite, PostgreSQL, or a dedicated graph database).
+- Implement caching mechanisms in `GraphObjectMapper` or at the application level to reduce redundant storage access.
+- Implement compression for JSON data to reduce disk usage.
+- Develop a system for managing graph versions or snapshots at the storage level.
