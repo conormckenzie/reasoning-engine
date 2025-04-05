@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
 using DotNetEnv;
 using ReasoningEngine.GraphFileHandling;
 using ReasoningEngine.GraphAccess;
@@ -45,14 +45,17 @@ namespace ReasoningEngine
             string dataFolderPath = Environment.GetEnvironmentVariable("DATA_FOLDER_PATH") 
                                     ?? throw new Exception("DATA_FOLDER_PATH is not set in the environment variables.");
 
-            var graphFileManager = new GraphFileManager(dataFolderPath);
-            var commandProcessor = new CommandProcessor(graphFileManager);
+            // Instantiate the storage provider and the object mapper
+            IGraphStorageProvider storageProvider = new FileGraphStorageProvider(dataFolderPath); 
+            var graphObjectMapper = new GraphObjectMapper(storageProvider);
+            var commandProcessor = new CommandProcessor(graphObjectMapper); // Pass mapper to processor
             var graphOperationsUserMenu = new GraphOperationsUserMenu(commandProcessor);
 
             // Check for command-line arguments
             if (args.Length > 0)
             {
-                ProcessCommandLineArguments(args, commandProcessor, graphFileManager);
+                // Pass mapper instead of the old file manager
+                ProcessCommandLineArguments(args, commandProcessor, graphObjectMapper); 
             }
             else
             {
@@ -61,7 +64,8 @@ namespace ReasoningEngine
             }
         }
 
-        static void ProcessCommandLineArguments(string[] args, CommandProcessor commandProcessor, GraphFileManager graphFileManager)
+        // Updated signature to take GraphObjectMapper
+        static void ProcessCommandLineArguments(string[] args, CommandProcessor commandProcessor, GraphObjectMapper graphObjectMapper) 
         {
             string command = args[0].ToLower();
 
@@ -105,13 +109,15 @@ namespace ReasoningEngine
                         }
                     }
                     
-                    var scenarioManager = new ScenarioManager(commandProcessor, graphFileManager);
+                    // ScenarioManager likely needs the mapper now
+                    var scenarioManager = new ScenarioManager(commandProcessor, graphObjectMapper); 
                     scenarioManager.RunScenario(scenarioName, verbosity);
                     break;
 
                 case "--list-scenarios":
                 case "-l":
-                    var listManager = new ScenarioManager(commandProcessor, graphFileManager);
+                     // ScenarioManager likely needs the mapper now
+                    var listManager = new ScenarioManager(commandProcessor, graphObjectMapper);
                     listManager.ListScenarios();
                     break;
 

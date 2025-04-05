@@ -14,12 +14,14 @@ namespace ReasoningEngine.Utils.Scenarios
     public class PopulateWeatherScenarioData
     {
         private readonly CommandProcessor _commandProcessor;
-        private readonly GraphFileManager _graphFileManager; // Added
+        // Updated field to use GraphObjectMapper
+        private readonly GraphObjectMapper _graphObjectMapper; 
 
-        public PopulateWeatherScenarioData(CommandProcessor commandProcessor, GraphFileManager graphFileManager) // Modified
+        // Updated constructor to accept GraphObjectMapper
+        public PopulateWeatherScenarioData(CommandProcessor commandProcessor, GraphObjectMapper graphObjectMapper) 
         {
             _commandProcessor = commandProcessor;
-            _graphFileManager = graphFileManager; // Added
+            _graphObjectMapper = graphObjectMapper; // Assign the mapper
         }
 
         public void PopulateData()
@@ -334,10 +336,11 @@ namespace ReasoningEngine.Utils.Scenarios
                             break;
                     }
 
-                    // Save the node if it was modified
+                    // Save the node if it was modified using the mapper
                     if (nodeModified)
                     {
-                        if (_graphFileManager.SaveNode(node))
+                        // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
+                        if (_graphObjectMapper.SaveNodeAsync(node).Result) 
                         {
                             DebugUtils.DebugWriter.DebugWriteLine("#SAVE_OK#", $"Node {node.Id} saved successfully after adding distribution.", true, DebugUtils.VerbosityLevel.Detailed);
                         }
@@ -363,27 +366,30 @@ namespace ReasoningEngine.Utils.Scenarios
             var variableNodes = new List<Node>(); // Changed type to Node
             DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_NODES#", "Loading Variable nodes...", true, DebugUtils.VerbosityLevel.Normal); // Updated message
             
+            // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
             try
             {
-                List<long> allNodeIds = _graphFileManager.GetAllNodeIds();
+                // Get IDs via mapper
+                List<long> allNodeIds = _graphObjectMapper.GetAllNodeIdsAsync().Result; 
                 DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_IDS#", $"Found {allNodeIds.Count} total node IDs.", true, DebugUtils.VerbosityLevel.Detailed);
 
                 foreach (long nodeId in allNodeIds)
                 {
-                    NodeBase? nodeBase = _graphFileManager.LoadNode(nodeId);
-                    // Check if it's the correct type (Node alias for NodeV3) and has the Variable role
-                    if (nodeBase is Node node && node.Role == NodeRole.Variable) 
+                    // Load node via mapper
+                    Node? node = _graphObjectMapper.GetNodeAsync(nodeId).Result; 
+                    // Check if it was loaded successfully and has the Variable role
+                    if (node != null && node.Role == NodeRole.Variable) 
                     {
                         variableNodes.Add(node); // Add the Node object
                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_NODE#", $"Loaded Variable node {nodeId}.", true, DebugUtils.VerbosityLevel.Detailed); // Updated message
                     }
-                    else if (nodeBase == null)
+                    else if (node == null)
                     {
-                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_ERR#", $"Failed to load node {nodeId}.", true, DebugUtils.VerbosityLevel.Minimal); // Updated message
+                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_ERR#", $"Failed to load node {nodeId} via mapper.", true, DebugUtils.VerbosityLevel.Minimal); // Updated message
                     }
                     // Optionally log if a node was loaded but wasn't a Variable node
-                    else if (nodeBase is Node nodeNonVar) {
-                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_NONVAR_NODE#", $"Loaded node {nodeId} but it has role {nodeNonVar.Role}, expected Variable.", true, DebugUtils.VerbosityLevel.Detailed);
+                    else { // node != null but role is not Variable
+                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_NONVAR_NODE#", $"Loaded node {nodeId} but it has role {node.Role}, expected Variable.", true, DebugUtils.VerbosityLevel.Detailed);
                     }
                 }
             }
@@ -479,15 +485,16 @@ namespace ReasoningEngine.Utils.Scenarios
                 
                 DebugUtils.DebugWriter.DebugWriteLine("#WF3ARH#", $"Using data folder path: {dataFolderPath}", true, DebugUtils.VerbosityLevel.Normal);
                 
-                // Initialize GraphFileManager and CommandProcessor
-                var graphFileManager = new GraphFileManager(dataFolderPath);
-                var commandProcessor = new CommandProcessor(graphFileManager);
+                // Initialize Storage Provider, Mapper, and Command Processor
+                IGraphStorageProvider storageProvider = new FileGraphStorageProvider(dataFolderPath);
+                var graphObjectMapper = new GraphObjectMapper(storageProvider);
+                var commandProcessor = new CommandProcessor(graphObjectMapper);
                 
                 // Run OneTimeSetup to ensure the data directory is properly initialized
                 OneTimeSetup.Initialize();
                 
-                // Create and run the data populator
-                var populator = new PopulateWeatherScenarioData(commandProcessor, graphFileManager); // Modified
+                // Create and run the data populator, passing the mapper
+                var populator = new PopulateWeatherScenarioData(commandProcessor, graphObjectMapper); 
                 populator.PopulateData();
                 
                 DebugUtils.DebugWriter.DebugWriteLine("#ZLUMLC#", "Weather scenario data population completed successfully.", true, DebugUtils.VerbosityLevel.Minimal);
