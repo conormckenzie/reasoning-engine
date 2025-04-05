@@ -34,8 +34,9 @@ namespace ReasoningEngine
                 // Check for duplicate points
                 if (Distribution.Any(d => Math.Abs(d.LowerBound - value) < EPSILON))
                     throw new InvalidOperationException($"A probability is already defined for value {value}");
-
-                Distribution.Add((value, value, probability));
+                
+                // TODO: Refactor to insert sorted (See issues.md TODO #1)
+                Distribution.Add((value, value, probability)); 
                 ValidateTotalProbability();
             }
             else
@@ -67,7 +68,8 @@ namespace ReasoningEngine
                     break;
             }
 
-            // Check for too-close ranges
+            // TODO: Relax this validation (See issues.md TODO #2)
+            // Check for too-close ranges (Prevents perfectly adjacent ranges)
             if (Distribution.Any(d => 
                 Math.Abs(lowerBound - d.UpperBound) < EPSILON || 
                 Math.Abs(upperBound - d.LowerBound) < EPSILON))
@@ -75,14 +77,15 @@ namespace ReasoningEngine
                 throw new InvalidOperationException("Range boundaries too close to existing range");
             }
 
-            // Check for overlapping ranges
+            // Check for overlapping ranges (Allows overlap within EPSILON tolerance)
             if (Distribution.Any(d => 
                 (lowerBound <= d.UpperBound + EPSILON && upperBound >= d.LowerBound - EPSILON)))
             {
                 throw new InvalidOperationException("New range overlaps with existing range");
             }
 
-            Distribution.Add((lowerBound, upperBound, probability));
+            // TODO: Refactor to insert sorted (See issues.md TODO #1)
+            Distribution.Add((lowerBound, upperBound, probability)); 
             ValidateTotalProbability();
         }
 
@@ -134,6 +137,7 @@ namespace ReasoningEngine
                     return point == default ? 0 : point.Probability;
 
                 case DomainType.Continuous:
+                    // TODO: Consider interpolation for points near boundaries (See issues.md TODO #4)
                     var range = Distribution.FirstOrDefault(d => 
                         value >= d.LowerBound - EPSILON && value <= d.UpperBound + EPSILON);
                     return range == default ? 0 : range.Probability;
@@ -244,10 +248,11 @@ namespace ReasoningEngine
                 throw new ArgumentException("Point is not contained in any range");
 
             // If point could be in multiple ranges, choose the one with the closest boundary
-            // If distances are equal, prefer the lower index range
+            // If distances are equal, prefer the lower index range.
+            // TODO: Ensure determinism by sorting main Distribution list first (See issues.md TODO #3)
             return possibleRanges
                 .OrderBy(r => r.Distance)
-                .ThenBy(r => r.Index)
+                .ThenBy(r => r.Index) // Relies on original list order if distances are equal
                 .First().Index;
         }
 
