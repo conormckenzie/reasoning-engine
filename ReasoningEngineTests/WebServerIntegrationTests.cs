@@ -36,8 +36,10 @@ namespace ReasoningEngine.Tests
             Environment.SetEnvironmentVariable("DATA_FOLDER_PATH", dataFolderPath);
             Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
 
-            var graphFileManager = new GraphFileManager(dataFolderPath);
-            var commandProcessor = new CommandProcessor(graphFileManager);
+            // Instantiate the new classes
+            IGraphStorageProvider storageProvider = new FileGraphStorageProvider(dataFolderPath);
+            var graphObjectMapper = new GraphObjectMapper(storageProvider);
+            var commandProcessor = new CommandProcessor(graphObjectMapper); // Pass mapper
 
             webServer = new WebServer(commandProcessor);
             cancellationTokenSource = new CancellationTokenSource();
