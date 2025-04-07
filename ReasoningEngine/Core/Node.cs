@@ -1,6 +1,7 @@
 // File: /home/user/code/reasoning-engine/ReasoningEngine/Core/Node.cs
-using System; // For Dictionary, Guid etc. if needed later
-using System.Collections.Generic; // For Dictionary
+using System; 
+using System.Collections.Generic; 
+using Newtonsoft.Json; // Added for JsonConstructor attribute
 
 namespace ReasoningEngine
 {
@@ -13,7 +14,8 @@ namespace ReasoningEngine
         // Override the abstract Version property from NodeBase
         public override int Version => 3; 
 
-        public NodeRole Role { get; protected set; }
+        // Made setter public for easier deserialization
+        public NodeRole Role { get; set; } 
 
         // Properties for different roles - ensure Distribution is not nullable for Variable role
         public ProbabilityDistribution? Distribution { get; set; } // Nullable for non-Variable roles
@@ -40,6 +42,34 @@ namespace ReasoningEngine
             Function = functionType;
             Distribution = null; // Ensure distribution is null
             FunctionParams = parameters ?? new Dictionary<string, object>(); // Ensure params dict exists
+        }
+
+        // Private constructor for JSON deserialization
+        // Note: Version property is handled by base class or implicitly by type during serialization,
+        // but including it here ensures Newtonsoft.Json can map it if present in JSON.
+        [JsonConstructor]
+        private NodeV3(long id, string content, int version, NodeRole role, ProbabilityDistribution? distribution, FunctionType? function, Dictionary<string, object>? functionParams)
+            : base(id) // Base constructor handles Id
+        {
+             // We don't explicitly set Version here as it's controlled by the class definition (override int Version => 3;)
+             // However, including it in the constructor signature helps Newtonsoft match JSON properties.
+            this.Content = content;
+            this.Role = role;
+            this.Distribution = distribution;
+            this.Function = function;
+            this.FunctionParams = functionParams;
+
+            // Basic validation after deserialization
+            if (Role == NodeRole.Variable && Distribution == null)
+            {
+                // Potentially throw or log an error, or try to create a default distribution?
+                // For now, let it be null, but this indicates potentially corrupt data.
+                 Console.Error.WriteLine($"Warning: Deserialized Variable node {id} with null Distribution.");
+            }
+             if (Role == NodeRole.Function && Function == null)
+            {
+                 Console.Error.WriteLine($"Warning: Deserialized Function node {id} with null Function type.");
+            }
         }
 
         // Removed UpgradeToLatest as V1/V2 are gone and this IS the latest

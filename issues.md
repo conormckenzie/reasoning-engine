@@ -29,6 +29,8 @@ Context: Issues identified during scenario data population and review of probabi
 - **Performance:** Implement response caching (e.g., in `GraphObjectMapper` or application layer) for frequently accessed nodes and edges.
 - **Indexing:** Improve indexing in `FileGraphStorageProvider` for efficient Guid lookups and edge retrieval by node.
 - **Data Import:** Develop the planned Data Import System to replace `ScenarioManager`. (See `README.md`)
+- **ProbabilityDistribution:** Consider adding an explicit check for full domain coverage (e.g., ensuring no gaps > `2*EPSILON` exist across the entire conceptual domain, not just between defined ranges).
+- **Code Quality:** Review codebase for non-conforming debug IDs (should be `#XXXXXX#` format with 6 alphanumeric chars) in `DebugWriter` calls and standardize them.
 
 ---
 *Completed during refactoring (2025-04-04):*

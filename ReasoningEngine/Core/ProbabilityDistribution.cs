@@ -1,3 +1,4 @@
+using Newtonsoft.Json; // Added for JsonConstructor
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +18,18 @@ namespace ReasoningEngine
             DomainType = domainType;
             Distribution = new List<(double, double, double)>();
         }
+
+        // Constructor for JSON deserialization
+        [JsonConstructor]
+        private ProbabilityDistribution(DomainType domainType, List<(double LowerBound, double UpperBound, double Probability)> distribution)
+        {
+            DomainType = domainType;
+            // Assign directly; assume data is already sorted if saved correctly,
+            // or handle potential unsorted data if necessary (e.g., sort here).
+            // For simplicity, assume it's saved sorted for now.
+            Distribution = distribution ?? new List<(double, double, double)>(); 
+        }
+
 
         public void AddPoint(double value, double probability)
         {

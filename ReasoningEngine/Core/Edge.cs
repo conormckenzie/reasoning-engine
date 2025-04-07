@@ -1,4 +1,5 @@
 using System; // For Guid
+using Newtonsoft.Json; // Added for JsonConstructor attribute
 
 namespace ReasoningEngine
 {
@@ -21,7 +22,8 @@ namespace ReasoningEngine
             // CreationDate = DateTime.Now;
         }
 
-        // Constructor accepting existing Guid (for loading)
+        // Constructor accepting existing Guid (for loading) - Mark for JSON deserialization
+         [JsonConstructor]
          public EdgeV2(Guid edgeId, long fromNode, long toNode, double weight, string edgeContent) 
             : base(edgeId, fromNode, toNode) // Calls EdgeBase constructor that accepts Guid
         {
