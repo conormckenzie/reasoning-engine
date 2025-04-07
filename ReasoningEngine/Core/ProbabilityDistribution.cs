@@ -165,11 +165,11 @@ namespace ReasoningEngine
         /// <summary>
         /// Gets the probability for a specific value.
         /// For Continuous domains, if the value falls within EPSILON of two range boundaries (ambiguous point),
-        /// this method currently returns the probability of the first range identified by GetCoveringRanges.
-        /// TODO: Implement smoothing/interpolation for ambiguous points (TODO #4).
+        /// this method returns a linearly interpolated probability between the two adjacent ranges.
+        /// A warning is logged via DebugWriter when interpolation occurs.
         /// </summary>
         /// <param name="value">The value to query.</param>
-        /// <returns>The probability associated with the value, or 0 if it falls outside defined ranges/points.</returns>
+        /// <returns>The probability associated with the value, potentially interpolated, or 0 if it falls outside defined ranges/points.</returns>
         public double GetProbability(double value)
         {
             var coveringRangesIndices = GetCoveringRanges(value);
@@ -186,14 +186,47 @@ namespace ReasoningEngine
                 // Point clearly falls within one range
                 return Distribution[coveringRangesIndices[0]].Probability;
             }
-            else // Count is 2 (or potentially more if ranges weren't added correctly, though AddRange prevents overlap)
+            else // Count is 2 (Point is ambiguous, falling within EPSILON of two boundaries)
             {
-                // Point is ambiguous, falling within EPSILON of two boundaries.
-                // TODO: Implement smoothing/interpolation logic here (TODO #4).
-                // For now, return the probability of the first range found (lower LowerBound due to sorted list).
-                // Consider adding a warning here as well.
-                // DebugWriter.DebugWriteLine("#AMBIGUOUS#", $"Ambiguous point {value} covered by ranges {coveringRangesIndices[0]} and {coveringRangesIndices[1]}");
-                return Distribution[coveringRangesIndices[0]].Probability; 
+                // Implement linear interpolation (TODO #4)
+                int index1 = coveringRangesIndices[0];
+                int index2 = coveringRangesIndices[1];
+                var range1 = Distribution[index1];
+                var range2 = Distribution[index2];
+
+                // Ensure range1 is the lower range if indices weren't guaranteed sorted by GetCoveringRanges (though they should be)
+                if (range1.LowerBound > range2.LowerBound)
+                {
+                    (range1, range2) = (range2, range1); // Swap if needed
+                    (index1, index2) = (index2, index1);
+                }
+
+                double zoneStart = range1.UpperBound;
+                double zoneEnd = range2.LowerBound;
+                double zoneWidth = zoneEnd - zoneStart;
+
+                // Log a warning about ambiguity and interpolation
+                DebugUtils.DebugWriter.DebugWriteLine("#PROB01#", // Corrected Debug ID format 
+                    $"Ambiguous point {value} between range {index1} [{range1.LowerBound},{range1.UpperBound}] (P={range1.Probability}) and range {index2} [{range2.LowerBound},{range2.UpperBound}] (P={range2.Probability}). Interpolating.");
+
+                if (zoneWidth <= EPSILON) // Should not happen with gap > EPSILON, but handle defensively
+                {
+                    // If gap is negligible, arbitrarily return the average or one of the probabilities.
+                    // Returning the probability of the range the point is closer to might be slightly better.
+                     double dist1 = Math.Abs(value - zoneStart);
+                     double dist2 = Math.Abs(value - zoneEnd);
+                     return (dist1 <= dist2) ? range1.Probability : range2.Probability;
+                }
+
+                double positionInZone = value - zoneStart;
+                double t = positionInZone / zoneWidth;
+
+                // Clamp t to [0, 1] to handle cases where 'value' might be slightly outside the strict gap due to EPSILON checks
+                t = Math.Max(0.0, Math.Min(1.0, t)); 
+
+                double interpolatedProbability = range1.Probability * (1.0 - t) + range2.Probability * t;
+
+                return interpolatedProbability;
             }
         }
 
