@@ -113,9 +113,23 @@ namespace ReasoningEngine.GraphAccess
 
             try 
             {
-                // Parse payload parts into dictionary
+                // Parse payload parts into dictionary (values are strings initially)
                 var parameters = ParsePayloadDictionary(rolePayloadParts);
-                // Delegate creation to NodeFactory using the dictionary
+
+                // If FunctionParams was provided as a string, parse it into a dictionary
+                if (parameters.TryGetValue("FunctionParams", out object? funcParamsObj) && funcParamsObj is string funcParamsStr)
+                {
+                    try 
+                    {
+                        parameters["FunctionParams"] = ParseFunctionParamsString(funcParamsStr);
+                    }
+                    catch (ArgumentException ex)
+                    {
+                         throw new ArgumentException($"Invalid format for FunctionParams string '{funcParamsStr}': {ex.Message}", ex);
+                    }
+                }
+
+                // Delegate creation to NodeFactory using the dictionary (which now might contain a parsed FunctionParams dict)
                 Node newNode = NodeFactory.CreateNodeFromPayload(nodeId, content, parameters); // Use Node alias
                 
                 // TODO: Implement using GraphObjectMapper layer (to serialize newNode and call SaveNodeDataAsync)
@@ -191,8 +205,22 @@ namespace ReasoningEngine.GraphAccess
 
             try
             {
-                // Parse payload parts into dictionary
+                // Parse payload parts into dictionary (values are strings initially)
                 var updateParameters = ParsePayloadDictionary(rolePayloadParts);
+
+                 // If FunctionParams was provided as a string, parse it into a dictionary
+                if (updateParameters.TryGetValue("FunctionParams", out object? funcParamsObj) && funcParamsObj is string funcParamsStr)
+                {
+                    try 
+                    {
+                        updateParameters["FunctionParams"] = ParseFunctionParamsString(funcParamsStr);
+                    }
+                    catch (ArgumentException ex)
+                    {
+                         throw new ArgumentException($"Invalid format for FunctionParams string during update '{funcParamsStr}': {ex.Message}", ex);
+                    }
+                }
+
                 // Delegate update logic to NodeFactory, passing the dictionary
                 Node updatedNode = NodeFactory.UpdateNodeFromPayload(currentNode, newContent, updateParameters); 
 
@@ -309,6 +337,36 @@ namespace ReasoningEngine.GraphAccess
                 }
             }
             return parameters;
+        }
+
+        // Helper to parse FunctionParams string (e.g., "Key1:Value1;Key2:Value2")
+        // Note: This assumes simple key-value pairs and doesn't handle nested structures or complex types within the string.
+        // NodeFactory's ParseFunctionParameters will handle type conversion (e.g., string "0.5" to double 0.5).
+        private Dictionary<string, object> ParseFunctionParamsString(string paramsString)
+        {
+            var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(paramsString)) return dict;
+
+            var pairs = paramsString.Split(';');
+            foreach (var pair in pairs)
+            {
+                var keyValue = pair.Split(':', 2);
+                if (keyValue.Length == 2)
+                {
+                    string key = keyValue[0].Trim();
+                    string value = keyValue[1].Trim();
+                    if (!string.IsNullOrEmpty(key))
+                    {
+                        // Store as string initially; NodeFactory will handle conversion
+                        dict[key] = value; 
+                    }
+                }
+                 else if (!string.IsNullOrWhiteSpace(pair))
+                {
+                     DebugWriter.DebugWriteLine("#PARAM_PARSE_WARN#", $"Ignoring malformed FunctionParams part: '{pair}'");
+                }
+            }
+            return dict;
         }
     }
 }

@@ -45,96 +45,98 @@ namespace ReasoningEngine.Utils.Scenarios
 
         private void AddSIMONodes()
         {
-            DebugUtils.DebugWriter.DebugWriteLine("#TR4P8P#", "Adding SIMO nodes...", true, DebugUtils.VerbosityLevel.Normal);
+            DebugUtils.DebugWriter.DebugWriteLine("#TR4P8P#", "Adding Variable nodes...", true, DebugUtils.VerbosityLevel.Normal); // Renamed SIMO -> Variable
             
             // Basic Propositions (Truth Domain)
-            string result1 = _commandProcessor.ProcessCommand("add_node", "1|Proposition A: It is raining outside [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result1 = _commandProcessor.ProcessCommand("add_node", "1|Proposition A: It is raining outside [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#4AZGY7#", result1, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result2 = _commandProcessor.ProcessCommand("add_node", "2|Proposition B: The ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result2 = _commandProcessor.ProcessCommand("add_node", "2|Proposition B: The ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#8ZLN4I#", result2, true, DebugUtils.VerbosityLevel.Detailed);
             
             // Results of Logical Operations
-            string result4 = _commandProcessor.ProcessCommand("add_node", "4|Result of AND: It is raining AND the ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result4 = _commandProcessor.ProcessCommand("add_node", "4|Result of AND: It is raining AND the ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#5BI68R#", result4, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result6 = _commandProcessor.ProcessCommand("add_node", "6|Result of OR: It is raining OR the ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result6 = _commandProcessor.ProcessCommand("add_node", "6|Result of OR: It is raining OR the ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#0I13I8#", result6, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result8 = _commandProcessor.ProcessCommand("add_node", "8|Result of NOT: It is NOT raining outside [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result8 = _commandProcessor.ProcessCommand("add_node", "8|Result of NOT: It is NOT raining outside [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#3DQW3J#", result8, true, DebugUtils.VerbosityLevel.Detailed);
             
             // Causal Strength (Continuous Range Domain)
-            string result9 = _commandProcessor.ProcessCommand("add_node", "9|Causal Strength of Rain → Wet Ground [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|ContinuousRange");
+            string result9 = _commandProcessor.ProcessCommand("add_node", "9|Causal Strength of Rain → Wet Ground [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Continuous"); // Changed DomainType
             DebugUtils.DebugWriter.DebugWriteLine("#PSHWNG#", result9, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result11 = _commandProcessor.ProcessCommand("add_node", "11|Result of Implication: If it is raining, then the ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result11 = _commandProcessor.ProcessCommand("add_node", "11|Result of Implication: If it is raining, then the ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#QXERWQ#", result11, true, DebugUtils.VerbosityLevel.Detailed);
             
             // Continuous and Discrete Concepts
-            string result12 = _commandProcessor.ProcessCommand("add_node", "12|Rain Intensity in mm/hour [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|ContinuousRange");
+            string result12 = _commandProcessor.ProcessCommand("add_node", "12|Rain Intensity in mm/hour [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Continuous"); // Changed DomainType
             DebugUtils.DebugWriter.DebugWriteLine("#L6TZP0#", result12, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result13 = _commandProcessor.ProcessCommand("add_node", "13|Wind Force according to Beaufort scale [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|DiscreteInteger");
+            string result13 = _commandProcessor.ProcessCommand("add_node", "13|Wind Force according to Beaufort scale [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=DiscreteInteger");
             DebugUtils.DebugWriter.DebugWriteLine("#G7417P#", result13, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result15 = _commandProcessor.ProcessCommand("add_node", "15|Puddle Formation Likelihood [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result15 = _commandProcessor.ProcessCommand("add_node", "15|Puddle Formation Likelihood [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#TMUMHC#", result15, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result17 = _commandProcessor.ProcessCommand("add_node", "17|Wind Impact on Umbrella [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result17 = _commandProcessor.ProcessCommand("add_node", "17|Wind Impact on Umbrella [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#FN3RYC#", result17, true, DebugUtils.VerbosityLevel.Detailed);
             
             // Complex Reasoning Chain
-            string result19 = _commandProcessor.ProcessCommand("add_node", "19|Is it raining heavily? [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result19 = _commandProcessor.ProcessCommand("add_node", "19|Is it raining heavily? [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#BT7KDI#", result19, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result21 = _commandProcessor.ProcessCommand("add_node", "21|Is an umbrella usable? [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result21 = _commandProcessor.ProcessCommand("add_node", "21|Is an umbrella usable? [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#0BPU33#", result21, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result23 = _commandProcessor.ProcessCommand("add_node", "23|Need for Umbrella [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result23 = _commandProcessor.ProcessCommand("add_node", "23|Need for Umbrella [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#3VT2A9#", result23, true, DebugUtils.VerbosityLevel.Detailed);
             
             // Alternative Reasoning Path
-            string result25 = _commandProcessor.ProcessCommand("add_node", "25|Ground wet because of rain [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result25 = _commandProcessor.ProcessCommand("add_node", "25|Ground wet because of rain [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#B605AW#", result25, true, DebugUtils.VerbosityLevel.Detailed);
         }
 
         private void AddMISONodes()
         {
-            DebugUtils.DebugWriter.DebugWriteLine("#SKIXT4#", "Adding MISO nodes...", true, DebugUtils.VerbosityLevel.Normal);
+            DebugUtils.DebugWriter.DebugWriteLine("#SKIXT4#", "Adding Function nodes...", true, DebugUtils.VerbosityLevel.Normal); // Renamed MISO -> Function
             
-            // Logical Operations
-            string result3 = _commandProcessor.ProcessCommand("add_node", "3|AND Operation: Logical AND of inputs [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            // Logical Operations - Assuming DefinedOp for simple logic gates
+            // Note: FunctionParams are now passed as a single string value "Key1:Value1;Key2:Value2"
+            string result3 = _commandProcessor.ProcessCommand("add_node", "3|AND Operation: Logical AND of inputs [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:And");
             DebugUtils.DebugWriter.DebugWriteLine("#DZ1M6Z#", result3, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result5 = _commandProcessor.ProcessCommand("add_node", "5|OR Operation: Logical OR of inputs [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            string result5 = _commandProcessor.ProcessCommand("add_node", "5|OR Operation: Logical OR of inputs [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:Or");
             DebugUtils.DebugWriter.DebugWriteLine("#MB6F1V#", result5, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result7 = _commandProcessor.ProcessCommand("add_node", "7|NOT Operation: Logical NOT of input [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            string result7 = _commandProcessor.ProcessCommand("add_node", "7|NOT Operation: Logical NOT of input [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:Not");
             DebugUtils.DebugWriter.DebugWriteLine("#DTXNNW#", result7, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result10 = _commandProcessor.ProcessCommand("add_node", "10|Implication Evaluation: Evaluates if A implies B [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            // Assuming Implication is a custom DefinedOp or potentially Linear if weighted
+            string result10 = _commandProcessor.ProcessCommand("add_node", "10|Implication Evaluation: Evaluates if A implies B [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:Implies"); // Assuming 'Implies' op
             DebugUtils.DebugWriter.DebugWriteLine("#13VNHC#", result10, true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Analysis Nodes
-            string result14 = _commandProcessor.ProcessCommand("add_node", "14|Puddle Formation Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            // Analysis Nodes - These are likely more complex, maybe Linear or custom DefinedOps. Using DefinedOp as placeholder.
+            string result14 = _commandProcessor.ProcessCommand("add_node", "14|Puddle Formation Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:PuddleAnalysis"); // Placeholder Op
             DebugUtils.DebugWriter.DebugWriteLine("#P8N8QE#", result14, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result16 = _commandProcessor.ProcessCommand("add_node", "16|Wind Impact Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            string result16 = _commandProcessor.ProcessCommand("add_node", "16|Wind Impact Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:WindImpact"); // Placeholder Op
             DebugUtils.DebugWriter.DebugWriteLine("#EBO9LJ#", result16, true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Complex Reasoning Chain
-            string result18 = _commandProcessor.ProcessCommand("add_node", "18|Heavy Rain Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            // Complex Reasoning Chain - Placeholders
+            string result18 = _commandProcessor.ProcessCommand("add_node", "18|Heavy Rain Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:HeavyRainCheck"); // Placeholder Op
             DebugUtils.DebugWriter.DebugWriteLine("#H6UHBG#", result18, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result20 = _commandProcessor.ProcessCommand("add_node", "20|Umbrella Usability Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            string result20 = _commandProcessor.ProcessCommand("add_node", "20|Umbrella Usability Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:UmbrellaUsable"); // Placeholder Op
             DebugUtils.DebugWriter.DebugWriteLine("#RFRZIN#", result20, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result22 = _commandProcessor.ProcessCommand("add_node", "22|Umbrella Need Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            string result22 = _commandProcessor.ProcessCommand("add_node", "22|Umbrella Need Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:UmbrellaNeed"); // Placeholder Op
             DebugUtils.DebugWriter.DebugWriteLine("#K5CYJM#", result22, true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Alternative Reasoning Path
-            string result24 = _commandProcessor.ProcessCommand("add_node", "24|Reverse Implication Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            // Alternative Reasoning Path - Placeholder
+            string result24 = _commandProcessor.ProcessCommand("add_node", "24|Reverse Implication Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:ReverseImplies"); // Placeholder Op
             DebugUtils.DebugWriter.DebugWriteLine("#S8DJ7K#", result24, true, DebugUtils.VerbosityLevel.Detailed);
         }
 
