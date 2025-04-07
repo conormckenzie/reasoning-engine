@@ -21,9 +21,9 @@ namespace ReasoningEngine
         ///   - "VariableDomainType" (string, optional, for Variable role): Name of the DomainType enum (e.g., "Truth", "Continuous"). Defaults to Truth.
         ///   - "FunctionType" (string, required for Function role): Name of the FunctionType enum (e.g., "Linear", "DefinedOp").
         ///   - "FunctionParams" (Dictionary<string, object>, optional, for Function role): Parameters specific to the FunctionType. 
-        ///     - For DefinedOp: Expected key "Operation" with value like "Multiply", "Add", "Sigmoid".
-        ///     - For Linear: Expected keys "Weights" (List<double> or comma-separated string), "Bias" (double or string).
-        ///     - TODO: Define parameters for NeuralNet.
+        ///     - For `DefinedOp`: Expected key `"Operation"` (string, e.g., "Multiply", "Add", "Sigmoid").
+        ///     - For `Linear`: Expected keys `"Weights"` (`List<double>` or comma-separated string) and `"Bias"` (`double` or string convertible to double).
+        ///     - TODO: Define parameters for `NeuralNet`.
         /// </param>
         /// <returns>A new Node instance (which is NodeV3).</returns>
         /// <exception cref="ArgumentException">Thrown if the parameters are invalid.</exception>
@@ -75,12 +75,23 @@ namespace ReasoningEngine
                     Dictionary<string, object>? functionParams = null;
                     if (parameters.TryGetValue("FunctionParams", out object? funcParamsObj) && funcParamsObj is Dictionary<string, object> parsedParams)
                     {
-                        functionParams = parsedParams;
-                        // TODO: Add validation/conversion for specific parameter types based on functionType
-                        DebugWriter.DebugWriteLine("#FUNC_PARAM_PARSE#", $"Received {functionParams.Count} function parameters for node {id}.", true, VerbosityLevel.Detailed);
+                        // Validate and parse parameters based on function type
+                        try
+                        {
+                            functionParams = ParseFunctionParameters(functionType, parsedParams);
+                            DebugWriter.DebugWriteLine("#FUNC_PARAM_PARSE#", $"Parsed {functionParams.Count} function parameters for node {id}.", true, VerbosityLevel.Detailed);
+                        }
+                        catch (ArgumentException ex)
+                        {
+                            throw new ArgumentException($"Invalid FunctionParams for FunctionType '{functionType}': {ex.Message}", ex);
+                        }
+                    }
+                    else // No params provided, create empty dict if needed by constructor later
+                    {
+                         functionParams = new Dictionary<string, object>();
                     }
                     
-                    newNode = new Node(id, content, functionType, functionParams); // Pass potentially null params dict
+                    newNode = new Node(id, content, functionType, functionParams); 
                     return newNode;
 
                 // Add cases for other roles as needed
@@ -178,9 +189,17 @@ namespace ReasoningEngine
                      // Check if FunctionParams are being updated (only if type didn't just change)
                      if (!functionTypeChanged && updateParameters.TryGetValue("FunctionParams", out object? funcParamsObj))
                      {
-                         if (funcParamsObj is Dictionary<string, object> parsedParams) {
-                             funcParams = parsedParams; // Replace existing params
-                             DebugWriter.DebugWriteLine("#FUNC_PARAM_PARSE_EDIT#", $"Updated function parameters for node {existingNode.Id}.", true, VerbosityLevel.Detailed);
+                         if (funcParamsObj is Dictionary<string, object> rawParams) {
+                             // Parse and validate the new parameters
+                             try
+                             {
+                                 funcParams = ParseFunctionParameters(funcType, rawParams); // Use current funcType
+                                 DebugWriter.DebugWriteLine("#FUNC_PARAM_PARSE_EDIT#", $"Updated and parsed function parameters for node {existingNode.Id}.", true, VerbosityLevel.Detailed);
+                             }
+                             catch (ArgumentException ex)
+                             {
+                                 throw new ArgumentException($"Invalid FunctionParams for update (FunctionType '{funcType}'): {ex.Message}", ex);
+                             }
                          } else if (funcParamsObj == null) {
                              funcParams = null; // Clear parameters
                              DebugWriter.DebugWriteLine("#FUNC_PARAM_CLEAR_EDIT#", $"Cleared function parameters for node {existingNode.Id}.", true, VerbosityLevel.Detailed);
@@ -188,7 +207,11 @@ namespace ReasoningEngine
                              throw new ArgumentException("'FunctionParams' must be a Dictionary<string, object> or null.");
                          }
                      }
-                     funcParams ??= new Dictionary<string, object>(); // Ensure not null if function role
+                     // Ensure funcParams is not null if role is Function, even if cleared or unchanged
+                     if (targetRole == NodeRole.Function && funcParams == null)
+                     {
+                         funcParams = new Dictionary<string, object>();
+                     }
 
                     return new Node(existingNode.Id, newContent, funcType, funcParams); 
 
@@ -196,6 +219,124 @@ namespace ReasoningEngine
                      throw new ArgumentException($"Unsupported NodeRole '{targetRole}' for node update.");
             }
             // TODO: Copy ExtendedProperties from existingNode if needed
+        }
+
+        // --- Private Helper Methods for Parameter Parsing ---
+
+        private static Dictionary<string, object> ParseFunctionParameters(FunctionType type, Dictionary<string, object> rawParams)
+        {
+            switch (type)
+            {
+                case FunctionType.Linear:
+                    return ParseLinearParams(rawParams);
+                case FunctionType.DefinedOp:
+                    return ParseDefinedOpParams(rawParams);
+                case FunctionType.NeuralNet:
+                    // TODO: Implement NeuralNet parameter parsing
+                    DebugWriter.DebugWriteLine("#NN_PARAM_TODO#", "NeuralNet parameter parsing not yet implemented.", true, VerbosityLevel.Minimal);
+                    return rawParams; // Return raw params for now
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type), $"Unsupported FunctionType for parameter parsing: {type}");
+            }
+        }
+
+        private static Dictionary<string, object> ParseLinearParams(Dictionary<string, object> rawParams)
+        {
+            var parsedParams = new Dictionary<string, object>();
+
+            // Parse Weights
+            if (!rawParams.TryGetValue("Weights", out object? weightsObj))
+            {
+                throw new ArgumentException("Missing required parameter 'Weights' for Linear function.");
+            }
+            if (weightsObj is List<double> weightsList)
+            {
+                parsedParams["Weights"] = weightsList;
+            }
+            else if (weightsObj is string weightsStr)
+            {
+                try
+                {
+                    parsedParams["Weights"] = weightsStr.Split(',')
+                                                        .Select(s => double.Parse(s.Trim()))
+                                                        .ToList();
+                }
+                catch (Exception ex) when (ex is FormatException || ex is OverflowException)
+                {
+                    throw new ArgumentException($"Invalid format for 'Weights' string parameter. Expected comma-separated doubles. Error: {ex.Message}", ex);
+                }
+            }
+            else
+            {
+                throw new ArgumentException("'Weights' parameter must be a List<double> or a comma-separated string of doubles.");
+            }
+
+            // Parse Bias
+            if (!rawParams.TryGetValue("Bias", out object? biasObj))
+            {
+                throw new ArgumentException("Missing required parameter 'Bias' for Linear function.");
+            }
+             if (biasObj is double biasDouble)
+            {
+                parsedParams["Bias"] = biasDouble;
+            }
+            else if (biasObj is string biasStr)
+            {
+                 try
+                 {
+                     parsedParams["Bias"] = double.Parse(biasStr.Trim());
+                 }
+                 catch (Exception ex) when (ex is FormatException || ex is OverflowException)
+                 {
+                     throw new ArgumentException($"Invalid format for 'Bias' string parameter. Expected a double. Error: {ex.Message}", ex);
+                 }
+            }
+             else if (biasObj is int biasInt) // Allow int implicitly convertible to double
+             {
+                 parsedParams["Bias"] = (double)biasInt;
+             }
+             else if (biasObj is long biasLong) // Allow long implicitly convertible to double
+             {
+                  parsedParams["Bias"] = (double)biasLong;
+             }
+            else
+            {
+                throw new ArgumentException("'Bias' parameter must be a double or a string convertible to double.");
+            }
+
+            // Copy any other parameters directly (though none are expected for Linear currently)
+            foreach(var kvp in rawParams)
+            {
+                if (!parsedParams.ContainsKey(kvp.Key))
+                {
+                    parsedParams[kvp.Key] = kvp.Value;
+                }
+            }
+
+            return parsedParams;
+        }
+
+        private static Dictionary<string, object> ParseDefinedOpParams(Dictionary<string, object> rawParams)
+        {
+             var parsedParams = new Dictionary<string, object>();
+
+             if (!rawParams.TryGetValue("Operation", out object? opObj) || !(opObj is string opStr))
+             {
+                 throw new ArgumentException("Missing or invalid 'Operation' string parameter for DefinedOp function.");
+             }
+             // TODO: Could add validation here to check if opStr is a known/supported operation name
+             parsedParams["Operation"] = opStr;
+
+             // Copy any other parameters directly
+             foreach(var kvp in rawParams)
+             {
+                 if (!parsedParams.ContainsKey(kvp.Key))
+                 {
+                     parsedParams[kvp.Key] = kvp.Value;
+                 }
+             }
+
+             return parsedParams;
         }
     }
 }
