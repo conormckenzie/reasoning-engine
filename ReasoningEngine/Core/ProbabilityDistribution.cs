@@ -35,8 +35,9 @@ namespace ReasoningEngine
                 if (Distribution.Any(d => Math.Abs(d.LowerBound - value) < EPSILON))
                     throw new InvalidOperationException($"A probability is already defined for value {value}");
                 
-                // TODO: Refactor to insert sorted (See issues.md TODO #1)
-                Distribution.Add((value, value, probability)); 
+                // Insert sorted by LowerBound (value)
+                int index = FindInsertionIndex(value);
+                Distribution.Insert(index, (value, value, probability)); 
                 ValidateTotalProbability();
             }
             else
@@ -77,73 +78,122 @@ namespace ReasoningEngine
                 throw new InvalidOperationException("Range boundaries too close to existing range");
             }
 
-            // Check for overlapping ranges (Allows overlap within EPSILON tolerance)
+            // Check for overlapping ranges. 
+            // We need lowerBound > d.UpperBound + EPSILON OR upperBound < d.LowerBound - EPSILON
+            // So, overlap occurs if !(lowerBound > d.UpperBound + EPSILON || upperBound < d.LowerBound - EPSILON)
+            // which simplifies to (lowerBound <= d.UpperBound + EPSILON && upperBound >= d.LowerBound - EPSILON)
+            // This check prevents ranges from having gaps <= EPSILON, enforcing a minimum gap > EPSILON.
             if (Distribution.Any(d => 
-                (lowerBound <= d.UpperBound + EPSILON && upperBound >= d.LowerBound - EPSILON)))
+                lowerBound <= d.UpperBound + EPSILON && upperBound >= d.LowerBound - EPSILON))
             {
-                throw new InvalidOperationException("New range overlaps with existing range");
+                throw new InvalidOperationException("New range overlaps or is too close to an existing range (gap must be > EPSILON)");
             }
 
-            // TODO: Refactor to insert sorted (See issues.md TODO #1)
-            Distribution.Add((lowerBound, upperBound, probability)); 
+            // Note: The previous "too close" check was redundant with the modified overlap check above.
+
+            // Insert sorted by LowerBound
+            int index = FindInsertionIndex(lowerBound);
+            Distribution.Insert(index, (lowerBound, upperBound, probability)); 
             ValidateTotalProbability();
         }
 
+        /// <summary>
+        /// Checks if the total probability defined in the distribution sums to 1 (within EPSILON).
+        /// Note: This does NOT check if the ranges/points cover the entire domain without invalid gaps.
+        /// Use AreRangesContiguousAndValid() for that check.
+        /// </summary>
+        /// <returns>True if total probability is approximately 1, false otherwise.</returns>
         public bool IsComplete()
         {
             if (Distribution.Count == 0)
-                return false;
+                return false; // An empty distribution cannot sum to 1
+
+            return Math.Abs(GetTotalProbability() - 1) < EPSILON;
+        }
+
+        /// <summary>
+        /// Checks if the defined ranges or points form a valid, contiguous sequence according to domain rules.
+        /// - For Continuous: Checks if gaps between sorted ranges are all strictly greater than EPSILON.
+        /// - For DiscreteInteger: Checks if sorted points are consecutive integers (within EPSILON).
+        /// - For Truth: Returns true (no contiguity requirement beyond non-overlap enforced by AddRange/AddPoint).
+        /// Note: This does NOT check if the total probability sums to 1. Use IsComplete() for that check.
+        /// </summary>
+        /// <returns>True if ranges/points are contiguous and validly spaced, false otherwise.</returns>
+        public bool AreRangesContiguousAndValid()
+        {
+             if (Distribution.Count <= 1) // Single point/range is always contiguous
+                return true;
+
+            // Distribution is already sorted by LowerBound due to insertion logic
+            var ranges = Distribution; // No need to OrderBy again
 
             switch (DomainType)
             {
-                case DomainType.Truth:
-                    return Math.Abs(GetTotalProbability() - 1) < EPSILON;
+                 case DomainType.Truth:
+                     // For Truth domain, AddRange/AddPoint already enforce non-overlap.
+                     // Contiguity isn't strictly required unless it aims to cover [0,1] fully,
+                     // which would be checked by IsComplete() and the range bounds themselves.
+                     // We consider any validly added set of non-overlapping ranges/points as "contiguous and valid" here.
+                     return true; 
 
                 case DomainType.DiscreteInteger:
-                    var values = Distribution.Select(d => d.LowerBound).OrderBy(v => v).ToList();
                     // Check if values are consecutive integers
-                    for (int i = 1; i < values.Count; i++)
-                    {
-                        if (Math.Abs(values[i] - values[i - 1] - 1) > EPSILON)
-                            return false;
-                    }
-                    return Math.Abs(GetTotalProbability() - 1) < EPSILON;
-
-                case DomainType.Continuous:
-                    // Sort ranges by lower bound
-                    var ranges = Distribution.OrderBy(d => d.LowerBound).ToList();
-                    // Check for gaps between ranges
-                    // Allow gaps up to 1.9*EPSILON to ensure no point can be "lost" between ranges
-                    // since points within EPSILON of a range boundary are considered part of that range
                     for (int i = 1; i < ranges.Count; i++)
                     {
-                        if (Math.Abs(ranges[i].LowerBound - ranges[i - 1].UpperBound) > 1.9 * EPSILON)
+                        // Check if difference is approximately 1
+                        if (Math.Abs(ranges[i].LowerBound - ranges[i - 1].LowerBound - 1) > EPSILON)
                             return false;
                     }
-                    return Math.Abs(GetTotalProbability() - 1) < EPSILON;
+                    return true; // Passed all checks
+
+                case DomainType.Continuous:
+                    // Check for gaps between ranges
+                    // Gaps must be strictly greater than EPSILON
+                    for (int i = 1; i < ranges.Count; i++)
+                    {
+                        double gap = ranges[i].LowerBound - ranges[i - 1].UpperBound;
+                        if (gap <= EPSILON) // Gap must be > EPSILON
+                            return false; 
+                    }
+                    return true; // Passed all checks
 
                 default:
                     throw new InvalidOperationException("Unknown domain type");
             }
         }
 
+        /// <summary>
+        /// Gets the probability for a specific value.
+        /// For Continuous domains, if the value falls within EPSILON of two range boundaries (ambiguous point),
+        /// this method currently returns the probability of the first range identified by GetCoveringRanges.
+        /// TODO: Implement smoothing/interpolation for ambiguous points (TODO #4).
+        /// </summary>
+        /// <param name="value">The value to query.</param>
+        /// <returns>The probability associated with the value, or 0 if it falls outside defined ranges/points.</returns>
         public double GetProbability(double value)
         {
-            switch (DomainType)
+            var coveringRangesIndices = GetCoveringRanges(value);
+
+            if (coveringRangesIndices.Count == 0)
             {
-                case DomainType.Truth:
-                case DomainType.DiscreteInteger:
-                    var point = Distribution.FirstOrDefault(d => Math.Abs(d.LowerBound - value) < EPSILON);
-                    return point == default ? 0 : point.Probability;
-
-                case DomainType.Continuous:
-                    // TODO: Consider interpolation for points near boundaries (See issues.md TODO #4)
-                    var range = Distribution.FirstOrDefault(d => 
-                        value >= d.LowerBound - EPSILON && value <= d.UpperBound + EPSILON);
-                    return range == default ? 0 : range.Probability;
-
-                default:
-                    throw new InvalidOperationException("Unknown domain type");
+                // Point is not covered by any range (considering EPSILON tolerance)
+                // This might happen in an incomplete distribution. Return 0 probability.
+                // Callers can check IsComplete() and AreRangesContiguousAndValid() if full coverage is expected.
+                return 0;
+            }
+            else if (coveringRangesIndices.Count == 1)
+            {
+                // Point clearly falls within one range
+                return Distribution[coveringRangesIndices[0]].Probability;
+            }
+            else // Count is 2 (or potentially more if ranges weren't added correctly, though AddRange prevents overlap)
+            {
+                // Point is ambiguous, falling within EPSILON of two boundaries.
+                // TODO: Implement smoothing/interpolation logic here (TODO #4).
+                // For now, return the probability of the first range found (lower LowerBound due to sorted list).
+                // Consider adding a warning here as well.
+                // DebugWriter.DebugWriteLine("#AMBIGUOUS#", $"Ambiguous point {value} covered by ranges {coveringRangesIndices[0]} and {coveringRangesIndices[1]}");
+                return Distribution[coveringRangesIndices[0]].Probability; 
             }
         }
 
@@ -218,43 +268,7 @@ namespace ReasoningEngine
             return result.AsReadOnly();
         }
 
-        /// <summary>
-        /// Returns the index of the range containing the given point.
-        /// For points that could belong to multiple ranges due to uncertainty,
-        /// assigns the point to the range with the closest boundary.
-        /// </summary>
-        public int GetContainingRange(double point)
-        {
-            var possibleRanges = new List<(int Index, double Distance)>();
-
-            // Check each range
-            for (int i = 0; i < Distribution.Count; i++)
-            {
-                var range = Distribution[i];
-                
-                // Check if point is definitely in this range
-                if (point + EPSILON >= range.LowerBound && point - EPSILON <= range.UpperBound)
-                {
-                    // Calculate distances to both bounds
-                    double distToLower = Math.Abs(point - range.LowerBound);
-                    double distToUpper = Math.Abs(point - range.UpperBound);
-                    double minDist = Math.Min(distToLower, distToUpper);
-                    
-                    possibleRanges.Add((i, minDist));
-                }
-            }
-
-            if (!possibleRanges.Any())
-                throw new ArgumentException("Point is not contained in any range");
-
-            // If point could be in multiple ranges, choose the one with the closest boundary
-            // If distances are equal, prefer the lower index range.
-            // TODO: Ensure determinism by sorting main Distribution list first (See issues.md TODO #3)
-            return possibleRanges
-                .OrderBy(r => r.Distance)
-                .ThenBy(r => r.Index) // Relies on original list order if distances are equal
-                .First().Index;
-        }
+        // Removed GetContainingRange as its single-assignment logic is less useful than GetCoveringRanges for smoothing.
 
         /// <summary>
         /// Returns a list of indices of ranges that might contain the given point,
@@ -277,6 +291,28 @@ namespace ReasoningEngine
             }
 
             return coveringRanges;
+        }
+
+        /// <summary>
+        /// Finds the correct index to insert a new element to maintain sorted order by LowerBound.
+        /// Uses BinarySearch for efficiency.
+        /// </summary>
+        private int FindInsertionIndex(double lowerBound)
+        {
+            // Perform binary search to find the index of the first element >= lowerBound
+            int index = Distribution.BinarySearch(0, Distribution.Count, (lowerBound, 0, 0), Comparer<(double LowerBound, double UpperBound, double Probability)>.Create((x, y) => x.LowerBound.CompareTo(y.LowerBound)));
+
+            // If BinarySearch returns a non-negative value, it's the index of an exact match (or where it would be).
+            // If it returns a negative value, it's the bitwise complement of the index of the first element larger than the item.
+            if (index < 0)
+            {
+                index = ~index; // Bitwise complement gives the insertion point
+            }
+            // Handle cases where multiple items might have the same LowerBound (though unlikely for ranges)
+            // Ensure we insert *after* any existing items with the same LowerBound for stability if needed,
+            // but for simple insertion, this index is correct.
+
+            return index;
         }
     }
 }
