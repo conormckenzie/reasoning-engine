@@ -1,5 +1,5 @@
+using Newtonsoft.Json; // Added for JsonIgnore
 using System;
-using System; // Added for KeyNotFoundException if not already present
 using System.Collections.Generic;
 
 namespace ReasoningEngine
@@ -8,14 +8,17 @@ namespace ReasoningEngine
 
     public abstract class NodeBase : IVersioned
     {
-        public long Id { get; protected set; }
+        // Setter protected
+        public long Id { get; protected set; } 
+        [JsonIgnore] // Ignore Version during serialization/deserialization
         public abstract int Version { get; }
         // public NodeType Type { get; protected set; } // Removed
-        public string Content { get; set; } // Kept Content here
-        protected Dictionary<string, object> ExtendedProperties { get; } = new Dictionary<string, object>();
+        public string Content { get; set; } // Kept Content here (public set OK)
+        // Property public, setter protected is correct.
+        public Dictionary<string, object> ExtendedProperties { get; protected set; } = new Dictionary<string, object>(); 
 
-        // Updated constructor - no longer takes NodeType
-        protected NodeBase(long id) 
+        // Constructor made public (as in commit b7611d3)
+        public NodeBase(long id) 
         {
             Id = id;
             Content = string.Empty; // Initialize Content

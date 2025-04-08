@@ -22,7 +22,7 @@ namespace ReasoningEngine
             // CreationDate = DateTime.Now;
         }
 
-        // Constructor accepting existing Guid (for loading) - Mark for JSON deserialization
+        // Constructor accepting existing Guid (for loading) - Mark for JSON deserialization (as in commit b7611d3)
          [JsonConstructor]
          public EdgeV2(Guid edgeId, long fromNode, long toNode, double weight, string edgeContent) 
             : base(edgeId, fromNode, toNode) // Calls EdgeBase constructor that accepts Guid

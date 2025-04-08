@@ -7,29 +7,30 @@ namespace ReasoningEngine
 {
     public class ProbabilityDistribution
     {
-        public DomainType DomainType { get; private set; }
+        // Made setters public for deserialization via property mapping
+        public DomainType DomainType { get; set; } 
         // Add string representation property
+        [JsonIgnore] // Should not be serialized
         public string DomainType_StringRepresentation => DomainType.ToString();
-        private List<(double LowerBound, double UpperBound, double Probability)> Distribution { get; set; }
+        // Made setter public for deserialization via property mapping
+        public List<(double LowerBound, double UpperBound, double Probability)> Distribution { get; set; } 
         private const double EPSILON = 1e-10; // For floating point comparisons
 
-        public ProbabilityDistribution(DomainType domainType)
-        {
-            DomainType = domainType;
+        // Parameterless constructor for deserialization
+        public ProbabilityDistribution() {
+            // Initialize with defaults, will be overwritten by deserializer
+            DomainType = DomainType.Truth; // Or another sensible default
             Distribution = new List<(double, double, double)>();
         }
 
-        // Constructor for JSON deserialization
-        [JsonConstructor]
-        private ProbabilityDistribution(DomainType domainType, List<(double LowerBound, double UpperBound, double Probability)> distribution)
+        // Original constructor for code usage
+        public ProbabilityDistribution(DomainType domainType) : this() // Chain to parameterless
         {
             DomainType = domainType;
-            // Assign directly; assume data is already sorted if saved correctly,
-            // or handle potential unsorted data if necessary (e.g., sort here).
-            // For simplicity, assume it's saved sorted for now.
-            Distribution = distribution ?? new List<(double, double, double)>(); 
+            // Distribution is already initialized by the parameterless constructor
         }
 
+        // Removed private constructor previously used for JSON deserialization
 
         public void AddPoint(double value, double probability)
         {

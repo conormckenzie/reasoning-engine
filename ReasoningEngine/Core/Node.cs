@@ -14,7 +14,7 @@ namespace ReasoningEngine
         // Override the abstract Version property from NodeBase
         public override int Version => 3; 
 
-        // Made setter public for easier deserialization
+        // Made setter public for easier deserialization (as in commit b7611d3)
         public NodeRole Role { get; set; } 
 
         // Properties for different roles - ensure Distribution is not nullable for Variable role
@@ -44,15 +44,11 @@ namespace ReasoningEngine
             FunctionParams = parameters ?? new Dictionary<string, object>(); // Ensure params dict exists
         }
 
-        // Private constructor for JSON deserialization
-        // Note: Version property is handled by base class or implicitly by type during serialization,
-        // but including it here ensures Newtonsoft.Json can map it if present in JSON.
+        // Private constructor for JSON deserialization (as in commit b7611d3)
         [JsonConstructor]
-        private NodeV3(long id, string content, int version, NodeRole role, ProbabilityDistribution? distribution, FunctionType? function, Dictionary<string, object>? functionParams)
+        private NodeV3(long id, string content, NodeRole role, ProbabilityDistribution? distribution, FunctionType? function, Dictionary<string, object>? functionParams)
             : base(id) // Base constructor handles Id
         {
-             // We don't explicitly set Version here as it's controlled by the class definition (override int Version => 3;)
-             // However, including it in the constructor signature helps Newtonsoft match JSON properties.
             this.Content = content;
             this.Role = role;
             this.Distribution = distribution;
