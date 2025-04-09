@@ -377,12 +377,13 @@ namespace ReasoningEngine.Utils.Scenarios
 
                 foreach (long nodeId in allNodeIds)
                 {
-                    // Load node via mapper
-                    Node? node = _graphObjectMapper.GetNodeAsync(nodeId).Result; 
+                    // Load node via mapper - variable type changed to NodeV3?
+                    NodeV3? node = _graphObjectMapper.GetNodeAsync(nodeId).Result; 
                     // Check if it was loaded successfully and has the Variable role
                     if (node != null && node.Role == NodeRole.Variable) 
                     {
-                        variableNodes.Add(node); // Add the Node object
+                        // Cast NodeV3 to Node before adding to the list
+                        variableNodes.Add((Node)node); // Add the Node object 
                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_NODE#", $"Loaded Variable node {nodeId}.", true, DebugUtils.VerbosityLevel.Detailed); // Updated message
                     }
                     else if (node == null)

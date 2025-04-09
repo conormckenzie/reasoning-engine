@@ -61,7 +61,7 @@ namespace ReasoningEngine.GraphAccess
             if (long.TryParse(payload, out long nodeId))
             {
                 // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-                Node? node = graphObjectMapper.GetNodeAsync(nodeId).Result; 
+                NodeV3? node = graphObjectMapper.GetNodeAsync(nodeId).Result; // Changed type to NodeV3?
                 if (node != null)
                 {
                     // Basic formatting, might need more detail depending on node Role
@@ -184,20 +184,14 @@ namespace ReasoningEngine.GraphAccess
             }
             
             // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-            Node? existingNode = graphObjectMapper.GetNodeAsync(nodeId).Result;
+            NodeV3? existingNode = graphObjectMapper.GetNodeAsync(nodeId).Result; // Changed type to NodeV3?
             if (existingNode == null)
             {
                 return $"Node {nodeId} not found.";
             }
 
-            // Node alias is NodeV3, so this cast should be safe if GetNodeAsync works correctly
-             if (!(existingNode is Node currentNode)) 
-             {
-                  // This path indicates an issue with GetNodeAsync or the stored data type
-                  DebugWriter.DebugWriteLine("#EDIT_NODE_TYPE_ERR#", $"Loaded node {nodeId} is not of expected type Node/NodeV3.");
-                  return $"Node {nodeId} is not of the expected type (NodeV3). Edit failed.";
-             }
-
+            // Removed the unnecessary cast, existingNode is already NodeV3
+            // NodeFactory expects NodeV3 (or Node alias)
 
             string newContent = parts[1];
             // Remaining parts define the potential new role and subtype info (index 2 onwards)
@@ -222,9 +216,12 @@ namespace ReasoningEngine.GraphAccess
                 }
 
                 // Delegate update logic to NodeFactory, passing the dictionary
-                Node updatedNode = NodeFactory.UpdateNodeFromPayload(currentNode, newContent, updateParameters); 
+                // NodeFactory.UpdateNodeFromPayload now accepts NodeV3 directly.
+                // Pass existingNode (which is NodeV3) without casting.
+                Node updatedNode = NodeFactory.UpdateNodeFromPayload(existingNode, newContent, updateParameters); 
 
                 // Save the updated node
+                // SaveNodeAsync expects Node (which is NodeV3), so updatedNode is compatible
                 bool success = graphObjectMapper.SaveNodeAsync(updatedNode).Result; 
                 if (success)
                 {

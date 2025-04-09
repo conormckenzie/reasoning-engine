@@ -1,6 +1,6 @@
 // File: GraphFileManager.cs
 
-using Newtonsoft.Json;
+using System.Text.Json; // Changed from Newtonsoft.Json
 using DebugUtils;
 using System.Collections.Concurrent;
 
@@ -136,10 +136,12 @@ namespace ReasoningEngine.GraphFileHandling
                                 {
                                     string jsonData = File.ReadAllText(edgeFilePath);
                                     // Partially deserialize to check Guid without loading the full object
-                                    // Assuming EdgeId is directly on the serialized object (might need adjustment if nested)
-                                    var edgeInfo = JsonConvert.DeserializeObject<EdgeIdHelper>(jsonData); 
-                                    if (edgeInfo?.EdgeId == edgeId)
-                                    {
+                                     // Assuming EdgeId is directly on the serialized object (might need adjustment if nested)
+                                     // Changed from JsonConvert, added case-insensitive option
+                                     var optionsCI = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                                     var edgeInfo = JsonSerializer.Deserialize<EdgeIdHelper>(jsonData, optionsCI); 
+                                     if (edgeInfo?.EdgeId == edgeId)
+                                     {
                                          DebugWriter.DebugWriteLine("#GET_EDGE_GUID_FOUND#", $"Found edge file {edgeFilePath} for Guid {edgeId}.", true, VerbosityLevel.Detailed);
                                          return Task.FromResult<string?>(jsonData);
                                     }
@@ -223,10 +225,12 @@ namespace ReasoningEngine.GraphFileHandling
                 if (edgeData == null) {
                      DebugWriter.DebugWriteLine("#DEL_EDGE_GUID_NOTFOUND#", $"Edge Guid {edgeId} not found for deletion.", true, VerbosityLevel.Normal);
                     return false; // Edge not found
-                }
+                 }
 
-                // Deserialize to get FromNode and ToNode to delete both files
-                 var edgeInfo = JsonConvert.DeserializeObject<EdgeFromToHelper>(edgeData);
+                 // Deserialize to get FromNode and ToNode to delete both files
+                 // Changed from JsonConvert, added case-insensitive option
+                 var optionsCI = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                 var edgeInfo = JsonSerializer.Deserialize<EdgeFromToHelper>(edgeData, optionsCI);
                  if (edgeInfo == null) {
                      DebugWriter.DebugWriteLine("#DEL_EDGE_GUID_DESER_ERR#", $"Could not deserialize From/To nodes from edge data for Guid {edgeId}.", true, VerbosityLevel.Minimal);
                      return false; // Could not determine file paths
@@ -354,12 +358,9 @@ namespace ReasoningEngine.GraphFileHandling
                 // Changed to Detailed
                 DebugWriter.DebugWriteLine("#R5TZE3#", $"Saving edge to file: {filePath}", true, VerbosityLevel.Detailed); 
                 EnsureDirectoryExists(filePath);
-                var edgeData = new
-                {
-                    Version = edge.Version,
-                    Edge = edge
-                };
-                string jsonData = JsonConvert.SerializeObject(edgeData, Formatting.Indented);
+                // Serialize the edge object directly, removing the wrapper
+                var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
+                string jsonData = JsonSerializer.Serialize(edge, options); // Serialize edge directly
                 File.WriteAllText(filePath, jsonData);
 
                 // Update index files
@@ -443,38 +444,50 @@ namespace ReasoningEngine.GraphFileHandling
                 // Traverse the directory hierarchy using index files
                 var edgeFiles = GetAllEdgeFiles(nodeId, outgoing);
 
+                // Prepare options once, include case-insensitivity for robustness
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true }; 
+
                 foreach (string filePath in edgeFiles)
                 {
                     string fileContent = File.ReadAllText(filePath);
-                    var edgeData = JsonConvert.DeserializeObject<dynamic>(fileContent);
-                    
-                    if (edgeData == null)
+                    EdgeBase? edge = null; 
+                    try 
                     {
-                        DebugWriter.DebugWriteLine("#XKIRIV#", $"Failed to deserialize edge data from file: {filePath}");
-                        continue;
+                        // Deserialize the entire content directly into EdgeV2
+                        edge = JsonSerializer.Deserialize<EdgeV2>(fileContent, options); 
+
+                        // Optional: Check version after deserialization if needed
+                        if (edge != null && edge.Version != 2) 
+                        {
+                             DebugWriter.DebugWriteLine("#EDGE_VER_WARN#", $"Loaded edge from {filePath} has unexpected version {edge.Version}.", true, VerbosityLevel.Minimal);
+                             // Decide whether to discard or handle older versions if they reappear
+                             edge = null; // Discard for now if version mismatch
+                        }
+                    }
+                    catch (JsonException jsonEx)
+                    {
+                         DebugWriter.DebugWriteLine("#XKIRIV#", $"JSON Error deserializing edge data from file: {filePath}. Error: {jsonEx.Message}");
+                         edge = null; // Ensure edge is null on error
+                    }
+                    catch (Exception ex) // Catch other potential errors during deserialization
+                    {
+                         DebugWriter.DebugWriteLine("#XKIRIV#", $"General Error deserializing edge data from file: {filePath}. Error: {ex.Message}");
+                         edge = null; // Ensure edge is null on error
                     }
 
-                    int version = (int)edgeData.Version;
-                    EdgeBase? edge;
-
-                    // Since EdgeV1 is removed, we only expect V2+ for edges
-                    switch (version) 
-                    {
-                        // case 1: // Removed V1 handling
-                        //    edge = JsonConvert.DeserializeObject<EdgeV1>(edgeData.Edge.ToString());
-                        //    break; 
-                        case 2:
-                            edge = JsonConvert.DeserializeObject<EdgeV2>(edgeData.Edge.ToString()); // Assumes EdgeV2 is still the latest edge version
-                            break;
-                        default:
-                            throw new NotSupportedException($"Edge version {version} is not supported.");
-                    }
-
+                    // Add the edge if deserialization was successful and version is okay (or version check removed)
                     if (edge != null)
                     {
-                        edges.Add(edge.UpgradeToLatest());
+                        edges.Add(edge.UpgradeToLatest()); // UpgradeToLatest might be redundant if only V2 exists
+                    }
+                    else 
+                    {
+                        // Log and continue if deserialization failed
+                        DebugWriter.DebugWriteLine("#XKIRIV#", $"Failed to deserialize edge data from file: {filePath}");
+                        continue; 
                     }
                 }
+                // Removed duplicate Newtonsoft.Json block from previous merge error
             }
             catch (Exception ex)
             {
@@ -618,7 +631,9 @@ namespace ReasoningEngine.GraphFileHandling
             if (File.Exists(indexFilePath))
             {
                 string json = File.ReadAllText(indexFilePath);
-                return JsonConvert.DeserializeObject<IndexFile>(json) ?? new IndexFile();
+                // Ensure System.Text.Json is used, add case-insensitive option
+                var optionsCI = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                return JsonSerializer.Deserialize<IndexFile>(json, optionsCI) ?? new IndexFile(); 
             }
             else
             {
@@ -628,7 +643,9 @@ namespace ReasoningEngine.GraphFileHandling
 
         private void SaveIndexFile(string indexFilePath, IndexFile indexFile)
         {
-            string json = JsonConvert.SerializeObject(indexFile, Formatting.Indented);
+            var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
+            // Ensure System.Text.Json is used
+            string json = JsonSerializer.Serialize(indexFile, options); 
             File.WriteAllText(indexFilePath, json);
         }
 

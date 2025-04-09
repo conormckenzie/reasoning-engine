@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Newtonsoft.Json; // Assuming Newtonsoft.Json for serialization
+using System.Text.Json; // Using System.Text.Json for serialization
 using ReasoningEngine; // For Node, Edge etc.
 using DebugUtils;
 
@@ -22,7 +22,7 @@ namespace ReasoningEngine.GraphFileHandling
 
         // --- Node Operations ---
 
-        public async Task<Node?> GetNodeAsync(long nodeId)
+        public async Task<NodeV3?> GetNodeAsync(long nodeId) // Changed return type to NodeV3?
         {
             string? nodeData = await storageProvider.GetNodeDataAsync(nodeId);
             if (string.IsNullOrEmpty(nodeData))
@@ -32,17 +32,20 @@ namespace ReasoningEngine.GraphFileHandling
 
             try
             {
+                // Log the JSON being read before deserialization
+                DebugWriter.DebugWriteLine("#MAP_GETNODE_JSON#", $"Reading Node {nodeId} JSON:\n{nodeData}"); // Removed incorrect verbosityLevel
                 // TODO: Implement robust deserialization, potentially checking a version/type field
-                // For now, assuming direct deserialization to Node (which is NodeV3 alias)
-                Node? node = JsonConvert.DeserializeObject<Node>(nodeData); 
-                return node;
+                // Deserialize directly into NodeV3, which has the JsonConstructor attribute
+                NodeV3? node = JsonSerializer.Deserialize<NodeV3>(nodeData);
+                return node; // Return type is Node? which is compatible with NodeV3?
             }
-            catch (JsonException ex)
+            catch (System.Text.Json.JsonException ex)
             {
                 DebugWriter.DebugWriteLine("#MAP_GETNODE_ERR#", $"Error deserializing node {nodeId}: {ex.Message}");
                 return null; // Or throw custom exception
             }
-            catch (Exception ex)
+            // Removed duplicate generic catch block
+            catch (Exception ex) 
             {
                  DebugWriter.DebugWriteLine("#MAP_GETNODE_GEN_ERR#", $"Unexpected error getting node {nodeId}: {ex.Message}");
                  return null; // Or throw
@@ -56,10 +59,13 @@ namespace ReasoningEngine.GraphFileHandling
              try
              {
                  // TODO: Implement robust serialization
-                 string nodeData = JsonConvert.SerializeObject(node, Formatting.Indented);
+                 var options = new JsonSerializerOptions { WriteIndented = true };
+                 string nodeData = JsonSerializer.Serialize(node, options);
+                 // Log the JSON being saved (Removed incorrect verbosityLevel parameter)
+                 DebugWriter.DebugWriteLine("#MAP_SAVNODE_JSON#", $"Saving Node {node.Id} JSON:\n{nodeData}");
                  return await storageProvider.SaveNodeDataAsync(node.Id, nodeData);
              }
-             catch (JsonException ex)
+             catch (System.Text.Json.JsonException ex)
              {
                  DebugWriter.DebugWriteLine("#MAP_SAVNODE_ERR#", $"Error serializing node {node.Id}: {ex.Message}");
                  return false; // Or throw custom exception
@@ -98,7 +104,7 @@ namespace ReasoningEngine.GraphFileHandling
                         DebugWriter.DebugWriteLine("#MAP_DELNODE_EDGEFAIL#", $"Failed to delete associated edge {edgeId} for node {nodeId}. Provider returned false.", true, VerbosityLevel.Minimal);
                         success = false; // Mark overall operation as potentially incomplete
                     } else {
-                         DebugWriter.DebugWriteLine("#MAP_DELNODE_EDGEDEL#", $"Deleted associated edge {edgeId} for node {nodeId}.", true, VerbosityLevel.Detailed);
+                         DebugWriter.DebugWriteLine("#MAP_DELNODE_EDGEDEL#", $"Deleted associated edge {edgeId} for node {nodeId}.", true, VerbosityLevel.Detailed); // Corrected VerbosityLevel access
                     }
                 }
 
@@ -110,7 +116,7 @@ namespace ReasoningEngine.GraphFileHandling
                 }
                  return success && nodeDeleted; // Return true only if node deletion itself succeeded
             }
-            catch (Exception ex)
+            catch (Exception ex) // Catch block for the outer try in DeleteNodeAsync
             {
                  DebugWriter.DebugWriteLine("#MAP_DELNODE_ERR#", $"Unexpected error deleting node {nodeId} and associated edges: {ex.Message}");
                  return false; // Or throw
@@ -133,10 +139,10 @@ namespace ReasoningEngine.GraphFileHandling
             {
                 // TODO: Implement robust deserialization, potentially checking a version/type field
                 // For now, assuming direct deserialization to Edge (which is EdgeV2 alias)
-                Edge? edge = JsonConvert.DeserializeObject<Edge>(edgeData); 
+                Edge? edge = JsonSerializer.Deserialize<Edge>(edgeData);
                 return edge;
             }
-            catch (JsonException ex)
+            catch (System.Text.Json.JsonException ex)
             {
                 DebugWriter.DebugWriteLine("#MAP_GETEDGE_GUID_ERR#", $"Error deserializing edge {edgeId}: {ex.Message}");
                 return null; // Or throw custom exception
@@ -160,10 +166,10 @@ namespace ReasoningEngine.GraphFileHandling
             try
             {
                 // TODO: Implement robust deserialization
-                Edge? edge = JsonConvert.DeserializeObject<Edge>(edgeData); 
+                Edge? edge = JsonSerializer.Deserialize<Edge>(edgeData);
                 return edge;
             }
-            catch (JsonException ex)
+            catch (System.Text.Json.JsonException ex)
             {
                 DebugWriter.DebugWriteLine("#MAP_GETEDGE_FROMTO_ERR#", $"Error deserializing edge {fromNodeId}->{toNodeId}: {ex.Message}");
                 return null; // Or throw custom exception
@@ -240,11 +246,12 @@ namespace ReasoningEngine.GraphFileHandling
             try
             {
                 // TODO: Implement robust serialization, maybe wrap edge like node data?
-                string edgeData = JsonConvert.SerializeObject(edge, Formatting.Indented);
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string edgeData = JsonSerializer.Serialize(edge, options);
                 // Use the provider's method which handles saving both outgoing/incoming representations
                 return await storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData);
             }
-            catch (JsonException ex)
+            catch (System.Text.Json.JsonException ex)
             {
                 DebugWriter.DebugWriteLine("#MAP_SAVEDGE_ERR#", $"Error serializing edge {edge.EdgeId} ({edge.FromNode}->{edge.ToNode}): {ex.Message}");
                 return false; // Or throw custom exception

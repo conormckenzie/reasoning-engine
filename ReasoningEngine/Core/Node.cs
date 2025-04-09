@@ -1,7 +1,8 @@
 // File: /home/user/code/reasoning-engine/ReasoningEngine/Core/Node.cs
-using System; 
-using System.Collections.Generic; 
-using Newtonsoft.Json; // Added for JsonConstructor attribute
+using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization; // For JsonConstructor attribute
+// using Newtonsoft.Json.Converters; // Removed for StringEnumConverter
 
 namespace ReasoningEngine
 {
@@ -15,6 +16,7 @@ namespace ReasoningEngine
         public override int Version => 3; 
 
         // Made setter public for easier deserialization (as in commit b7611d3)
+        // Removed [JsonConverter(typeof(StringEnumConverter))]
         public NodeRole Role { get; set; } 
 
         // Properties for different roles - ensure Distribution is not nullable for Variable role
@@ -45,7 +47,7 @@ namespace ReasoningEngine
         }
 
         // Private constructor for JSON deserialization (as in commit b7611d3)
-        [JsonConstructor]
+        [System.Text.Json.Serialization.JsonConstructor]
         private NodeV3(long id, string content, NodeRole role, ProbabilityDistribution? distribution, FunctionType? function, Dictionary<string, object>? functionParams)
             : base(id) // Base constructor handles Id
         {

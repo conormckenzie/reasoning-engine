@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json; // Changed from Newtonsoft.Json
 
 namespace ReasoningEngineTests
 {
@@ -45,8 +45,9 @@ namespace ReasoningEngineTests
             var toNode = new Node(edge.ToNode, "To Node", DomainType.Truth);
 
             // Create nodes first using the storage provider
-            string fromNodeData = JsonConvert.SerializeObject(fromNode, Formatting.Indented);
-            string toNodeData = JsonConvert.SerializeObject(toNode, Formatting.Indented);
+            var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
+            string fromNodeData = JsonSerializer.Serialize(fromNode, options);
+            string toNodeData = JsonSerializer.Serialize(toNode, options);
             Assert.Multiple(() =>
             {
                 Assert.That(storageProvider.SaveNodeDataAsync(fromNode.Id, fromNodeData).Result, Is.True, "Failed to save FromNode"); 
@@ -54,16 +55,16 @@ namespace ReasoningEngineTests
             });
 
             // Save edge using the storage provider
-            string edgeData = JsonConvert.SerializeObject(edge, Formatting.Indented);
-            Assert.That(storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData).Result, Is.True, "Failed to save edge"); 
+            string edgeData = JsonSerializer.Serialize(edge, options);
+            Assert.That(storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData).Result, Is.True, "Failed to save edge");
 
             // Load edge data using the provider (by From/To IDs)
             string? loadedEdgeData = storageProvider.GetEdgeDataAsync(edge.FromNode, edge.ToNode).Result; 
             Assert.That(loadedEdgeData, Is.Not.Null.And.Not.Empty, "Failed to load edge data");
 
             // Deserialize and verify
-            Edge? loadedEdge = JsonConvert.DeserializeObject<Edge>(loadedEdgeData!); // Added '!' after null check
-            if (loadedEdge != null) 
+            Edge? loadedEdge = JsonSerializer.Deserialize<Edge>(loadedEdgeData!); // Changed from JsonConvert
+            if (loadedEdge != null)
             {
                 Assert.Multiple(() => // Already wrapped
                 {
@@ -106,19 +107,20 @@ namespace ReasoningEngineTests
             var edge = new Edge(1234567890123456, 6543210987654321, 1.5, "Test Edge");
             var fromNode = new Node(edge.FromNode, "From Node", DomainType.Truth);
             var toNode = new Node(edge.ToNode, "To Node", DomainType.Truth);
-    
+
             // Create nodes first using the storage provider
-            string fromNodeData = JsonConvert.SerializeObject(fromNode, Formatting.Indented);
-            string toNodeData = JsonConvert.SerializeObject(toNode, Formatting.Indented);
+            var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
+            string fromNodeData = JsonSerializer.Serialize(fromNode, options);
+            string toNodeData = JsonSerializer.Serialize(toNode, options);
             Assert.Multiple(() =>
             {
                 Assert.That(storageProvider.SaveNodeDataAsync(fromNode.Id, fromNodeData).Result, Is.True, "Failed to save FromNode"); 
                 Assert.That(storageProvider.SaveNodeDataAsync(toNode.Id, toNodeData).Result, Is.True, "Failed to save ToNode"); 
             });
-    
+
             // Save edge using the storage provider
-            string edgeData = JsonConvert.SerializeObject(edge, Formatting.Indented);
-            Assert.That(storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData).Result, Is.True, "Failed to save edge"); 
+            string edgeData = JsonSerializer.Serialize(edge, options);
+            Assert.That(storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData).Result, Is.True, "Failed to save edge");
 
             // Get file paths using the provider's helper methods
             string outgoingEdgeFilePath = storageProvider.GetEdgeFilePath(edge.FromNode, edge.ToNode, true); 
@@ -171,21 +173,22 @@ namespace ReasoningEngineTests
             var destNode3 = new Node(8765432109876543, "Dest Node 3", DomainType.Truth);
 
             // Create nodes first using the storage provider
+            var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
             Assert.Multiple(() =>
             {
-                Assert.That(storageProvider.SaveNodeDataAsync(sourceNode.Id, JsonConvert.SerializeObject(sourceNode)).Result, Is.True); 
-                Assert.That(storageProvider.SaveNodeDataAsync(destNode1.Id, JsonConvert.SerializeObject(destNode1)).Result, Is.True); 
-                Assert.That(storageProvider.SaveNodeDataAsync(destNode2.Id, JsonConvert.SerializeObject(destNode2)).Result, Is.True); 
-                Assert.That(storageProvider.SaveNodeDataAsync(destNode3.Id, JsonConvert.SerializeObject(destNode3)).Result, Is.True); 
+                Assert.That(storageProvider.SaveNodeDataAsync(sourceNode.Id, JsonSerializer.Serialize(sourceNode, options)).Result, Is.True);
+                Assert.That(storageProvider.SaveNodeDataAsync(destNode1.Id, JsonSerializer.Serialize(destNode1, options)).Result, Is.True);
+                Assert.That(storageProvider.SaveNodeDataAsync(destNode2.Id, JsonSerializer.Serialize(destNode2, options)).Result, Is.True);
+                Assert.That(storageProvider.SaveNodeDataAsync(destNode3.Id, JsonSerializer.Serialize(destNode3, options)).Result, Is.True);
             });
 
 
             // Save edges using provider
             Assert.Multiple(() =>
             {
-                Assert.That(storageProvider.SaveEdgeDataAsync(edge1.EdgeId, edge1.FromNode, edge1.ToNode, JsonConvert.SerializeObject(edge1)).Result, Is.True); 
-                Assert.That(storageProvider.SaveEdgeDataAsync(edge2.EdgeId, edge2.FromNode, edge2.ToNode, JsonConvert.SerializeObject(edge2)).Result, Is.True); 
-                Assert.That(storageProvider.SaveEdgeDataAsync(edge3.EdgeId, edge3.FromNode, edge3.ToNode, JsonConvert.SerializeObject(edge3)).Result, Is.True); 
+                Assert.That(storageProvider.SaveEdgeDataAsync(edge1.EdgeId, edge1.FromNode, edge1.ToNode, JsonSerializer.Serialize(edge1, options)).Result, Is.True);
+                Assert.That(storageProvider.SaveEdgeDataAsync(edge2.EdgeId, edge2.FromNode, edge2.ToNode, JsonSerializer.Serialize(edge2, options)).Result, Is.True);
+                Assert.That(storageProvider.SaveEdgeDataAsync(edge3.EdgeId, edge3.FromNode, edge3.ToNode, JsonSerializer.Serialize(edge3, options)).Result, Is.True);
             });
 
             // Test GetOutgoingEdgeIdsAsync
@@ -231,13 +234,15 @@ namespace ReasoningEngineTests
         {
             long largeId = 9223372036854775807; // Max long value
             // Use V3 Variable constructor with default DomainType
-            var node = new Node(largeId, "Large ID Node", DomainType.Truth); 
-            string nodeData = JsonConvert.SerializeObject(node, Formatting.Indented);
-            Assert.That(storageProvider.SaveNodeDataAsync(node.Id, nodeData).Result, Is.True); 
+            var node = new Node(largeId, "Large ID Node", DomainType.Truth);
+            var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
+            string nodeData = JsonSerializer.Serialize(node, options);
+            Assert.That(storageProvider.SaveNodeDataAsync(node.Id, nodeData).Result, Is.True);
 
-            string? loadedNodeData = storageProvider.GetNodeDataAsync(largeId).Result; 
+            string? loadedNodeData = storageProvider.GetNodeDataAsync(largeId).Result;
             Assert.That(loadedNodeData, Is.Not.Null.And.Not.Empty, "Loaded node data should not be null");
-            Node? loadedNode = JsonConvert.DeserializeObject<Node>(loadedNodeData!); // Added '!' after null check
+            // Deserialize as NodeV3 because that's what GraphObjectMapper does now
+            NodeV3? loadedNode = JsonSerializer.Deserialize<NodeV3>(loadedNodeData!); // Changed from JsonConvert and Node to NodeV3
             if (loadedNode != null)
             {
                 Assert.Multiple(() =>
@@ -263,17 +268,19 @@ namespace ReasoningEngineTests
                 new(3, "Node Three", DomainType.Truth) // Simplified new()
             };
 
+            var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
             foreach (var node in nodes)
             {
-                 string nodeData = JsonConvert.SerializeObject(node, Formatting.Indented);
-                 Assert.That(storageProvider.SaveNodeDataAsync(node.Id, nodeData).Result, Is.True); 
+                 string nodeData = JsonSerializer.Serialize(node, options);
+                 Assert.That(storageProvider.SaveNodeDataAsync(node.Id, nodeData).Result, Is.True);
             }
 
             foreach (var node in nodes)
             {
-                string? loadedNodeData = storageProvider.GetNodeDataAsync(node.Id).Result; 
+                string? loadedNodeData = storageProvider.GetNodeDataAsync(node.Id).Result;
                 Assert.That(loadedNodeData, Is.Not.Null.And.Not.Empty, $"Loaded node data for {node.Id} should not be null");
-                Node? loadedNode = JsonConvert.DeserializeObject<Node>(loadedNodeData!); // Added '!' after null check
+                // Deserialize as NodeV3 because that's what GraphObjectMapper does now
+                NodeV3? loadedNode = JsonSerializer.Deserialize<NodeV3>(loadedNodeData!); // Changed from JsonConvert and Node to NodeV3
                 if (loadedNode != null)
                 {
                     Assert.Multiple(() =>
@@ -297,11 +304,12 @@ namespace ReasoningEngineTests
             var node2 = new Node(2, "Node Two", DomainType.Truth);
             var edge = new Edge(1, 2, 1.0, "Test Edge");
 
-            string node1Data = JsonConvert.SerializeObject(node1, Formatting.Indented);
-            string node2Data = JsonConvert.SerializeObject(node2, Formatting.Indented);
-            string edgeData = JsonConvert.SerializeObject(edge, Formatting.Indented);
-            storageProvider.SaveNodeDataAsync(node1.Id, node1Data).Wait(); 
-            storageProvider.SaveNodeDataAsync(node2.Id, node2Data).Wait(); 
+            var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
+            string node1Data = JsonSerializer.Serialize(node1, options);
+            string node2Data = JsonSerializer.Serialize(node2, options);
+            string edgeData = JsonSerializer.Serialize(edge, options);
+            storageProvider.SaveNodeDataAsync(node1.Id, node1Data).Wait();
+            storageProvider.SaveNodeDataAsync(node2.Id, node2Data).Wait();
             storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData).Wait(); 
 
             Assert.That(storageProvider.DeleteNodeDataAsync(1).Result, Is.True); 
@@ -333,11 +341,12 @@ namespace ReasoningEngineTests
             var node2 = new Node(largeId2, "Large Node Two", DomainType.Truth);
             var edge = new Edge(largeId1, largeId2, 1.0, "Large ID Edge");
 
-            string node1Data = JsonConvert.SerializeObject(node1, Formatting.Indented);
-            string node2Data = JsonConvert.SerializeObject(node2, Formatting.Indented);
-            string edgeData = JsonConvert.SerializeObject(edge, Formatting.Indented);
-            storageProvider.SaveNodeDataAsync(node1.Id, node1Data).Wait(); 
-            storageProvider.SaveNodeDataAsync(node2.Id, node2Data).Wait(); 
+            var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
+            string node1Data = JsonSerializer.Serialize(node1, options);
+            string node2Data = JsonSerializer.Serialize(node2, options);
+            string edgeData = JsonSerializer.Serialize(edge, options);
+            storageProvider.SaveNodeDataAsync(node1.Id, node1Data).Wait();
+            storageProvider.SaveNodeDataAsync(node2.Id, node2Data).Wait();
             Assert.That(storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData).Result, Is.True); 
 
             var loadedEdgeIds = storageProvider.GetOutgoingEdgeIdsAsync(largeId1).Result; 
@@ -348,9 +357,9 @@ namespace ReasoningEngineTests
             });
 
             // Optionally load and verify the edge data
-            string? loadedEdgeData = storageProvider.GetEdgeDataAsync(edge.EdgeId).Result; 
+            string? loadedEdgeData = storageProvider.GetEdgeDataAsync(edge.EdgeId).Result;
             Assert.That(loadedEdgeData, Is.Not.Null, "Loaded edge data should not be null");
-            Edge? loadedEdge = JsonConvert.DeserializeObject<Edge>(loadedEdgeData!); // Added '!' after null check
+            Edge? loadedEdge = JsonSerializer.Deserialize<Edge>(loadedEdgeData!); // Changed from JsonConvert
              if (loadedEdge != null)
              {
                  Assert.Multiple(() =>
@@ -373,11 +382,12 @@ namespace ReasoningEngineTests
             var node2 = new Node(2, "Node Two", DomainType.Truth);
             var edge = new Edge(1, 2, 1.0, "Test Edge");
 
-            string node1Data = JsonConvert.SerializeObject(node1, Formatting.Indented);
-            string node2Data = JsonConvert.SerializeObject(node2, Formatting.Indented);
-            string edgeData = JsonConvert.SerializeObject(edge, Formatting.Indented);
-            storageProvider.SaveNodeDataAsync(node1.Id, node1Data).Wait(); 
-            storageProvider.SaveNodeDataAsync(node2.Id, node2Data).Wait(); 
+            var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
+            string node1Data = JsonSerializer.Serialize(node1, options);
+            string node2Data = JsonSerializer.Serialize(node2, options);
+            string edgeData = JsonSerializer.Serialize(edge, options);
+            storageProvider.SaveNodeDataAsync(node1.Id, node1Data).Wait();
+            storageProvider.SaveNodeDataAsync(node2.Id, node2Data).Wait();
             storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData).Wait(); 
 
             storageProvider.DeleteNodeDataAsync(1).Wait(); // Delete node 1
@@ -391,20 +401,21 @@ namespace ReasoningEngineTests
         public void TestGetAllNodeIds()
         {
              // Use V3 Variable constructor with default DomainType
-            var nodes = new List<Node> 
+            var nodes = new List<Node>
             {
-                new(1, "Node One", DomainType.Truth), 
-                new(2, "Node Two", DomainType.Truth), 
+                new(1, "Node One", DomainType.Truth),
+                new(2, "Node Two", DomainType.Truth),
                 new(3, "Node Three", DomainType.Truth) // Simplified new()
             };
 
+            var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
             foreach (var node in nodes)
             {
-                string nodeData = JsonConvert.SerializeObject(node, Formatting.Indented);
-                storageProvider.SaveNodeDataAsync(node.Id, nodeData).Wait(); 
+                string nodeData = JsonSerializer.Serialize(node, options);
+                storageProvider.SaveNodeDataAsync(node.Id, nodeData).Wait();
             }
 
-            var allNodeIds = storageProvider.GetAllNodeIdsAsync().Result; 
+            var allNodeIds = storageProvider.GetAllNodeIdsAsync().Result;
             Assert.That(allNodeIds, Is.EquivalentTo(new List<long> { 1, 2, 3 }));
 
             storageProvider.DeleteNodeDataAsync(2).Wait(); // Delete node 2
@@ -417,7 +428,8 @@ namespace ReasoningEngineTests
         public void TestSaveEdgeWithNonExistentNodes()
         {
             var edge = new Edge(1, 2, 1.0, "Test Edge");
-            string edgeData = JsonConvert.SerializeObject(edge, Formatting.Indented);
+            var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
+            string edgeData = JsonSerializer.Serialize(edge, options);
             // SaveEdgeDataAsync itself doesn't check node existence, but the underlying file provider might fail implicitly
             // or succeed but lead to dangling edges. The FileGraphStorageProvider SaveEdgeDataAsync implementation
             // *does* check node existence via a helper. Let's assume it returns false.
@@ -433,23 +445,24 @@ namespace ReasoningEngineTests
             var node2 = new Node(2, "Node Two", DomainType.Truth);
             var edge = new Edge(1, 2, 1.0, "Original Edge");
 
-            string node1Data = JsonConvert.SerializeObject(node1, Formatting.Indented);
-            string node2Data = JsonConvert.SerializeObject(node2, Formatting.Indented);
-            string edgeData = JsonConvert.SerializeObject(edge, Formatting.Indented);
-            storageProvider.SaveNodeDataAsync(node1.Id, node1Data).Wait(); 
-            storageProvider.SaveNodeDataAsync(node2.Id, node2Data).Wait(); 
+            var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
+            string node1Data = JsonSerializer.Serialize(node1, options);
+            string node2Data = JsonSerializer.Serialize(node2, options);
+            string edgeData = JsonSerializer.Serialize(edge, options);
+            storageProvider.SaveNodeDataAsync(node1.Id, node1Data).Wait();
+            storageProvider.SaveNodeDataAsync(node2.Id, node2Data).Wait();
             storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData).Wait(); 
 
             // Create updated edge object (constructor generates a new Guid, which is fine for the data part)
-            var updatedEdgeDataOnly = new Edge(1, 2, 2.0, "Updated Edge"); 
-            string updatedEdgeDataString = JsonConvert.SerializeObject(updatedEdgeDataOnly, Formatting.Indented);
+            var updatedEdgeDataOnly = new Edge(1, 2, 2.0, "Updated Edge");
+            string updatedEdgeDataString = JsonSerializer.Serialize(updatedEdgeDataOnly, options);
             // Save using the *original* edge's Guid but the *new* data
-            Assert.That(storageProvider.SaveEdgeDataAsync(edge.EdgeId, updatedEdgeDataOnly.FromNode, updatedEdgeDataOnly.ToNode, updatedEdgeDataString).Result, Is.True); 
+            Assert.That(storageProvider.SaveEdgeDataAsync(edge.EdgeId, updatedEdgeDataOnly.FromNode, updatedEdgeDataOnly.ToNode, updatedEdgeDataString).Result, Is.True);
 
             // Load the edge data using the original Guid and verify
-            string? loadedEdgeData = storageProvider.GetEdgeDataAsync(edge.EdgeId).Result; 
+            string? loadedEdgeData = storageProvider.GetEdgeDataAsync(edge.EdgeId).Result;
             Assert.That(loadedEdgeData, Is.Not.Null, "Loaded edge data should not be null");
-            Edge? loadedEdge = JsonConvert.DeserializeObject<Edge>(loadedEdgeData!); // Added '!' after null check
+            Edge? loadedEdge = JsonSerializer.Deserialize<Edge>(loadedEdgeData!); // Changed from JsonConvert
             if (loadedEdge != null)
             {
                 Assert.Multiple(() =>
@@ -466,10 +479,11 @@ namespace ReasoningEngineTests
         }
 
         // Make static as it doesn't use instance members
-        private static IndexFile LoadIndexFile(string indexFilePath) 
+        private static IndexFile LoadIndexFile(string indexFilePath)
         {
             string json = File.ReadAllText(indexFilePath);
-            return JsonConvert.DeserializeObject<IndexFile>(json) ?? new IndexFile();
+            // Changed from JsonConvert
+            return JsonSerializer.Deserialize<IndexFile>(json) ?? new IndexFile(); 
         }
     }
 }

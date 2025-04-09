@@ -1,5 +1,5 @@
 using System; // For Guid
-using Newtonsoft.Json; // Added for JsonConstructor attribute
+using System.Text.Json.Serialization; // Changed for JsonConstructor attribute
 
 namespace ReasoningEngine
 {
@@ -23,7 +23,7 @@ namespace ReasoningEngine
         }
 
         // Constructor accepting existing Guid (for loading) - Mark for JSON deserialization (as in commit b7611d3)
-         [JsonConstructor]
+         [System.Text.Json.Serialization.JsonConstructor] // Changed attribute
          public EdgeV2(Guid edgeId, long fromNode, long toNode, double weight, string edgeContent) 
             : base(edgeId, fromNode, toNode) // Calls EdgeBase constructor that accepts Guid
         {

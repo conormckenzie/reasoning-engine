@@ -115,7 +115,8 @@ namespace ReasoningEngine
         /// </param>
         /// <returns>A new, updated Node instance.</returns>
         /// <exception cref="ArgumentException">Thrown if the parameters are invalid.</exception>
-        public static Node UpdateNodeFromPayload(Node existingNode, string newContent, Dictionary<string, object> updateParameters) 
+        // Changed parameter type from Node to NodeV3
+        public static Node UpdateNodeFromPayload(NodeV3 existingNode, string newContent, Dictionary<string, object> updateParameters) 
         {
             // Parameters that can be updated: "Role", "VariableDomainType", "FunctionType", "FunctionParams"
             // If "Role" is provided and different, other relevant properties might be reset.
