@@ -221,21 +221,22 @@ namespace ReasoningEngineTests
             commandProcessor.ProcessCommand("add_edge", "2|1|1.0|Edge 2-1"); // Edge from 2 to 1
             
             string result = commandProcessor.ProcessCommand("delete_node", "1");
-            // Check updated message
-            Assert.That(result, Does.Contain("Node 1 data deleted. (Associated edges might still exist).")); 
+            // Check updated message (Remove the potentially misleading parenthetical)
+            Assert.That(result, Does.Contain("Node 1 data deleted.")); 
             
-            // Verify edges related to node 1 are gone (or should be handled by DeleteNodeAsync eventually)
-            // Currently, DeleteNodeAsync only deletes node data, so edges might remain.
-            // This test needs adjustment based on how edge deletion during node deletion is implemented.
-            // For now, check that querying node 1 fails.
+            // Verify node 1 is gone
              string queryNode1 = commandProcessor.ProcessCommand("node_query", "1");
              Assert.That(queryNode1, Is.EqualTo("Node 1 not found."));
 
-            // Check edges for node 2 - the edge 2->1 might still exist depending on DeleteNode implementation
+            // Check edges for node 2 - the edge 2->1 should now be deleted by the updated DeleteNodeDataAsync
              string queryEdges2 = commandProcessor.ProcessCommand("outgoing_edge_query", "2");
-             // Assert based on expected behavior (currently edge 2->1 might remain)
-             // Assert.That(queryEdges2, Does.Not.Contain("Connected Node: 1")); // This would fail currently
-             Assert.That(queryEdges2, Does.Contain("Connected Node: 1")); // Expect edge to remain for now
+             Assert.That(queryEdges2, Does.Not.Contain("Connected Node: 1"), "Edge 2->1 should be deleted.");
+             Assert.That(queryEdges2, Does.Contain("No outgoing edges found"), "Node 2 should have no outgoing edges left."); // Since 2->1 was the only one
+
+            // Check edges for node 3 - the edge 1->3 should be gone
+             string queryEdges3 = commandProcessor.ProcessCommand("incoming_edge_query", "3");
+             Assert.That(queryEdges3, Does.Not.Contain("Connected Node: 1"), "Edge 1->3 should be deleted.");
+             Assert.That(queryEdges3, Does.Contain("No incoming edges found"), "Node 3 should have no incoming edges left."); // Since 1->3 was the only one
         }
 
         [Test]

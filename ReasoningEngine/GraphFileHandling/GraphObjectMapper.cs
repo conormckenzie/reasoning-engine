@@ -125,7 +125,7 @@ namespace ReasoningEngine.GraphFileHandling
 
         // --- Edge Operations ---
 
-        public async Task<Edge?> GetEdgeAsync(Guid edgeId)
+        public async Task<EdgeV2?> GetEdgeAsync(Guid edgeId) // Changed return type
         {
             string? edgeData = await storageProvider.GetEdgeDataAsync(edgeId);
             if (string.IsNullOrEmpty(edgeData))
@@ -138,9 +138,9 @@ namespace ReasoningEngine.GraphFileHandling
             try
             {
                 // TODO: Implement robust deserialization, potentially checking a version/type field
-                // For now, assuming direct deserialization to Edge (which is EdgeV2 alias)
-                Edge? edge = JsonSerializer.Deserialize<Edge>(edgeData);
-                return edge;
+                // Deserialize directly into EdgeV2, which has the correct [JsonConstructor]
+                EdgeV2? edge = JsonSerializer.Deserialize<EdgeV2>(edgeData); 
+                return edge; // Return type changed to EdgeV2?
             }
             catch (System.Text.Json.JsonException ex)
             {
@@ -154,7 +154,7 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
          
-        public async Task<Edge?> GetEdgeAsync(long fromNodeId, long toNodeId)
+        public async Task<EdgeV2?> GetEdgeAsync(long fromNodeId, long toNodeId) // Changed return type
         {
             string? edgeData = await storageProvider.GetEdgeDataAsync(fromNodeId, toNodeId);
             if (string.IsNullOrEmpty(edgeData))
@@ -166,8 +166,9 @@ namespace ReasoningEngine.GraphFileHandling
             try
             {
                 // TODO: Implement robust deserialization
-                Edge? edge = JsonSerializer.Deserialize<Edge>(edgeData);
-                return edge;
+                // Deserialize directly into EdgeV2, which has the correct [JsonConstructor]
+                EdgeV2? edge = JsonSerializer.Deserialize<EdgeV2>(edgeData);
+                return edge; // Return type changed to EdgeV2?
             }
             catch (System.Text.Json.JsonException ex)
             {
@@ -181,19 +182,19 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
-        public async Task<List<Edge>> GetOutgoingEdgesAsync(long nodeId)
+        public async Task<List<EdgeV2>> GetOutgoingEdgesAsync(long nodeId) // Changed list type
         {
-            var edges = new List<Edge>();
+            var edges = new List<EdgeV2>(); // Changed list type
             try
             {
                 List<Guid> edgeIds = await storageProvider.GetOutgoingEdgeIdsAsync(nodeId);
                 foreach (Guid edgeId in edgeIds)
                 {
                     // Use the already implemented GetEdgeAsync(Guid)
-                    Edge? edge = await GetEdgeAsync(edgeId); 
+                    EdgeV2? edge = await GetEdgeAsync(edgeId); // Changed variable type
                     if (edge != null)
                     {
-                        edges.Add(edge);
+                        edges.Add(edge); // Add EdgeV2 directly
                     }
                     else
                     {
@@ -210,19 +211,19 @@ namespace ReasoningEngine.GraphFileHandling
             return edges;
         }
 
-        public async Task<List<Edge>> GetIncomingEdgesAsync(long nodeId)
+        public async Task<List<EdgeV2>> GetIncomingEdgesAsync(long nodeId) // Changed list type
         {
-            var edges = new List<Edge>();
+            var edges = new List<EdgeV2>(); // Changed list type
             try
             {
                 List<Guid> edgeIds = await storageProvider.GetIncomingEdgeIdsAsync(nodeId);
                 foreach (Guid edgeId in edgeIds)
                 {
                     // Use the already implemented GetEdgeAsync(Guid)
-                    Edge? edge = await GetEdgeAsync(edgeId); 
+                    EdgeV2? edge = await GetEdgeAsync(edgeId); // Changed variable type
                     if (edge != null)
                     {
-                        edges.Add(edge);
+                        edges.Add(edge); // Add EdgeV2 directly
                     }
                     else
                     {
@@ -239,15 +240,30 @@ namespace ReasoningEngine.GraphFileHandling
             return edges;
         }
 
-        public async Task<bool> SaveEdgeAsync(Edge edge)
+        public async Task<bool> SaveEdgeAsync(EdgeV2 edge) // Changed parameter type to EdgeV2
         {
             if (edge == null) throw new ArgumentNullException(nameof(edge));
 
             try
             {
+                // *** START: Add node existence check ***
+                // Check if both source and destination nodes exist before attempting to save the edge
+                var fromNodeExists = await storageProvider.GetNodeDataAsync(edge.FromNode) != null;
+                var toNodeExists = await storageProvider.GetNodeDataAsync(edge.ToNode) != null;
+
+                if (!fromNodeExists || !toNodeExists)
+                {
+                    string missingNode = !fromNodeExists ? $"Source node {edge.FromNode}" : $"Destination node {edge.ToNode}";
+                    DebugWriter.DebugWriteLine("#MAP_SAVEDGE_NODE_NF#", $"Cannot save edge {edge.EdgeId}: {missingNode} does not exist.", true, VerbosityLevel.Minimal);
+                    return false; // Indicate failure due to missing node
+                }
+                // *** END: Add node existence check ***
+
                 // TODO: Implement robust serialization, maybe wrap edge like node data?
                 var options = new JsonSerializerOptions { WriteIndented = true };
                 string edgeData = JsonSerializer.Serialize(edge, options);
+                // Log the JSON being passed to the provider
+                DebugWriter.DebugWriteLine("#MAP_SAVEDGE_JSON#", $"Saving Edge {edge.EdgeId} ({edge.FromNode}->{edge.ToNode}) JSON:\n{edgeData}");
                 // Use the provider's method which handles saving both outgoing/incoming representations
                 return await storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData);
             }

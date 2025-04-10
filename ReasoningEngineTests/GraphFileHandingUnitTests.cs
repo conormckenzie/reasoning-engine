@@ -16,6 +16,7 @@ namespace ReasoningEngineTests
         // These fields are initialized in the [SetUp] method, which NUnit guarantees
         // runs before each test execution. Therefore, they will not be null when accessed in tests.
         private FileGraphStorageProvider storageProvider = null!;
+        private GraphObjectMapper graphObjectMapper = null!; // Added ObjectMapper
         private string tempDir = null!;
 
         [SetUp]
@@ -23,8 +24,9 @@ namespace ReasoningEngineTests
         {
             tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             Directory.CreateDirectory(tempDir);
-            // Instantiate the provider
+            // Instantiate the provider and mapper
             storageProvider = new FileGraphStorageProvider(tempDir); 
+            graphObjectMapper = new GraphObjectMapper(storageProvider); // Initialize ObjectMapper
         }
 
         [TearDown]
@@ -62,8 +64,8 @@ namespace ReasoningEngineTests
             string? loadedEdgeData = storageProvider.GetEdgeDataAsync(edge.FromNode, edge.ToNode).Result; 
             Assert.That(loadedEdgeData, Is.Not.Null.And.Not.Empty, "Failed to load edge data");
 
-            // Deserialize and verify
-            Edge? loadedEdge = JsonSerializer.Deserialize<Edge>(loadedEdgeData!); // Changed from JsonConvert
+            // Deserialize and verify - Target EdgeV2 directly to use the correct constructor
+            EdgeV2? loadedEdge = JsonSerializer.Deserialize<EdgeV2>(loadedEdgeData!); 
             if (loadedEdge != null)
             {
                 Assert.Multiple(() => // Already wrapped
@@ -428,13 +430,11 @@ namespace ReasoningEngineTests
         public void TestSaveEdgeWithNonExistentNodes()
         {
             var edge = new Edge(1, 2, 1.0, "Test Edge");
-            var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
-            string edgeData = JsonSerializer.Serialize(edge, options);
-            // SaveEdgeDataAsync itself doesn't check node existence, but the underlying file provider might fail implicitly
-            // or succeed but lead to dangling edges. The FileGraphStorageProvider SaveEdgeDataAsync implementation
-            // *does* check node existence via a helper. Let's assume it returns false.
-            // If the check was removed, this test would need adjustment.
-            Assert.That(storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData).Result, Is.False, "Saving an edge with non-existent nodes should fail"); 
+            // Act: Attempt to save the edge using the GraphObjectMapper, which should perform the node existence check
+            bool result = graphObjectMapper.SaveEdgeAsync(edge).Result;
+
+            // Assert: Saving should fail because the ObjectMapper checks for node existence
+            Assert.That(result, Is.False, "Saving an edge with non-existent nodes should fail via ObjectMapper");
         }
 
         [Test]
@@ -453,16 +453,21 @@ namespace ReasoningEngineTests
             storageProvider.SaveNodeDataAsync(node2.Id, node2Data).Wait();
             storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData).Wait(); 
 
-            // Create updated edge object (constructor generates a new Guid, which is fine for the data part)
-            var updatedEdgeDataOnly = new Edge(1, 2, 2.0, "Updated Edge");
-            string updatedEdgeDataString = JsonSerializer.Serialize(updatedEdgeDataOnly, options);
-            // Save using the *original* edge's Guid but the *new* data
-            Assert.That(storageProvider.SaveEdgeDataAsync(edge.EdgeId, updatedEdgeDataOnly.FromNode, updatedEdgeDataOnly.ToNode, updatedEdgeDataString).Result, Is.True);
+            // Load the original edge using the ObjectMapper
+            EdgeV2? originalEdge = graphObjectMapper.GetEdgeAsync(edge.EdgeId).Result;
+            Assert.That(originalEdge, Is.Not.Null, "Failed to load original edge for update");
 
-            // Load the edge data using the original Guid and verify
-            string? loadedEdgeData = storageProvider.GetEdgeDataAsync(edge.EdgeId).Result;
-            Assert.That(loadedEdgeData, Is.Not.Null, "Loaded edge data should not be null");
-            Edge? loadedEdge = JsonSerializer.Deserialize<Edge>(loadedEdgeData!); // Changed from JsonConvert
+            // Modify the loaded edge object
+            originalEdge!.Weight = 2.0; // Use null-forgiving operator as we asserted Not.Null
+            originalEdge.EdgeContent = "Updated Edge";
+
+            // Save the modified edge object using the ObjectMapper
+            Assert.That(graphObjectMapper.SaveEdgeAsync(originalEdge).Result, Is.True, "Failed to save updated edge via ObjectMapper");
+
+            // Load the edge data again using the original Guid and verify
+            EdgeV2? loadedEdge = graphObjectMapper.GetEdgeAsync(edge.EdgeId).Result; // Use ObjectMapper to load
+            Assert.That(loadedEdge, Is.Not.Null, "Loaded edge data should not be null after update");
+            
             if (loadedEdge != null)
             {
                 Assert.Multiple(() =>

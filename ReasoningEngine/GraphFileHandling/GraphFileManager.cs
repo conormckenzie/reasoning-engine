@@ -77,33 +77,68 @@ namespace ReasoningEngine.GraphFileHandling
 
         // --- IGraphStorageProvider Implementation (Continued) ---
 
-        public Task<bool> DeleteNodeDataAsync(long nodeId)
+        public async Task<bool> DeleteNodeDataAsync(long nodeId) // Changed to async Task
         {
              try
             {
                 string nodeFilePath = GetNodeFilePath(nodeId);
-                if (File.Exists(nodeFilePath))
+                if (!File.Exists(nodeFilePath))
                 {
-                    File.Delete(nodeFilePath);
-                    indexManager.RemoveNode(nodeId);
-
-                    // Also remove the potentially large edge directories for this node
-                    // Note: This assumes edges related ONLY to this node are stored here.
-                    // A more robust system might require iterating edges first.
-                    string outgoingEdgeDir = GetEdgeDirPath(nodeId, true);
-                    if (Directory.Exists(outgoingEdgeDir)) Directory.Delete(outgoingEdgeDir, true);
-                    string incomingEdgeDir = GetEdgeDirPath(nodeId, false);
-                    if (Directory.Exists(incomingEdgeDir)) Directory.Delete(incomingEdgeDir, true);
-
-                    return Task.FromResult(true);
+                    DebugWriter.DebugWriteLine("#00DEL1#", $"Node file {nodeFilePath} does not exist for deletion.");
+                    return false; // Return false directly
                 }
-                DebugWriter.DebugWriteLine("#00DEL1#", $"Node file {nodeFilePath} does not exist for deletion.");
-                return Task.FromResult(false);
+
+                // 1. Get all edge IDs connected to this node BEFORE deleting the node file
+                var outgoingEdgeIds = await GetOutgoingEdgeIdsAsync(nodeId);
+                var incomingEdgeIds = await GetIncomingEdgeIdsAsync(nodeId);
+                var allEdgeIds = outgoingEdgeIds.Union(incomingEdgeIds).ToList(); // Combine and remove duplicates
+
+                DebugWriter.DebugWriteLine("#DEL_NODE_EDGES#", $"Found {allEdgeIds.Count} unique edges connected to node {nodeId} for deletion.", true, VerbosityLevel.Detailed);
+
+                // 2. Delete each associated edge (this handles both file representations and index updates)
+                // Use a separate options instance for deserializing edge info
+                var optionsCI = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                foreach (var edgeId in allEdgeIds)
+                {
+                    // Need edge data to know From/To nodes for DeleteEdgeDataAsync(long, long)
+                    string? edgeData = await GetEdgeDataAsync(edgeId); // Use the (inefficient) Guid scan
+                    if (edgeData != null)
+                    {
+                        var edgeInfo = JsonSerializer.Deserialize<EdgeFromToHelper>(edgeData, optionsCI);
+                        if (edgeInfo != null)
+                        {
+                            DebugWriter.DebugWriteLine("#DEL_NODE_EDGE_CLEANUP#", $"Deleting edge {edgeId} ({edgeInfo.FromNode}->{edgeInfo.ToNode}) as part of node {nodeId} deletion.", true, VerbosityLevel.Detailed);
+                            await DeleteEdgeDataAsync(edgeInfo.FromNode, edgeInfo.ToNode);
+                        }
+                        else
+                        {
+                             DebugWriter.DebugWriteLine("#DEL_NODE_EDGE_DESER_ERR#", $"Could not deserialize From/To for edge {edgeId} during node {nodeId} deletion.", true, VerbosityLevel.Minimal);
+                             // Continue trying to delete other edges
+                        }
+                    }
+                    else
+                    {
+                         DebugWriter.DebugWriteLine("#DEL_NODE_EDGE_NOTFOUND#", $"Edge {edgeId} data not found during node {nodeId} deletion (might have been deleted already).", true, VerbosityLevel.Normal);
+                         // Continue trying to delete other edges
+                    }
+                }
+
+                // 3. Delete the node file itself
+                File.Delete(nodeFilePath);
+                indexManager.RemoveNode(nodeId); // Remove node from the main index
+
+                // 4. Remove the primary edge directories for this node (should be empty now, but remove for cleanliness)
+                string outgoingEdgeDir = GetEdgeDirPath(nodeId, true);
+                if (Directory.Exists(outgoingEdgeDir)) Directory.Delete(outgoingEdgeDir, true);
+                string incomingEdgeDir = GetEdgeDirPath(nodeId, false);
+                if (Directory.Exists(incomingEdgeDir)) Directory.Delete(incomingEdgeDir, true);
+
+                return true; // Return true directly
             }
             catch (Exception ex)
             {
                 DebugWriter.DebugWriteLine("#00DEL2#", $"Error deleting node data for {nodeId}: {ex.Message}");
-                return Task.FromResult(false);
+                return false; // Corrected return for async Task<bool>
             }
         }
 
@@ -191,12 +226,14 @@ namespace ReasoningEngine.GraphFileHandling
             {
                 // Save outgoing representation
                 string outgoingEdgeFilePath = GetEdgeFilePath(fromNodeId, toNodeId, true);
+                DebugWriter.DebugWriteLine("#SAVE_EDGE_PATH_OUT#", $"Saving outgoing edge {edgeId} to: {outgoingEdgeFilePath}", true, VerbosityLevel.Detailed); // Added Logging
                 EnsureDirectoryExists(outgoingEdgeFilePath);
                 File.WriteAllText(outgoingEdgeFilePath, edgeData);
                 UpdateEdgeIndex(outgoingEdgeFilePath, true); // Update outgoing index
 
                 // Save incoming representation
                 string incomingEdgeFilePath = GetEdgeFilePath(toNodeId, fromNodeId, false);
+                DebugWriter.DebugWriteLine("#SAVE_EDGE_PATH_IN#", $"Saving incoming edge {edgeId} to: {incomingEdgeFilePath}", true, VerbosityLevel.Detailed); // Added Logging
                  EnsureDirectoryExists(incomingEdgeFilePath);
                 File.WriteAllText(incomingEdgeFilePath, edgeData); // Save same data
                 UpdateEdgeIndex(incomingEdgeFilePath, true); // Update incoming index
@@ -304,46 +341,11 @@ namespace ReasoningEngine.GraphFileHandling
              return Task.FromResult(edges.Select(e => e.EdgeId).ToList());
         }
 
-
-        // --- Existing Methods (May need removal/refactoring) ---
-
-        // LoadNode is now replaced by GetNodeDataAsync + deserialization layer above
-        /*
-        public NodeBase? LoadNode(long nodeId) { ... } 
-        */
-
-        // SaveNode is now replaced by serialization layer above + SaveNodeDataAsync
-        /*
-        public bool SaveNode(NodeBase node) { ... }
-        */
-
-        // DeleteNode is now replaced by DeleteNodeDataAsync + logic layer above
-        /*
-        public bool DeleteNode(long nodeId) { ... }
-        */
-
-        // DeleteEdgesForNode logic moved/commented out
-        /*
-        private void DeleteEdgesForNode(long nodeId, bool outgoing) { ... }
-        */
-
-        // SaveEdge is now replaced by serialization layer above + SaveEdgeDataAsync
-        /*
-        public bool SaveEdge(EdgeBase edge) { ... }
-        */
-
-        // LoadEdges is now replaced by GetEdgeIdsAsync + GetEdgeDataAsync + deserialization layer above
-        /*
-        public List<EdgeBase> LoadEdges(long nodeId, bool outgoing = true) { ... }
-        */
-
-        // DeleteEdge is now replaced by DeleteEdgeDataAsync
-        /*
-        public bool DeleteEdge(long fromNodeId, long toNodeId) { ... }
-        */
-
-
         // --- Helper methods used by the interface implementations ---
+
+        // Note: Old methods like LoadNode, SaveNode, DeleteNode, SaveEdge, DeleteEdge, DeleteEdgesForNode
+        // have been removed as their functionality is now handled by the IGraphStorageProvider implementations
+        // and the GraphObjectMapper layer. The LoadEdges method below is still used by GetOutgoing/IncomingEdgeIdsAsync.
 
         private bool NodeExists(long nodeId)
         {
@@ -351,30 +353,7 @@ namespace ReasoningEngine.GraphFileHandling
             return File.Exists(nodeFilePath);
         }
 
-        private bool SaveEdgeToFile(EdgeBase edge, string filePath)
-        {
-            try
-            {
-                // Changed to Detailed
-                DebugWriter.DebugWriteLine("#R5TZE3#", $"Saving edge to file: {filePath}", true, VerbosityLevel.Detailed); 
-                EnsureDirectoryExists(filePath);
-                // Serialize the edge object directly, removing the wrapper
-                var options = new JsonSerializerOptions { WriteIndented = true }; // Options for System.Text.Json
-                string jsonData = JsonSerializer.Serialize(edge, options); // Serialize edge directly
-                File.WriteAllText(filePath, jsonData);
-
-                // Update index files
-                bool indexUpdated = UpdateEdgeIndex(filePath, true);
-                // Changed to Detailed
-                DebugWriter.DebugWriteLine("#33RNRG#", $"Index update result for {filePath}: {indexUpdated}", true, VerbosityLevel.Detailed); 
-                return indexUpdated;
-            }
-            catch (Exception ex)
-            {
-                DebugWriter.DebugWriteLine("#00SAV6#", $"Error saving edge to file {filePath}: {ex.Message}");
-                return false;
-            }
-        }
+        // Note: SaveEdgeToFile removed as SaveEdgeDataAsync now handles writing the pre-serialized data.
 
         private bool UpdateEdgeIndex(string edgeFilePath, bool isAdding)
         {
@@ -450,11 +429,15 @@ namespace ReasoningEngine.GraphFileHandling
                 foreach (string filePath in edgeFiles)
                 {
                     string fileContent = File.ReadAllText(filePath);
-                    EdgeBase? edge = null; 
+                    EdgeBase? edge = null;
+                    // Changed to Detailed
+                    DebugWriter.DebugWriteLine("#LOAD_EDGE_ATTEMPT#", $"Attempting to deserialize edge from: {filePath}", true, VerbosityLevel.Detailed);
                     try 
                     {
                         // Deserialize the entire content directly into EdgeV2
                         edge = JsonSerializer.Deserialize<EdgeV2>(fileContent, options); 
+                        // Changed to Detailed
+                        DebugWriter.DebugWriteLine("#LOAD_EDGE_SUCCESS#", $"Successfully deserialized edge {edge?.EdgeId} from: {filePath}", true, VerbosityLevel.Detailed);
 
                         // Optional: Check version after deserialization if needed
                         if (edge != null && edge.Version != 2) 
@@ -497,38 +480,7 @@ namespace ReasoningEngine.GraphFileHandling
             return edges;
         }
 
-        public bool DeleteEdge(long fromNodeId, long toNodeId)
-        {
-            try
-            {
-                // Delete from outgoing edges
-                string outgoingEdgeFilePath = GetEdgeFilePath(fromNodeId, toNodeId, true);
-                if (File.Exists(outgoingEdgeFilePath))
-                {
-                    File.Delete(outgoingEdgeFilePath);
-                    RemoveEdgeFromIndex(outgoingEdgeFilePath);
-                }
-
-                // Delete from incoming edges
-                string incomingEdgeFilePath = GetEdgeFilePath(toNodeId, fromNodeId, false);
-                if (File.Exists(incomingEdgeFilePath))
-                {
-                    File.Delete(incomingEdgeFilePath);
-                    RemoveEdgeFromIndex(incomingEdgeFilePath);
-                }
-
-                // Update edge counts for nodes
-                UpdateNodeEdgeCount(fromNodeId, true);
-                UpdateNodeEdgeCount(toNodeId, false);
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                DebugWriter.DebugWriteLine("#00DEL3#", $"Error deleting edge from {fromNodeId} to {toNodeId}: {ex.Message}");
-                return false;
-            }
-        }
+        // Note: DeleteEdge(long, long) removed as DeleteEdgeDataAsync(long, long) provides the same functionality.
 
         private bool UpdateNodeEdgeCount(long nodeId, bool outgoing)
         {
@@ -583,7 +535,10 @@ namespace ReasoningEngine.GraphFileHandling
             string fileName = $"{fromNodeIdStr}-{toNodeIdStr}.json";
             pathSegments.Add(fileName);
 
-            return Path.Combine(pathSegments.ToArray());
+            string finalPath = Path.Combine(pathSegments.ToArray());
+            // Log the generated path
+            DebugWriter.DebugWriteLine("#GET_EDGE_PATH#", $"Generated edge path ({direction}): {finalPath}", true, VerbosityLevel.Detailed); // Added Logging
+            return finalPath;
         }
 
         public string GetEdgeDirPath(long nodeId, bool outgoing)

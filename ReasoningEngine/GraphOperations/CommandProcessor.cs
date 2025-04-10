@@ -77,7 +77,8 @@ namespace ReasoningEngine.GraphAccess
             if (long.TryParse(payload, out long nodeId))
             {
                  // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-                 List<Edge> edges = outgoing 
+                 // Changed List<Edge> to List<EdgeV2> to match GraphObjectMapper return type
+                 List<EdgeV2> edges = outgoing 
                                     ? graphObjectMapper.GetOutgoingEdgesAsync(nodeId).Result 
                                     : graphObjectMapper.GetIncomingEdgesAsync(nodeId).Result;
 
