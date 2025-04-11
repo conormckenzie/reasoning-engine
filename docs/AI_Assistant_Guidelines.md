@@ -7,7 +7,7 @@ This document provides guidelines for AI assistants working on the Reasoning Eng
 *   Refer to `CONTRIBUTING.md` for general development workflow guidelines (branching, basic coding standards).
 *   **Error Handling:** Use specific exception types where appropriate. Log errors using `DebugUtils.DebugWriter`.
 *   **Debugging:** Use `DebugUtils.DebugWriter` for logging. Debug messages should follow the format `#XXXXXX#` (unique 6-char tag) followed by the message.
-*   **Serialization:** The project primarily uses `Newtonsoft.Json` for serialization/deserialization.
+*   **Serialization:** The project primarily uses `System.Text.Json` for serialization/deserialization.
 *   **Architecture:** Be aware of the V3 functional graph approach (Nodes as Variables/Functions) and the decoupled persistence layer (`IGraphStorageProvider` for raw storage, `GraphObjectMapper` for object mapping).
 *   **Tool Usage:**
     *   Handle potentially long command outputs (like `git diff`) by redirecting to a temporary file (`> output.txt.~`) and then reading the file. This way it does not get halted due to requiring user interaction.
@@ -17,7 +17,7 @@ This document provides guidelines for AI assistants working on the Reasoning Eng
     *   Always seek explicit confirmation from the user before marking tasks or sub-tasks as complete. State what was done and ask if it's complete and what to do next.
     *   Justify and document the use of the null-forgiving operator (`!`) if its use is necessary (e.g., explain *why* the value is known to be non-null in that context). Prefer explicit null checks otherwise.
     *   Be aware of other custom instructions provided in the system prompt (e.g., re-reading files on repeated failures, handling potentially malformed linter line numbers, context window limits).
-*   **Testing:** Write both unit and integration tests. Use appropriate NUnit test setup (`[SetUp]`, `[TearDown]`) and teardown attributes to ensure test isolation.
+*   **Testing:** Write both unit and integration tests in the `ReasoningEngineTests` project. Use appropriate NUnit test setup (`[SetUp]`, `[TearDown]`) and teardown attributes to ensure test isolation.
 *   **Environment Configuration:** Use environment variables and `.env` files for configuration (see `.env.example`). Always document required environment variables in `README.md`.
 *   **Input Validation:** Ensure proper error handling and input validation, especially in user-facing methods or API endpoints.
 *   **Versioning:** When implementing new features affecting core data structures, consider version compatibility (`IVersioned.cs`, `VersionCompatibilityAttribute`, `VersionCompatibilityChecker`) and update attributes as necessary.

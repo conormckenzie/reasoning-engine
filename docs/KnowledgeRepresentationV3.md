@@ -38,7 +38,7 @@ This enum defines the fundamental purpose or behavior of a node within the graph
 Based on its `NodeRole`, a `NodeV3` object utilizes specific properties:
 
 *   **If `Role == NodeRole.Variable`:**
-    *   `ProbabilityDistribution Distribution`: Holds a `ProbabilityDistribution` object representing the node's current belief state `P(Self)`. This distribution is **not conditional** on parents in its definition; dependencies are handled via Function nodes. It must be non-null.
+    *   `ProbabilityDistribution Distribution`: Holds a `ProbabilityDistribution` object representing the node's current belief state `P(Self)`. This distribution is **not conditional** on parents in its definition; dependencies are handled via Function nodes. The `Node` constructor initializes this property, so it will be non-null, though potentially empty until populated via `AddPoint` or `AddRange`.
 *   **If `Role == NodeRole.Function`:**
     *   `FunctionType Function`: An enum (`Core/FunctionTypes.cs`) specifying the operation (e.g., `Linear`, `DefinedOp`, `NeuralNet`).
     *   `Dictionary<string, object> FunctionParams`: Stores parameters for the function (e.g., `"Weights"`, `"Bias"` for `Linear`; `"Operation": "Multiply"` for `DefinedOp`).

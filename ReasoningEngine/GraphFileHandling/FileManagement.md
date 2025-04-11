@@ -48,7 +48,7 @@ Located in `ReasoningEngine/GraphFileHandling/GraphObjectMapper.cs`, this class 
 - Calls the appropriate `IGraphStorageProvider` methods to save/delete raw data.
 - Retrieves raw data using `IGraphStorageProvider`.
 - Deserializes JSON strings back into domain objects.
-- Handles logic like ensuring nodes exist before adding edges, deleting associated edges when deleting a node (partially implemented).
+- Handles logic like ensuring nodes exist before adding edges, preserving `EdgeId` during edge updates, and deleting associated edges when deleting a node.
 
 ## 3. File Path Generation Philosophy (FileGraphStorageProvider)
 
@@ -73,7 +73,7 @@ Application components (like `CommandProcessor` or `ScenarioManager`) interact w
     *   It calls a method on `GraphObjectMapper` (e.g., `SaveNodeAsync`, `SaveEdgeAsync`).
     *   `GraphObjectMapper` serializes the object to JSON.
     *   `GraphObjectMapper` calls the corresponding method on the injected `IGraphStorageProvider` (e.g., `SaveNodeDataAsync`, `SaveEdgeDataAsync`) with the ID and JSON data.
-    *   The `IGraphStorageProvider` implementation handles writing the data to the underlying storage (e.g., creating/updating files).
+    *   The `IGraphStorageProvider` implementation handles writing the data to the underlying storage (e.g., creating/updating files). Note: Edge updates preserve the original `EdgeId`.
 2.  **Retrieving Nodes/Edges:**
     *   The application requests a node or edge via `GraphObjectMapper` (e.g., `GetNodeAsync`, `GetEdgeAsync`, `GetOutgoingEdgesAsync`).
     *   `GraphObjectMapper` calls the appropriate method(s) on `IGraphStorageProvider` to fetch the raw data (e.g., `GetNodeDataAsync`, `GetOutgoingEdgeIdsAsync` followed by `GetEdgeDataAsync`).
@@ -117,21 +117,28 @@ Base Directory/
   - edges/
     - {edgeId}.json
 ```
-Or potentially organized by node:
+Or potentially organized by node (reflecting current implementation):
 ```
 Base Directory/
   - nodes/
-    - {nodeId_part1}/
-      - {nodeId_part1}{nodeId_part2}/
-        - {nodeId_part1}{nodeId_part2}{nodeId_part3}/
-          - {nodeId_full}/
+    - {sourceNodeId_part1}/
+      - {sourceNodeId_part1}{sourceNodeId_part2}/
+        - {sourceNodeId_part1}{sourceNodeId_part2}{sourceNodeId_part3}/
+          - {sourceNodeId_full}/
             - edges/
               - outgoing/
-                - {edgeId}.json
+                - {edgeId}.json  // EdgeId is the Guid
+  - nodes/
+    - {destNodeId_part1}/
+      - {destNodeId_part1}{destNodeId_part2}/
+        - {destNodeId_part1}{destNodeId_part2}{destNodeId_part3}/
+          - {destNodeId_full}/
+            - edges/
               - incoming/
-                - {edgeId}.json
+                - {edgeId}.json  // EdgeId is the Guid
 ```
-**Verification Needed:** The exact structure used by the current `GraphFileManager.cs` for storing edges and enabling `GetOutgoingEdgeIdsAsync`/`GetIncomingEdgeIdsAsync` needs verification and documentation here. The use of `Guid` for Edge IDs also impacts the path generation compared to the original numeric ID assumption.
+*   **Edge Storage:** Edges are stored twice: once under the source node's `outgoing` directory and once under the destination node's `incoming` directory. The filename in both locations is the edge's unique `Guid` (`EdgeId`). This allows efficient retrieval of outgoing/incoming edges by scanning the respective directories under a node.
+*   **Guid Lookups:** Retrieving/deleting an edge solely by its `Guid` still requires an inefficient scan across node directories.
 
 ## 6. Performance Considerations
 

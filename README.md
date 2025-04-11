@@ -107,7 +107,7 @@ ReasoningEngine/
 │
 ├── GraphFileHandling/        # Persistence layer
 │   ├── IGraphStorageProvider.cs # Interface for raw data storage
-│   ├── GraphFileManager.cs   # File-based implementation of IGraphStorageProvider
+│   ├── GraphFileManager.cs   # Contains FileGraphStorageProvider class (file-based implementation of IGraphStorageProvider)
 │   ├── GraphObjectMapper.cs  # Handles object mapping & serialization using IGraphStorageProvider
 │   └── IndexManager.cs       # (Potentially outdated/unused) Handles file-based indexing
 │
@@ -143,7 +143,7 @@ See `docs/KnowledgeRepresentationV3.md` for full details.
 - **Node Factory (`NodeFactory.cs`):** Creates/updates `Node` objects based on input parameters (currently `Dictionary<string, object>`).
 - **Persistence (`GraphFileHandling/`):** Decoupled persistence layer.
     - `IGraphStorageProvider`: Interface defining raw data storage operations.
-    - `GraphFileManager.cs`: Implements `IGraphStorageProvider` using the file system (see `ReasoningEngine/GraphFileHandling/FileManagement.md` for file structure details).
+    - `FileGraphStorageProvider` (in `GraphFileManager.cs`): Implements `IGraphStorageProvider` using the file system (see `ReasoningEngine/GraphFileHandling/FileManagement.md` for file structure details).
     - `GraphObjectMapper`: Handles serialization/deserialization and mapping between domain objects (`Node`, `Edge`) and the storage provider.
 - **Command Processor (`GraphOperations/CommandProcessor.cs`):** Provides a string-based API for graph manipulation, using `NodeFactory` and `GraphObjectMapper`. The payload format is typically `id|content|param1=value1|param2=value2...`.
 - **Entry Points (`Program.cs`, `WebServer.cs`):** Provide console and web API access.
