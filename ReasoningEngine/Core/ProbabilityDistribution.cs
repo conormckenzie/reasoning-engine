@@ -327,9 +327,9 @@ namespace ReasoningEngine
             {
                 var range = Distribution[i];
                 
-                // Check if point might be in this range
-                if (point - EPSILON <= range.UpperBound + EPSILON && 
-                    point + EPSILON >= range.LowerBound - EPSILON)
+                // Check if point might be in this range (Original logic restored again)
+                if (point <= range.UpperBound + EPSILON && 
+                    point >= range.LowerBound - EPSILON)
                 {
                     coveringRanges.Add(i);
                 }
