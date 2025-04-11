@@ -84,26 +84,24 @@ namespace ReasoningEngine
             }
 
             // TODO: Relax this validation (See issues.md TODO #2)
-            // Check for too-close ranges (Prevents perfectly adjacent ranges)
-            if (Distribution.Any(d => 
-                Math.Abs(lowerBound - d.UpperBound) < EPSILON || 
-                Math.Abs(upperBound - d.LowerBound) < EPSILON))
-            {
-                throw new InvalidOperationException("Range boundaries too close to existing range");
-            }
+            // TODO: Relax this validation (See issues.md TODO #2) - Temporarily commented out
+            // // Check for too-close ranges (Prevents perfectly adjacent ranges)
+            // if (Distribution.Any(d => 
+            //     Math.Abs(lowerBound - d.UpperBound) < EPSILON || 
+            //     Math.Abs(upperBound - d.LowerBound) < EPSILON))
+            // {
+            //     throw new InvalidOperationException("Range boundaries too close to existing range");
+            // }
 
             // Check for overlapping ranges. 
-            // We need lowerBound > d.UpperBound + EPSILON OR upperBound < d.LowerBound - EPSILON
-            // So, overlap occurs if !(lowerBound > d.UpperBound + EPSILON || upperBound < d.LowerBound - EPSILON)
-            // which simplifies to (lowerBound <= d.UpperBound + EPSILON && upperBound >= d.LowerBound - EPSILON)
-            // This check prevents ranges from having gaps <= EPSILON, enforcing a minimum gap > EPSILON.
+            // Overlap occurs if the new range's start is before an existing range's end,
+            // AND the new range's end is after that existing range's start.
+            // Allow perfectly adjacent ranges (gap = 0).
             if (Distribution.Any(d => 
-                lowerBound <= d.UpperBound + EPSILON && upperBound >= d.LowerBound - EPSILON))
+                lowerBound < d.UpperBound - EPSILON && upperBound > d.LowerBound + EPSILON))
             {
-                throw new InvalidOperationException("New range overlaps or is too close to an existing range (gap must be > EPSILON)");
+                throw new InvalidOperationException("New range overlaps with an existing range.");
             }
-
-            // Note: The previous "too close" check was redundant with the modified overlap check above.
 
             // Insert sorted by LowerBound
             int index = FindInsertionIndex(lowerBound);

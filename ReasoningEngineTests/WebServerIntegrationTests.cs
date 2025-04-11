@@ -94,11 +94,11 @@ namespace ReasoningEngineTests // Fixed namespace (IDE0130)
         [Test]
         public async Task EndToEndTest_AddNodeAndQuery()
         {
-            // Create node
-            var createPayload = new CommandRequest { Payload = "1|TestNode" };
+            // Create node with Role parameter (using valid Role)
+            var createPayload = new CommandRequest { Payload = "1|TestNode|Role=Variable" };
             // Corrected StringContent constructor
             var createContent = new StringContent(
-                JsonSerializer.Serialize(createPayload, SerializerOptions), 
+                JsonSerializer.Serialize(createPayload, SerializerOptions),
                 Encoding.UTF8, 
                 "application/json"); 
 
@@ -141,12 +141,12 @@ namespace ReasoningEngineTests // Fixed namespace (IDE0130)
             // First run setup
             await client.GetAsync("/api/commands/setup");
 
-            // Create two nodes
-            var createNode1 = new CommandRequest { Payload = "1|Node1" };
-            var createNode2 = new CommandRequest { Payload = "2|Node2" };
+            // Create two nodes with Role parameter (using valid Role)
+            var createNode1 = new CommandRequest { Payload = "1|Node1|Role=Variable" };
+            var createNode2 = new CommandRequest { Payload = "2|Node2|Role=Variable" };
 
             // Corrected StringContent constructor
-            await client.PostAsync("/api/nodes/create", 
+            await client.PostAsync("/api/nodes/create",
                 new StringContent(JsonSerializer.Serialize(createNode1, SerializerOptions), 
                     Encoding.UTF8, 
                     "application/json")); 

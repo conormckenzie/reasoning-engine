@@ -299,12 +299,23 @@ namespace ReasoningEngine.GraphAccess
                 return "Invalid payload for editing an edge.";
             }
             string newContent = parts[3];
-            Edge updatedEdge = new Edge(sourceNodeId, destNodeId, newWeight, newContent); // Edge alias is EdgeV2
-            
-            // TODO: Add logic to actually *load* the existing edge first if needed for validation/merging?
-            // For now, just overwrite by saving the new edge data.
+
+            // Load the existing edge to preserve its EdgeId
             // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-            bool success = graphObjectMapper.SaveEdgeAsync(updatedEdge).Result;
+            EdgeV2? existingEdge = graphObjectMapper.GetEdgeAsync(sourceNodeId, destNodeId).Result; // Use EdgeV2
+
+            if (existingEdge == null)
+            {
+                return $"Failed to update edge: Edge from {sourceNodeId} to {destNodeId} not found.";
+            }
+
+            // Update the properties of the existing edge object
+            existingEdge.Weight = newWeight;
+            existingEdge.EdgeContent = newContent;
+            // EdgeId remains the same
+
+            // Save the modified existing edge object
+            bool success = graphObjectMapper.SaveEdgeAsync(existingEdge).Result; // Save the modified object
             if (success)
             {
                  return $"Edge from {sourceNodeId} to {destNodeId} updated successfully.";

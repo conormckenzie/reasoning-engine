@@ -49,10 +49,10 @@ namespace ReasoningEngine.GraphFileHandling
             {
                  DebugWriter.DebugWriteLine("#MAP_GETNODE_GEN_ERR#", $"Unexpected error getting node {nodeId}: {ex.Message}");
                  return null; // Or throw
-            }
+             }
         }
 
-        public async Task<bool> SaveNodeAsync(Node node)
+        public async Task<bool> SaveNodeAsync(NodeV3 node) // Changed parameter type to NodeV3
         {
              if (node == null) throw new ArgumentNullException(nameof(node));
 

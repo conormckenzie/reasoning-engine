@@ -362,10 +362,10 @@ namespace ReasoningEngine.Utils.Scenarios
             }
         }
         
-        // Method now loads Variable nodes
-        private List<Node> LoadVariableNodes() 
+        // Method now loads Variable nodes and returns List<NodeV3>
+        private List<NodeV3> LoadVariableNodes() 
         {
-            var variableNodes = new List<Node>(); // Changed type to Node
+            var variableNodes = new List<NodeV3>(); // Use NodeV3 explicitly
             DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_NODES#", "Loading Variable nodes...", true, DebugUtils.VerbosityLevel.Normal); // Updated message
             
             // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
@@ -382,8 +382,8 @@ namespace ReasoningEngine.Utils.Scenarios
                     // Check if it was loaded successfully and has the Variable role
                     if (node != null && node.Role == NodeRole.Variable) 
                     {
-                        // Cast NodeV3 to Node before adding to the list
-                        variableNodes.Add((Node)node); // Add the Node object 
+                        // Add the NodeV3 object directly (Node is an alias for NodeV3)
+                        variableNodes.Add(node); 
                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_NODE#", $"Loaded Variable node {nodeId}.", true, DebugUtils.VerbosityLevel.Detailed); // Updated message
                     }
                     else if (node == null)
@@ -403,11 +403,11 @@ namespace ReasoningEngine.Utils.Scenarios
             }
             
             DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_DONE#", $"Loaded {variableNodes.Count} Variable nodes.", true, DebugUtils.VerbosityLevel.Normal); // Updated message
-            return variableNodes; // Return list of Node
+            return variableNodes; // Return list of NodeV3
         }
         
-        // Parameter type changed to Node
-        private void AddTruthDistribution(Node node, double trueValue) 
+        // Parameter type changed to NodeV3
+        private void AddTruthDistribution(NodeV3 node, double trueValue) 
         {
             // Ensure the node is a Variable node and has a distribution
             if (node.Role != NodeRole.Variable || node.Distribution == null) {
@@ -421,8 +421,8 @@ namespace ReasoningEngine.Utils.Scenarios
             node.Distribution.AddPoint(0.0, 1.0 - trueValue);
         }
         
-        // Parameter type changed to Node
-        private void AddCausalStrengthDistribution(Node node) 
+        // Parameter type changed to NodeV3
+        private void AddCausalStrengthDistribution(NodeV3 node) 
         {
              // Ensure the node is a Variable node and has a distribution
             if (node.Role != NodeRole.Variable || node.Distribution == null) {
@@ -437,8 +437,8 @@ namespace ReasoningEngine.Utils.Scenarios
             node.Distribution.AddRange(0.0, 0.4, 0.1);  
         }
         
-        // Parameter type changed to Node
-        private void AddRainIntensityDistribution(Node node) 
+        // Parameter type changed to NodeV3
+        private void AddRainIntensityDistribution(NodeV3 node) 
         {
              // Ensure the node is a Variable node and has a distribution
             if (node.Role != NodeRole.Variable || node.Distribution == null) {
@@ -454,8 +454,8 @@ namespace ReasoningEngine.Utils.Scenarios
             node.Distribution.AddRange(15.0, 50.0, 0.1); 
         }
         
-         // Parameter type changed to Node
-        private void AddWindForceDistribution(Node node)
+         // Parameter type changed to NodeV3
+        private void AddWindForceDistribution(NodeV3 node)
         {
              // Ensure the node is a Variable node and has a distribution
             if (node.Role != NodeRole.Variable || node.Distribution == null) {
