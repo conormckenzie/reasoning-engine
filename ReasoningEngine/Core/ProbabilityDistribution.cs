@@ -176,12 +176,16 @@ namespace ReasoningEngine
 
         /// <summary>
         /// Gets the probability for a specific value.
-        /// For Continuous domains, if the value falls within EPSILON of two range boundaries (ambiguous point),
-        /// this method returns a linearly interpolated probability between the two adjacent ranges.
-        /// A warning is logged via DebugWriter when interpolation occurs.
+        /// - For DiscreteInteger domains, returns the probability of the specific point if defined, otherwise 0.
+        /// - For Continuous/Truth domains:
+        ///   - If the value falls clearly within one defined range (more than EPSILON from any boundary of any other range), returns that range's probability.
+        ///   - If the value falls within EPSILON of two or more boundaries between two defined ranges (ambiguous point), 
+        ///     this method returns a linearly interpolated probability between the probabilities of the two adjacent ranges.
+        ///     A warning is logged via DebugWriter when interpolation occurs.
+        ///   - If the value falls outside all defined ranges (more than EPSILON from any boundary), returns 0.
         /// </summary>
         /// <param name="value">The value to query.</param>
-        /// <returns>The probability associated with the value, potentially interpolated, or 0 if it falls outside defined ranges/points.</returns>
+        /// <returns>The probability associated with the value, potentially interpolated for Continuous domains near boundaries, or 0 if undefined.</returns>
         public double GetProbability(double value)
         {
             var coveringRangesIndices = GetCoveringRanges(value);
@@ -316,9 +320,13 @@ namespace ReasoningEngine
         // Removed GetContainingRange as its single-assignment logic is less useful than GetCoveringRanges for smoothing.
 
         /// <summary>
-        /// Returns a list of indices of ranges that might contain the given point,
-        /// taking into account measurement uncertainty.
+        /// Returns a list of indices of ranges that cover the given point, considering boundary ambiguity.
+        /// A range `[L, U]` is considered covering if the point `p` satisfies `p >= L - EPSILON && p <= U + EPSILON`.
+        /// This means a point within EPSILON of two ranges' boundaries will be covered by both,
+        /// enabling interpolation in GetProbability.
         /// </summary>
+        /// <param name="point">The point to check.</param>
+        /// <returns>A list of indices of the covering ranges.</returns>
         public List<int> GetCoveringRanges(double point)
         {
             var coveringRanges = new List<int>();
