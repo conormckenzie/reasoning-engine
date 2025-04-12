@@ -93,7 +93,7 @@ namespace DebugUtils
         /// </summary>
         /// <returns>A randomly generated debug message.</returns>
         /// <remarks>
-        /// The generated message consists of a '#' character, followed by 4 random uppercase letters or digits, and ends with another '#' character.
+        /// The generated message consists of a '#' character, followed by 6 random uppercase letters or digits, and ends with another '#' character.
         /// </remarks>
         public static string GenerateRandomDebugMessage()
         {

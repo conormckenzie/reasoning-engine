@@ -22,7 +22,8 @@ namespace ReasoningEngine.GraphAccess
         /// Payloads are generally pipe-delimited strings.
         /// For AddNode/EditNode, the format after id|content is key=value pairs, also pipe-delimited.
         /// Example AddNode: "1|Node A|Role=Variable|VariableDomainType=Truth"
-        /// Example EditNode: "1|New Content|FunctionType=Linear|FunctionParams=Weights=[0.5];Bias=0.1" 
+        /// Example EditNode: "1|New Content|FunctionType=Linear|FunctionParams=Weights:0.5,0.6;Bias:0.1" 
+        /// Note: FunctionParams value uses a semicolon-delimited string of Key:Value pairs.
         /// </summary>
         public virtual string ProcessCommand(string command, string payload)
         {
@@ -165,8 +166,8 @@ namespace ReasoningEngine.GraphAccess
                  bool success = graphObjectMapper.DeleteNodeAsync(nodeId).Result;
                  if (success)
                  {
-                    // Note: Mapper currently warns that edges are not deleted.
-                    return $"Node {nodeId} data deleted. (Associated edges might still exist).";
+                    // Note: Mapper attempts to delete associated edges. Check logs for details if any failed.
+                    return $"Node {nodeId} data deleted. Associated edges were also attempted to be deleted.";
                  }
                  else
                  {
