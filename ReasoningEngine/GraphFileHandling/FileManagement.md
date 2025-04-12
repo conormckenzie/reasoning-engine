@@ -39,7 +39,10 @@ Implementations of this interface handle the specifics of the storage mechanism 
 Located in `ReasoningEngine/GraphFileHandling/GraphFileManager.cs`, this class implements `IGraphStorageProvider` using the local file system.
 - **Node Storage:** Stores individual nodes as JSON files in a hierarchical directory structure based on their IDs (see Section 5).
 - **Edge Storage:** Stores individual edges as JSON files, potentially using a bidirectional structure (see Section 5). Relies on scanning directories for retrieving edge lists by node ID and currently uses inefficient scanning for Guid-based lookups.
-- **Indexing:** Currently relies on directory structure and file existence checks. A more robust indexing mechanism (e.g., for Guid lookups) is a potential future improvement.
+- **Indexing:** Relies on directory structure, file existence checks, and two types of index files:
+    - **Main Index (`index.json` in base directory):** Managed by `IndexManager`. Stores a list of all known node IDs and their file paths (`NodeInfo`). Used by `FileGraphStorageProvider` for `GetAllNodeIdsAsync`. The stored `EdgeCount` per node is currently not reliably maintained or used effectively.
+    - **Edge Directory Indexes (`index.json` within edge hierarchy):** Managed directly by `FileGraphStorageProvider`. Each `index.json` lists the edge filenames (`{sourceId}-{destId}.json` or `{destId}-{sourceId}.json`) present in that specific directory. Used by `GetAllEdgeFiles` (and thus `GetOutgoing/IncomingEdgeIdsAsync`) to avoid scanning all files when loading edges by node ID.
+- **Limitations:** No index exists for efficient `EdgeId` (Guid) lookups.
 
 ### 2.3 `GraphObjectMapper`
 Located in `ReasoningEngine/GraphFileHandling/GraphObjectMapper.cs`, this class uses an instance of `IGraphStorageProvider` to perform higher-level operations:
@@ -108,37 +111,39 @@ Base Directory/
         - 1234567890123456.json
 ```
 
-### 5.2 Edge File Structure
+### 5.2 Edge File Structure (Implemented)
 
-The original design specified a complex bidirectional structure. The current `FileGraphStorageProvider` implementation might store edges differently or only partially implement this. A simplified view might be:
+The `FileGraphStorageProvider` implements a hierarchical, bidirectional structure for storing edge data:
 
 ```
 Base Directory/
   - edges/
-    - {edgeId}.json
+    - outgoing/
+      - {sourceNodeId_part1}/
+        - {sourceNodeId_part1}{sourceNodeId_part2}/
+          - {sourceNodeId_part1}{sourceNodeId_part2}{sourceNodeId_part3}/
+            - {sourceNodeId_full}/
+              - {sourceNodeId_full}-{destNodeId_part1}/
+                - {sourceNodeId_full}-{destNodeId_part1}{destNodeId_part2}/
+                  - {sourceNodeId_full}-{destNodeId_part1}{destNodeId_part2}{destNodeId_part3}/
+                    - {sourceNodeId_full}-{destNodeId_full}.json
+                    - index.json  // Tracks edge files in this directory
+    - incoming/
+      - {destNodeId_part1}/
+        - {destNodeId_part1}{destNodeId_part2}/
+          - {destNodeId_part1}{destNodeId_part2}{destNodeId_part3}/
+            - {destNodeId_full}/
+              - {destNodeId_full}-{sourceNodeId_part1}/
+                - {destNodeId_full}-{sourceNodeId_part1}{sourceNodeId_part2}/
+                  - {destNodeId_full}-{sourceNodeId_part1}{sourceNodeId_part2}{sourceNodeId_part3}/
+                    - {destNodeId_full}-{sourceNodeId_full}.json // Note: Filename uses dest-source order here
+                    - index.json // Tracks edge files in this directory
 ```
-Or potentially organized by node (reflecting current implementation):
-```
-Base Directory/
-  - nodes/
-    - {sourceNodeId_part1}/
-      - {sourceNodeId_part1}{sourceNodeId_part2}/
-        - {sourceNodeId_part1}{sourceNodeId_part2}{sourceNodeId_part3}/
-          - {sourceNodeId_full}/
-            - edges/
-              - outgoing/
-                - {edgeId}.json  // EdgeId is the Guid
-  - nodes/
-    - {destNodeId_part1}/
-      - {destNodeId_part1}{destNodeId_part2}/
-        - {destNodeId_part1}{destNodeId_part2}{destNodeId_part3}/
-          - {destNodeId_full}/
-            - edges/
-              - incoming/
-                - {edgeId}.json  // EdgeId is the Guid
-```
-*   **Edge Storage:** Edges are stored twice: once under the source node's `outgoing` directory and once under the destination node's `incoming` directory. The filename in both locations is the edge's unique `Guid` (`EdgeId`). This allows efficient retrieval of outgoing/incoming edges by scanning the respective directories under a node.
-*   **Guid Lookups:** Retrieving/deleting an edge solely by its `Guid` still requires an inefficient scan across node directories.
+*   **Edge Storage:** Edges are stored twice: once under the source node's hierarchy in `edges/outgoing/` and once under the destination node's hierarchy in `edges/incoming/`.
+*   **Filename Convention:** The filename uses the format `{sourceNodeId_full}-{destNodeId_full}.json` in the `outgoing` path and `{destNodeId_full}-{sourceNodeId_full}.json` in the `incoming` path. The edge's unique `Guid` (`EdgeId`) is stored *within* the JSON file content.
+*   **Directory Structure:** Both `outgoing` and `incoming` paths use a deep hierarchy based on both the primary node ID (source for outgoing, destination for incoming) and the secondary node ID (destination for outgoing, source for incoming) to distribute files.
+*   **Edge Index Files (`index.json`):** Each directory potentially containing edge files also contains an `index.json` file listing the edge filenames within that specific directory. This is used by `GetAllEdgeFiles` to avoid scanning every file during edge loading by node ID.
+*   **Guid Lookups:** Retrieving/deleting an edge solely by its `Guid` still requires an inefficient scan across the directory structure, as there is no index mapping Guids to file paths.
 
 ## 6. Performance Considerations
 

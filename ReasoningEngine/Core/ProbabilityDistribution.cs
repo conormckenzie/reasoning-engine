@@ -1,7 +1,7 @@
-using Newtonsoft.Json; // Added for JsonConstructor
-using System;
+using System; // Removed Newtonsoft.Json
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization; // Added for System.Text.Json
 
 namespace ReasoningEngine
 {
@@ -10,7 +10,7 @@ namespace ReasoningEngine
         // Made setters public for deserialization via property mapping
         public DomainType DomainType { get; set; } 
         // Add string representation property
-        [JsonIgnore] // Should not be serialized
+        [JsonIgnore] // Should not be serialized (Now using System.Text.Json)
         public string DomainType_StringRepresentation => DomainType.ToString();
         // Made setter public for deserialization via property mapping
         public List<(double LowerBound, double UpperBound, double Probability)> Distribution { get; set; } 
@@ -40,10 +40,12 @@ namespace ReasoningEngine
             if (DomainType == DomainType.DiscreteInteger && !IsInteger(value))
                 throw new ArgumentException("Value must be an integer for DiscreteInteger domain");
             
-            if (DomainType == DomainType.Truth && (value < 0 || value > 1))
-                throw new ArgumentException("Value must be between 0 and 1 for Truth domain");
+            // Disallow AddPoint for Truth domain as per issues.md TODO #5/#12
+            if (DomainType == DomainType.Truth)
+                throw new InvalidOperationException("Use AddRange for Truth domain. Point probabilities can be approximated with narrow ranges.");
 
-            if (DomainType == DomainType.DiscreteInteger || DomainType == DomainType.Truth)
+            // Only proceed for DiscreteInteger
+            if (DomainType == DomainType.DiscreteInteger) 
             {
                 // Check for duplicate points
                 if (Distribution.Any(d => Math.Abs(d.LowerBound - value) < EPSILON))

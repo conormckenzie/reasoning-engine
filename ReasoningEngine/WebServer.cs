@@ -162,17 +162,19 @@ namespace ReasoningEngine
 
             app.MapPost("/api/nodes/create", async ([FromBody] CommandRequest request) => 
                 await ProcessCommand("add_node", request.Payload))
-                .WithMetadata(new SwaggerOperationAttribute("Create Node", 
-                    "Creates a new node. Payload format: \"nodeId|content|[nodeType]|[domainInterpretation]\". " +
-                    "nodeType can be Standard, SIMO, or MISO. " +
-                    "domainInterpretation (for SIMO nodes) can be Truth, ContinuousRange, or DiscreteRange."));
+                .WithMetadata(new SwaggerOperationAttribute("Create Node (V3)", 
+                    "Creates a new V3 node. Payload format: \"nodeId|content|Role=Value|param1=value1|...\". " +
+                    "Required: Role=Variable or Role=Function. " +
+                    "Optional for Variable: VariableDomainType=Truth/Continuous/DiscreteInteger. " +
+                    "Required for Function: FunctionType=Linear/DefinedOp/NeuralNet. " +
+                    "Optional for Function: FunctionParams=Key1:Value1;Key2:Value2... (See NodeFactory for details)."));
 
             app.MapPut("/api/nodes/{id}/update", async (long id, [FromBody] CommandRequest request) => 
                 await ProcessCommand("edit_node", $"{id}|{request.Payload}"))
-                .WithMetadata(new SwaggerOperationAttribute("Update Node", 
-                    "Updates an existing node's content. Payload format: \"content|[nodeType]|[domainInterpretation]\". " +
-                    "nodeType can be Standard, SIMO, or MISO. " +
-                    "domainInterpretation (for SIMO nodes) can be Truth, ContinuousRange, or DiscreteRange."));
+                .WithMetadata(new SwaggerOperationAttribute("Update Node (V3)", 
+                    "Updates an existing V3 node's content and optionally other properties. Payload format: \"content|param1=value1|...\". " +
+                    "Optional params: Role, VariableDomainType, FunctionType, FunctionParams. " +
+                    "Changing Role resets role-specific properties. See NodeFactory for details."));
 
             app.MapDelete("/api/nodes/{id}/delete", (long id) => 
                 ProcessCommand("delete_node", id.ToString()))

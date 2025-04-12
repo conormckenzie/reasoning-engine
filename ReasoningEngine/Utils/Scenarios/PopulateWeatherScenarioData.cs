@@ -28,11 +28,11 @@ namespace ReasoningEngine.Utils.Scenarios
         {
             DebugUtils.DebugWriter.DebugWriteLine("#Y8Z68I#", "Starting to populate weather scenario data...", true, DebugUtils.VerbosityLevel.Minimal);
             
-            // Add SIMO nodes
-            AddSIMONodes();
+            // Add Variable nodes
+            AddVariableNodes();
             
-            // Add MISO nodes
-            AddMISONodes();
+            // Add Function nodes
+            AddFunctionNodes();
             
             // Add edges
             AddEdges();
@@ -43,7 +43,7 @@ namespace ReasoningEngine.Utils.Scenarios
             DebugUtils.DebugWriter.DebugWriteLine("#TG4PZN#", "Weather scenario data population completed.", true, DebugUtils.VerbosityLevel.Minimal);
         }
 
-        private void AddSIMONodes()
+        private void AddVariableNodes() // Renamed from AddSIMONodes
         {
             DebugUtils.DebugWriter.DebugWriteLine("#TR4P8P#", "Adding Variable nodes...", true, DebugUtils.VerbosityLevel.Normal); // Renamed SIMO -> Variable
             
@@ -99,7 +99,7 @@ namespace ReasoningEngine.Utils.Scenarios
             DebugUtils.DebugWriter.DebugWriteLine("#B605AW#", result25, true, DebugUtils.VerbosityLevel.Detailed);
         }
 
-        private void AddMISONodes()
+        private void AddFunctionNodes() // Renamed from AddMISONodes
         {
             DebugUtils.DebugWriter.DebugWriteLine("#SKIXT4#", "Adding Function nodes...", true, DebugUtils.VerbosityLevel.Normal); // Renamed MISO -> Function
             

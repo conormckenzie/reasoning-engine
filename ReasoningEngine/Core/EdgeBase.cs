@@ -1,6 +1,6 @@
-using Newtonsoft.Json; // Added for JsonIgnore
-using System;
+using System; // Removed Newtonsoft.Json
 using System.Collections.Generic;
+using System.Text.Json.Serialization; // Added for System.Text.Json
 
 namespace ReasoningEngine
 {
@@ -10,7 +10,7 @@ namespace ReasoningEngine
         public Guid EdgeId { get; protected set; } 
         public long FromNode { get; protected set; }
         public long ToNode { get; protected set; }
-        [JsonIgnore] // Ignore Version during serialization/deserialization
+        [JsonIgnore] // Ignore Version during serialization/deserialization (Now using System.Text.Json)
         public abstract int Version { get; }
         // Property public, setter protected is correct.
         public Dictionary<string, object> ExtendedProperties { get; protected set; } = new Dictionary<string, object>(); 
