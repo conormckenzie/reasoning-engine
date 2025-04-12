@@ -18,12 +18,18 @@ namespace ReasoningEngine.Tests
         private TestServer? testServer;
         private HttpClient? client;
         private Mock<CommandProcessor>? mockCommandProcessor;
+        private Mock<GraphObjectMapper>? mockGraphObjectMapper; // Mock for the mapper
+        private Mock<IGraphStorageProvider>? mockStorageProvider; // Mock for the provider (needed by mapper)
 
         [OneTimeSetUp]
         public void Setup()
         {
-            // Create mock CommandProcessor directly
-            mockCommandProcessor = new Mock<CommandProcessor>(new GraphFileManager("test-path"));
+            // Create mocks for dependencies
+            mockStorageProvider = new Mock<IGraphStorageProvider>();
+            mockGraphObjectMapper = new Mock<GraphObjectMapper>(mockStorageProvider.Object); // Pass mock provider
+            // Create mock CommandProcessor, passing the mock mapper
+            // Need to mock the CommandProcessor itself, not create a real one with mocks
+            mockCommandProcessor = new Mock<CommandProcessor>(mockGraphObjectMapper.Object); 
 
             var webHostBuilder = new WebHostBuilder()
                 .ConfigureServices(services =>

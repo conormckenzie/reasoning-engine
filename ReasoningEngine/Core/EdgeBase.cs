@@ -1,3 +1,4 @@
+using Newtonsoft.Json; // Added for JsonIgnore
 using System;
 using System.Collections.Generic;
 
@@ -5,18 +6,36 @@ namespace ReasoningEngine
 {
     public abstract class EdgeBase : IVersioned
     {
+        // Setters protected
+        public Guid EdgeId { get; protected set; } 
         public long FromNode { get; protected set; }
         public long ToNode { get; protected set; }
+        [JsonIgnore] // Ignore Version during serialization/deserialization
         public abstract int Version { get; }
-        protected Dictionary<string, object> ExtendedProperties { get; } = new Dictionary<string, object>();
+        // Property public, setter protected is correct.
+        public Dictionary<string, object> ExtendedProperties { get; protected set; } = new Dictionary<string, object>(); 
 
-        protected EdgeBase(long fromNode, long toNode)
+        // Constructor now generates a Guid
+        // Made public (as in commit b7611d3)
+        public EdgeBase(long fromNode, long toNode) 
         {
+            EdgeId = Guid.NewGuid(); // Generate new ID
             FromNode = fromNode;
             ToNode = toNode;
         }
 
-        public abstract EdgeBase UpgradeToLatest();
+        // Constructor overload to accept an existing Guid (e.g., during loading)
+        // Made public (as in commit b7611d3)
+        public EdgeBase(Guid edgeId, long fromNode, long toNode)
+        {
+            EdgeId = edgeId;
+            FromNode = fromNode;
+            ToNode = toNode;
+        }
+
+
+        // Keep UpgradeToLatest for future edge versions
+        public abstract EdgeBase UpgradeToLatest(); 
 
         public void SetExtendedProperty(string key, object value)
         {

@@ -7,18 +7,26 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ReasoningEngine; // For WebServer, ApiResponse, CommandRequest
+// Removed incorrect using ReasoningEngine.DTOs; again
 using ReasoningEngine.GraphAccess;
 using ReasoningEngine.GraphFileHandling;
 
-namespace ReasoningEngine.Tests
+namespace ReasoningEngineTests // Fixed namespace (IDE0130)
 {
     [TestFixture]
     public class WebServerIntegrationTests
     {
-        private HttpClient client;
-        private WebServer webServer;
-        private Task serverTask;
-        private CancellationTokenSource cancellationTokenSource;
+        // Justification for null-forgiving operator (!):
+        // These fields are initialized in the [OneTimeSetUp] method, which NUnit guarantees
+        // runs once before all tests in the fixture. Therefore, they will not be null when accessed.
+        private HttpClient client = null!;
+        private WebServer webServer = null!;
+        // IDE0052: serverTask is assigned but value never read. This is technically true,
+        // but the task represents the running server. It should ideally be awaited in TearDown
+        // after cancellation for clean shutdown. Leaving the field for now.
+        private Task serverTask = null!;
+        private CancellationTokenSource cancellationTokenSource = null!;
 
         // Define serializer options to match the response format
         private static readonly JsonSerializerOptions SerializerOptions = new()
@@ -36,8 +44,10 @@ namespace ReasoningEngine.Tests
             Environment.SetEnvironmentVariable("DATA_FOLDER_PATH", dataFolderPath);
             Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
 
-            var graphFileManager = new GraphFileManager(dataFolderPath);
-            var commandProcessor = new CommandProcessor(graphFileManager);
+            // Instantiate the new classes
+            IGraphStorageProvider storageProvider = new FileGraphStorageProvider(dataFolderPath);
+            var graphObjectMapper = new GraphObjectMapper(storageProvider);
+            var commandProcessor = new CommandProcessor(graphObjectMapper); // Pass mapper
 
             webServer = new WebServer(commandProcessor);
             cancellationTokenSource = new CancellationTokenSource();
@@ -45,8 +55,8 @@ namespace ReasoningEngine.Tests
 
             Thread.Sleep(2000); // Give the server time to start
 
-            client = new HttpClient();
-            client.BaseAddress = new Uri("http://localhost:5000");
+            // Simplified object initialization (IDE0017)
+            client = new HttpClient { BaseAddress = new Uri("http://localhost:5000") };
         }
 
         [OneTimeTearDown]
@@ -72,21 +82,25 @@ namespace ReasoningEngine.Tests
             var content = await response.Content.ReadAsStringAsync();
             Console.WriteLine($"Response content: {content}");
 
-            var apiResponse = JsonSerializer.Deserialize<ApiResponse<string>>(content, SerializerOptions);
-            Assert.That(apiResponse, Is.Not.Null, "Failed to deserialize response");
-            Assert.That(apiResponse!.Success, Is.True, $"API response indicated failure: {apiResponse.Error}");
-            Assert.That(apiResponse.Data, Is.EqualTo("OK"));
+            Assert.Multiple(() => // Added Assert.Multiple (NUnit2045)
+            {
+                var apiResponse = JsonSerializer.Deserialize<ApiResponse<string>>(content, SerializerOptions);
+                Assert.That(apiResponse, Is.Not.Null, "Failed to deserialize response");
+                Assert.That(apiResponse!.Success, Is.True, $"API response indicated failure: {apiResponse.Error}");
+                Assert.That(apiResponse.Data, Is.EqualTo("OK"));
+            });
         }
 
         [Test]
         public async Task EndToEndTest_AddNodeAndQuery()
         {
-            // Create node
-            var createPayload = new CommandRequest { Payload = "1|TestNode" };
+            // Create node with Role parameter (using valid Role)
+            var createPayload = new CommandRequest { Payload = "1|TestNode|Role=Variable" };
+            // Corrected StringContent constructor
             var createContent = new StringContent(
                 JsonSerializer.Serialize(createPayload, SerializerOptions),
-                Encoding.UTF8,
-                "application/json");
+                Encoding.UTF8, 
+                "application/json"); 
 
             // First run setup
             await client.GetAsync("/api/commands/setup");
@@ -96,11 +110,14 @@ namespace ReasoningEngine.Tests
             
             var addContent = await addResponse.Content.ReadAsStringAsync();
             Console.WriteLine($"Add node response: {addContent}");
-            
-            var addResult = JsonSerializer.Deserialize<ApiResponse<string>>(addContent, SerializerOptions);
-            Assert.That(addResult, Is.Not.Null, "Failed to deserialize response");
-            Assert.That(addResult!.Success, Is.True, $"API response indicated failure: {addResult.Error}");
-            Assert.That(addResult.Data, Does.Contain("added successfully"));
+
+            Assert.Multiple(() => // Added Assert.Multiple (NUnit2045)
+            {
+                var addResult = JsonSerializer.Deserialize<ApiResponse<string>>(addContent, SerializerOptions);
+                Assert.That(addResult, Is.Not.Null, "Failed to deserialize response");
+                Assert.That(addResult!.Success, Is.True, $"API response indicated failure: {addResult.Error}");
+                Assert.That(addResult.Data, Does.Contain("added successfully"));
+            });
 
             // Query node
             var queryResponse = await client.GetAsync("/api/nodes/1/get");
@@ -108,11 +125,14 @@ namespace ReasoningEngine.Tests
             
             var queryContent = await queryResponse.Content.ReadAsStringAsync();
             Console.WriteLine($"Query node response: {queryContent}");
-            
-            var queryResult = JsonSerializer.Deserialize<ApiResponse<string>>(queryContent, SerializerOptions);
-            Assert.That(queryResult, Is.Not.Null, "Failed to deserialize response");
-            Assert.That(queryResult!.Success, Is.True, $"API response indicated failure: {queryResult.Error}");
-            Assert.That(queryResult.Data, Does.Contain("TestNode"));
+
+            Assert.Multiple(() => // Added Assert.Multiple (NUnit2045)
+            {
+                var queryResult = JsonSerializer.Deserialize<ApiResponse<string>>(queryContent, SerializerOptions);
+                Assert.That(queryResult, Is.Not.Null, "Failed to deserialize response");
+                Assert.That(queryResult!.Success, Is.True, $"API response indicated failure: {queryResult.Error}");
+                Assert.That(queryResult.Data, Does.Contain("TestNode"));
+            });
         }
 
         [Test]
@@ -121,32 +141,41 @@ namespace ReasoningEngine.Tests
             // First run setup
             await client.GetAsync("/api/commands/setup");
 
-            // Create two nodes
-            var createNode1 = new CommandRequest { Payload = "1|Node1" };
-            var createNode2 = new CommandRequest { Payload = "2|Node2" };
-            
-            await client.PostAsync("/api/nodes/create", 
+            // Create two nodes with Role parameter (using valid Role)
+            var createNode1 = new CommandRequest { Payload = "1|Node1|Role=Variable" };
+            var createNode2 = new CommandRequest { Payload = "2|Node2|Role=Variable" };
+
+            // Corrected StringContent constructor
+            await client.PostAsync("/api/nodes/create",
                 new StringContent(JsonSerializer.Serialize(createNode1, SerializerOptions), 
-                    Encoding.UTF8, "application/json"));
+                    Encoding.UTF8, 
+                    "application/json")); 
+            // Corrected StringContent constructor
             await client.PostAsync("/api/nodes/create", 
                 new StringContent(JsonSerializer.Serialize(createNode2, SerializerOptions), 
-                    Encoding.UTF8, "application/json"));
+                    Encoding.UTF8, 
+                    "application/json")); 
 
             // Create edge between nodes
             var createEdge = new CommandRequest { Payload = "1|2|1.5|TestEdge" };
+            // Corrected StringContent constructor
             var createEdgeResponse = await client.PostAsync("/api/edges/create",
                 new StringContent(JsonSerializer.Serialize(createEdge, SerializerOptions), 
-                    Encoding.UTF8, "application/json"));
+                    Encoding.UTF8, 
+                    "application/json")); 
             
             Assert.That(createEdgeResponse.IsSuccessStatusCode, Is.True, "HTTP request failed");
             
             var createEdgeContent = await createEdgeResponse.Content.ReadAsStringAsync();
             Console.WriteLine($"Create edge response: {createEdgeContent}");
-            
-            var createEdgeResult = JsonSerializer.Deserialize<ApiResponse<string>>(createEdgeContent, SerializerOptions);
-            Assert.That(createEdgeResult, Is.Not.Null, "Failed to deserialize response");
-            Assert.That(createEdgeResult!.Success, Is.True, $"API response indicated failure: {createEdgeResult.Error}");
-            Assert.That(createEdgeResult.Data, Does.Contain("added successfully"));
+
+            Assert.Multiple(() => // Added Assert.Multiple (NUnit2045)
+            {
+                var createEdgeResult = JsonSerializer.Deserialize<ApiResponse<string>>(createEdgeContent, SerializerOptions);
+                Assert.That(createEdgeResult, Is.Not.Null, "Failed to deserialize response");
+                Assert.That(createEdgeResult!.Success, Is.True, $"API response indicated failure: {createEdgeResult.Error}");
+                Assert.That(createEdgeResult.Data, Does.Contain("added successfully"));
+            });
 
             // Query outgoing edges
             var outgoingResponse = await client.GetAsync("/api/nodes/1/edges/outgoing/list");
@@ -154,11 +183,14 @@ namespace ReasoningEngine.Tests
             
             var outgoingContent = await outgoingResponse.Content.ReadAsStringAsync();
             Console.WriteLine($"Query edges response: {outgoingContent}");
-            
-            var outgoingResult = JsonSerializer.Deserialize<ApiResponse<string>>(outgoingContent, SerializerOptions);
-            Assert.That(outgoingResult, Is.Not.Null, "Failed to deserialize response");
-            Assert.That(outgoingResult!.Success, Is.True, $"API response indicated failure: {outgoingResult.Error}");
-            Assert.That(outgoingResult.Data, Does.Contain("TestEdge"));
+
+            Assert.Multiple(() => // Added Assert.Multiple (NUnit2045)
+            {
+                var outgoingResult = JsonSerializer.Deserialize<ApiResponse<string>>(outgoingContent, SerializerOptions);
+                Assert.That(outgoingResult, Is.Not.Null, "Failed to deserialize response");
+                Assert.That(outgoingResult!.Success, Is.True, $"API response indicated failure: {outgoingResult.Error}");
+                Assert.That(outgoingResult.Data, Does.Contain("TestEdge"));
+            });
         }
     }
 }

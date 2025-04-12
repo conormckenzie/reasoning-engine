@@ -14,12 +14,14 @@ namespace ReasoningEngine.Utils.Scenarios
     public class PopulateWeatherScenarioData
     {
         private readonly CommandProcessor _commandProcessor;
-        private readonly GraphFileManager _graphFileManager; // Added
+        // Updated field to use GraphObjectMapper
+        private readonly GraphObjectMapper _graphObjectMapper; 
 
-        public PopulateWeatherScenarioData(CommandProcessor commandProcessor, GraphFileManager graphFileManager) // Modified
+        // Updated constructor to accept GraphObjectMapper
+        public PopulateWeatherScenarioData(CommandProcessor commandProcessor, GraphObjectMapper graphObjectMapper) 
         {
             _commandProcessor = commandProcessor;
-            _graphFileManager = graphFileManager; // Added
+            _graphObjectMapper = graphObjectMapper; // Assign the mapper
         }
 
         public void PopulateData()
@@ -43,96 +45,98 @@ namespace ReasoningEngine.Utils.Scenarios
 
         private void AddSIMONodes()
         {
-            DebugUtils.DebugWriter.DebugWriteLine("#TR4P8P#", "Adding SIMO nodes...", true, DebugUtils.VerbosityLevel.Normal);
+            DebugUtils.DebugWriter.DebugWriteLine("#TR4P8P#", "Adding Variable nodes...", true, DebugUtils.VerbosityLevel.Normal); // Renamed SIMO -> Variable
             
             // Basic Propositions (Truth Domain)
-            string result1 = _commandProcessor.ProcessCommand("add_node", "1|Proposition A: It is raining outside [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result1 = _commandProcessor.ProcessCommand("add_node", "1|Proposition A: It is raining outside [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#4AZGY7#", result1, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result2 = _commandProcessor.ProcessCommand("add_node", "2|Proposition B: The ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result2 = _commandProcessor.ProcessCommand("add_node", "2|Proposition B: The ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#8ZLN4I#", result2, true, DebugUtils.VerbosityLevel.Detailed);
             
             // Results of Logical Operations
-            string result4 = _commandProcessor.ProcessCommand("add_node", "4|Result of AND: It is raining AND the ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result4 = _commandProcessor.ProcessCommand("add_node", "4|Result of AND: It is raining AND the ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#5BI68R#", result4, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result6 = _commandProcessor.ProcessCommand("add_node", "6|Result of OR: It is raining OR the ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result6 = _commandProcessor.ProcessCommand("add_node", "6|Result of OR: It is raining OR the ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#0I13I8#", result6, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result8 = _commandProcessor.ProcessCommand("add_node", "8|Result of NOT: It is NOT raining outside [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result8 = _commandProcessor.ProcessCommand("add_node", "8|Result of NOT: It is NOT raining outside [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#3DQW3J#", result8, true, DebugUtils.VerbosityLevel.Detailed);
             
             // Causal Strength (Continuous Range Domain)
-            string result9 = _commandProcessor.ProcessCommand("add_node", "9|Causal Strength of Rain → Wet Ground [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|ContinuousRange");
+            string result9 = _commandProcessor.ProcessCommand("add_node", "9|Causal Strength of Rain → Wet Ground [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Continuous"); // Changed DomainType
             DebugUtils.DebugWriter.DebugWriteLine("#PSHWNG#", result9, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result11 = _commandProcessor.ProcessCommand("add_node", "11|Result of Implication: If it is raining, then the ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result11 = _commandProcessor.ProcessCommand("add_node", "11|Result of Implication: If it is raining, then the ground is wet [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#QXERWQ#", result11, true, DebugUtils.VerbosityLevel.Detailed);
             
             // Continuous and Discrete Concepts
-            string result12 = _commandProcessor.ProcessCommand("add_node", "12|Rain Intensity in mm/hour [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|ContinuousRange");
+            string result12 = _commandProcessor.ProcessCommand("add_node", "12|Rain Intensity in mm/hour [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Continuous"); // Changed DomainType
             DebugUtils.DebugWriter.DebugWriteLine("#L6TZP0#", result12, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result13 = _commandProcessor.ProcessCommand("add_node", "13|Wind Force according to Beaufort scale [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|DiscreteInteger");
+            string result13 = _commandProcessor.ProcessCommand("add_node", "13|Wind Force according to Beaufort scale [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=DiscreteInteger");
             DebugUtils.DebugWriter.DebugWriteLine("#G7417P#", result13, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result15 = _commandProcessor.ProcessCommand("add_node", "15|Puddle Formation Likelihood [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result15 = _commandProcessor.ProcessCommand("add_node", "15|Puddle Formation Likelihood [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#TMUMHC#", result15, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result17 = _commandProcessor.ProcessCommand("add_node", "17|Wind Impact on Umbrella [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result17 = _commandProcessor.ProcessCommand("add_node", "17|Wind Impact on Umbrella [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#FN3RYC#", result17, true, DebugUtils.VerbosityLevel.Detailed);
             
             // Complex Reasoning Chain
-            string result19 = _commandProcessor.ProcessCommand("add_node", "19|Is it raining heavily? [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result19 = _commandProcessor.ProcessCommand("add_node", "19|Is it raining heavily? [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#BT7KDI#", result19, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result21 = _commandProcessor.ProcessCommand("add_node", "21|Is an umbrella usable? [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result21 = _commandProcessor.ProcessCommand("add_node", "21|Is an umbrella usable? [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#0BPU33#", result21, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result23 = _commandProcessor.ProcessCommand("add_node", "23|Need for Umbrella [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result23 = _commandProcessor.ProcessCommand("add_node", "23|Need for Umbrella [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#3VT2A9#", result23, true, DebugUtils.VerbosityLevel.Detailed);
             
             // Alternative Reasoning Path
-            string result25 = _commandProcessor.ProcessCommand("add_node", "25|Ground wet because of rain [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|SIMO|Truth");
+            string result25 = _commandProcessor.ProcessCommand("add_node", "25|Ground wet because of rain [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Variable|VariableDomainType=Truth");
             DebugUtils.DebugWriter.DebugWriteLine("#B605AW#", result25, true, DebugUtils.VerbosityLevel.Detailed);
         }
 
         private void AddMISONodes()
         {
-            DebugUtils.DebugWriter.DebugWriteLine("#SKIXT4#", "Adding MISO nodes...", true, DebugUtils.VerbosityLevel.Normal);
+            DebugUtils.DebugWriter.DebugWriteLine("#SKIXT4#", "Adding Function nodes...", true, DebugUtils.VerbosityLevel.Normal); // Renamed MISO -> Function
             
-            // Logical Operations
-            string result3 = _commandProcessor.ProcessCommand("add_node", "3|AND Operation: Logical AND of inputs [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            // Logical Operations - Assuming DefinedOp for simple logic gates
+            // Note: FunctionParams are now passed as a single string value "Key1:Value1;Key2:Value2"
+            string result3 = _commandProcessor.ProcessCommand("add_node", "3|AND Operation: Logical AND of inputs [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:And");
             DebugUtils.DebugWriter.DebugWriteLine("#DZ1M6Z#", result3, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result5 = _commandProcessor.ProcessCommand("add_node", "5|OR Operation: Logical OR of inputs [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            string result5 = _commandProcessor.ProcessCommand("add_node", "5|OR Operation: Logical OR of inputs [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:Or");
             DebugUtils.DebugWriter.DebugWriteLine("#MB6F1V#", result5, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result7 = _commandProcessor.ProcessCommand("add_node", "7|NOT Operation: Logical NOT of input [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            string result7 = _commandProcessor.ProcessCommand("add_node", "7|NOT Operation: Logical NOT of input [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:Not");
             DebugUtils.DebugWriter.DebugWriteLine("#DTXNNW#", result7, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result10 = _commandProcessor.ProcessCommand("add_node", "10|Implication Evaluation: Evaluates if A implies B [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            // Assuming Implication is a custom DefinedOp or potentially Linear if weighted
+            string result10 = _commandProcessor.ProcessCommand("add_node", "10|Implication Evaluation: Evaluates if A implies B [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:Implies"); // Assuming 'Implies' op
             DebugUtils.DebugWriter.DebugWriteLine("#13VNHC#", result10, true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Analysis Nodes
-            string result14 = _commandProcessor.ProcessCommand("add_node", "14|Puddle Formation Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            // Analysis Nodes - These are likely more complex, maybe Linear or custom DefinedOps. Using DefinedOp as placeholder.
+            string result14 = _commandProcessor.ProcessCommand("add_node", "14|Puddle Formation Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:PuddleAnalysis"); // Placeholder Op
             DebugUtils.DebugWriter.DebugWriteLine("#P8N8QE#", result14, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result16 = _commandProcessor.ProcessCommand("add_node", "16|Wind Impact Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            string result16 = _commandProcessor.ProcessCommand("add_node", "16|Wind Impact Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:WindImpact"); // Placeholder Op
             DebugUtils.DebugWriter.DebugWriteLine("#EBO9LJ#", result16, true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Complex Reasoning Chain
-            string result18 = _commandProcessor.ProcessCommand("add_node", "18|Heavy Rain Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            // Complex Reasoning Chain - Placeholders
+            string result18 = _commandProcessor.ProcessCommand("add_node", "18|Heavy Rain Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:HeavyRainCheck"); // Placeholder Op
             DebugUtils.DebugWriter.DebugWriteLine("#H6UHBG#", result18, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result20 = _commandProcessor.ProcessCommand("add_node", "20|Umbrella Usability Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            string result20 = _commandProcessor.ProcessCommand("add_node", "20|Umbrella Usability Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:UmbrellaUsable"); // Placeholder Op
             DebugUtils.DebugWriter.DebugWriteLine("#RFRZIN#", result20, true, DebugUtils.VerbosityLevel.Detailed);
             
-            string result22 = _commandProcessor.ProcessCommand("add_node", "22|Umbrella Need Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            string result22 = _commandProcessor.ProcessCommand("add_node", "22|Umbrella Need Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:UmbrellaNeed"); // Placeholder Op
             DebugUtils.DebugWriter.DebugWriteLine("#K5CYJM#", result22, true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Alternative Reasoning Path
-            string result24 = _commandProcessor.ProcessCommand("add_node", "24|Reverse Implication Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|MISO");
+            // Alternative Reasoning Path - Placeholder
+            string result24 = _commandProcessor.ProcessCommand("add_node", "24|Reverse Implication Analysis [scenario: 8bf1ef9c-a64d-41ba-94f0-c7550357e0ef]|Role=Function|FunctionType=DefinedOp|FunctionParams=Operation:ReverseImplies"); // Placeholder Op
             DebugUtils.DebugWriter.DebugWriteLine("#S8DJ7K#", result24, true, DebugUtils.VerbosityLevel.Detailed);
         }
 
@@ -239,10 +243,10 @@ namespace ReasoningEngine.Utils.Scenarios
             
             try
             {
-                // Load nodes from the graph file manager
-                var nodes = LoadSIMONodes();
+                // Load Variable nodes from the graph file manager
+                var nodes = LoadVariableNodes(); // Updated method call
                 
-                if (nodes.Count == 0)
+                if (nodes.Count == 0) // This check should still be valid
                 {
                     DebugUtils.DebugWriter.DebugWriteLine("#3M802W#", "No SIMO nodes found. Make sure to add nodes first.", true, DebugUtils.VerbosityLevel.Minimal);
                     return;
@@ -334,10 +338,11 @@ namespace ReasoningEngine.Utils.Scenarios
                             break;
                     }
 
-                    // Save the node if it was modified
+                    // Save the node if it was modified using the mapper
                     if (nodeModified)
                     {
-                        if (_graphFileManager.SaveNode(node))
+                        // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
+                        if (_graphObjectMapper.SaveNodeAsync(node).Result) 
                         {
                             DebugUtils.DebugWriter.DebugWriteLine("#SAVE_OK#", $"Node {node.Id} saved successfully after adding distribution.", true, DebugUtils.VerbosityLevel.Detailed);
                         }
@@ -353,86 +358,120 @@ namespace ReasoningEngine.Utils.Scenarios
             catch (Exception ex)
             {
                 DebugUtils.DebugWriter.DebugWriteLine("#NM5HED#", $"Error adding probability distributions: {ex.Message}", true, DebugUtils.VerbosityLevel.Minimal);
-                DebugUtils.DebugWriter.DebugWriteLine("#2IAIKF#", ex.StackTrace, true, DebugUtils.VerbosityLevel.Detailed);
+                DebugUtils.DebugWriter.DebugWriteLine("#2IAIKF#", ex.StackTrace ?? "<No stack trace>", true, DebugUtils.VerbosityLevel.Detailed); // Added null check
             }
         }
         
-        private List<SIMONode> LoadSIMONodes()
+        // Method now loads Variable nodes and returns List<NodeV3>
+        private List<NodeV3> LoadVariableNodes() 
         {
-            var simoNodes = new List<SIMONode>();
-            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO#", "Loading SIMO nodes...", true, DebugUtils.VerbosityLevel.Normal);
+            var variableNodes = new List<NodeV3>(); // Use NodeV3 explicitly
+            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_NODES#", "Loading Variable nodes...", true, DebugUtils.VerbosityLevel.Normal); // Updated message
             
+            // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
             try
             {
-                List<long> allNodeIds = _graphFileManager.GetAllNodeIds();
+                // Get IDs via mapper
+                List<long> allNodeIds = _graphObjectMapper.GetAllNodeIdsAsync().Result; 
                 DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_IDS#", $"Found {allNodeIds.Count} total node IDs.", true, DebugUtils.VerbosityLevel.Detailed);
 
                 foreach (long nodeId in allNodeIds)
                 {
-                    NodeBase? node = _graphFileManager.LoadNode(nodeId);
-                    if (node is SIMONode simoNode)
+                    // Load node via mapper - variable type changed to NodeV3?
+                    NodeV3? node = _graphObjectMapper.GetNodeAsync(nodeId).Result; 
+                    // Check if it was loaded successfully and has the Variable role
+                    if (node != null && node.Role == NodeRole.Variable) 
                     {
-                        simoNodes.Add(simoNode);
-                        DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_NODE#", $"Loaded SIMO node {nodeId}.", true, DebugUtils.VerbosityLevel.Detailed);
+                        // Add the NodeV3 object directly (Node is an alias for NodeV3)
+                        variableNodes.Add(node); 
+                        DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_NODE#", $"Loaded Variable node {nodeId}.", true, DebugUtils.VerbosityLevel.Detailed); // Updated message
                     }
                     else if (node == null)
                     {
-                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_ERR#", $"Failed to load node {nodeId}.", true, DebugUtils.VerbosityLevel.Minimal);
+                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_ERR#", $"Failed to load node {nodeId} via mapper.", true, DebugUtils.VerbosityLevel.Minimal); // Updated message
+                    }
+                    // Optionally log if a node was loaded but wasn't a Variable node
+                    else { // node != null but role is not Variable
+                         DebugUtils.DebugWriter.DebugWriteLine("#LOAD_NONVAR_NODE#", $"Loaded node {nodeId} but it has role {node.Role}, expected Variable.", true, DebugUtils.VerbosityLevel.Detailed);
                     }
                 }
             }
             catch (Exception ex)
             {
-                DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_EX#", $"Error loading nodes: {ex.Message}", true, DebugUtils.VerbosityLevel.Minimal);
-                DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_STACK#", ex.StackTrace, true, DebugUtils.VerbosityLevel.Detailed);
+                DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_EX#", $"Error loading nodes: {ex.Message}", true, DebugUtils.VerbosityLevel.Minimal); // Updated message
+                DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_STACK#", ex.StackTrace ?? "<No stack trace>", true, DebugUtils.VerbosityLevel.Detailed); // Added null check
             }
             
-            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_DONE#", $"Loaded {simoNodes.Count} SIMO nodes.", true, DebugUtils.VerbosityLevel.Normal);
-            return simoNodes;
+            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_DONE#", $"Loaded {variableNodes.Count} Variable nodes.", true, DebugUtils.VerbosityLevel.Normal); // Updated message
+            return variableNodes; // Return list of NodeV3
         }
         
-        private void AddTruthDistribution(SIMONode node, double trueValue)
+        // Parameter type changed to NodeV3
+        private void AddTruthDistribution(NodeV3 node, double trueValue) 
         {
+            // Ensure the node is a Variable node and has a distribution
+            if (node.Role != NodeRole.Variable || node.Distribution == null) {
+                 DebugUtils.DebugWriter.DebugWriteLine("#TRUTH_DIST_ERR#", $"Node {node.Id} is not a Variable node or has no distribution. Cannot add Truth distribution.", true, DebugUtils.VerbosityLevel.Minimal);
+                 return;
+            }
             DebugUtils.DebugWriter.DebugWriteLine("#SQ9FO2#", $"Adding Truth distribution to node {node.Id}: True={trueValue}, False={1-trueValue}", true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Uncommented:
-            node.AddDistributionPoint(1.0, trueValue);
-            node.AddDistributionPoint(0.0, 1.0 - trueValue);
+            // Add points to the existing distribution object
+            node.Distribution.AddPoint(1.0, trueValue); 
+            node.Distribution.AddPoint(0.0, 1.0 - trueValue);
         }
         
-        private void AddCausalStrengthDistribution(SIMONode node)
+        // Parameter type changed to NodeV3
+        private void AddCausalStrengthDistribution(NodeV3 node) 
         {
+             // Ensure the node is a Variable node and has a distribution
+            if (node.Role != NodeRole.Variable || node.Distribution == null) {
+                 DebugUtils.DebugWriter.DebugWriteLine("#CAUSAL_DIST_ERR#", $"Node {node.Id} is not a Variable node or has no distribution. Cannot add Causal Strength distribution.", true, DebugUtils.VerbosityLevel.Minimal);
+                 return;
+            }
             DebugUtils.DebugWriter.DebugWriteLine("#R1RH7B#", $"Adding Causal Strength distribution to node {node.Id}", true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Uncommented:
-            node.AddDistributionRange(0.7, 0.9, 0.6);  // Strong causation
-            node.AddDistributionRange(0.4, 0.7, 0.3);  // Moderate causation
-            node.AddDistributionRange(0.0, 0.4, 0.1);  // Weak causation
+            // Add ranges to the existing distribution object
+            node.Distribution.AddRange(0.7, 0.9, 0.6);  
+            node.Distribution.AddRange(0.4, 0.7, 0.3);  
+            node.Distribution.AddRange(0.0, 0.4, 0.1);  
         }
         
-        private void AddRainIntensityDistribution(SIMONode node)
+        // Parameter type changed to NodeV3
+        private void AddRainIntensityDistribution(NodeV3 node) 
         {
+             // Ensure the node is a Variable node and has a distribution
+            if (node.Role != NodeRole.Variable || node.Distribution == null) {
+                 DebugUtils.DebugWriter.DebugWriteLine("#RAIN_DIST_ERR#", $"Node {node.Id} is not a Variable node or has no distribution. Cannot add Rain Intensity distribution.", true, DebugUtils.VerbosityLevel.Minimal);
+                 return;
+            }
             DebugUtils.DebugWriter.DebugWriteLine("#7W0XRH#", $"Adding Rain Intensity distribution to node {node.Id}", true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Uncommented:
-            node.AddDistributionRange(0.0, 1.0, 0.3);   // No/trace rain
-            node.AddDistributionRange(1.0, 5.0, 0.4);   // Light rain
-            node.AddDistributionRange(5.0, 15.0, 0.2);  // Moderate rain
-            node.AddDistributionRange(15.0, 50.0, 0.1); // Heavy rain
+             // Add ranges to the existing distribution object
+            node.Distribution.AddRange(0.0, 1.0, 0.3);   
+            node.Distribution.AddRange(1.0, 5.0, 0.4);   
+            node.Distribution.AddRange(5.0, 15.0, 0.2);  
+            node.Distribution.AddRange(15.0, 50.0, 0.1); 
         }
         
-        private void AddWindForceDistribution(SIMONode node)
+         // Parameter type changed to NodeV3
+        private void AddWindForceDistribution(NodeV3 node)
         {
+             // Ensure the node is a Variable node and has a distribution
+            if (node.Role != NodeRole.Variable || node.Distribution == null) {
+                 DebugUtils.DebugWriter.DebugWriteLine("#WIND_DIST_ERR#", $"Node {node.Id} is not a Variable node or has no distribution. Cannot add Wind Force distribution.", true, DebugUtils.VerbosityLevel.Minimal);
+                 return;
+            }
             DebugUtils.DebugWriter.DebugWriteLine("#M26F8E#", $"Adding Wind Force distribution to node {node.Id}", true, DebugUtils.VerbosityLevel.Detailed);
             
-            // Uncommented:
-            node.AddDistributionPoint(0, 0.05); // Calm
-            node.AddDistributionPoint(1, 0.10); // Light air
-            node.AddDistributionPoint(2, 0.20); // Light breeze
-            node.AddDistributionPoint(3, 0.30); // Gentle breeze
-            node.AddDistributionPoint(4, 0.20); // Moderate breeze
-            node.AddDistributionPoint(5, 0.10); // Fresh breeze
-            node.AddDistributionPoint(6, 0.05); // Strong breeze
+             // Add points to the existing distribution object
+            node.Distribution.AddPoint(0, 0.05); 
+            node.Distribution.AddPoint(1, 0.10); 
+            node.Distribution.AddPoint(2, 0.20); 
+            node.Distribution.AddPoint(3, 0.30); 
+            node.Distribution.AddPoint(4, 0.20); 
+            node.Distribution.AddPoint(5, 0.10); 
+            node.Distribution.AddPoint(6, 0.05); 
         }
 
         // Note: This Main method allows running the populator directly.
@@ -449,15 +488,16 @@ namespace ReasoningEngine.Utils.Scenarios
                 
                 DebugUtils.DebugWriter.DebugWriteLine("#WF3ARH#", $"Using data folder path: {dataFolderPath}", true, DebugUtils.VerbosityLevel.Normal);
                 
-                // Initialize GraphFileManager and CommandProcessor
-                var graphFileManager = new GraphFileManager(dataFolderPath);
-                var commandProcessor = new CommandProcessor(graphFileManager);
+                // Initialize Storage Provider, Mapper, and Command Processor
+                IGraphStorageProvider storageProvider = new FileGraphStorageProvider(dataFolderPath);
+                var graphObjectMapper = new GraphObjectMapper(storageProvider);
+                var commandProcessor = new CommandProcessor(graphObjectMapper);
                 
                 // Run OneTimeSetup to ensure the data directory is properly initialized
                 OneTimeSetup.Initialize();
                 
-                // Create and run the data populator
-                var populator = new PopulateWeatherScenarioData(commandProcessor, graphFileManager); // Modified
+                // Create and run the data populator, passing the mapper
+                var populator = new PopulateWeatherScenarioData(commandProcessor, graphObjectMapper); 
                 populator.PopulateData();
                 
                 DebugUtils.DebugWriter.DebugWriteLine("#ZLUMLC#", "Weather scenario data population completed successfully.", true, DebugUtils.VerbosityLevel.Minimal);
@@ -465,7 +505,7 @@ namespace ReasoningEngine.Utils.Scenarios
             catch (Exception ex)
             {
                 DebugUtils.DebugWriter.DebugWriteLine("#9KOY9E#", $"Error in Main: {ex.Message}", true, DebugUtils.VerbosityLevel.Minimal);
-                DebugUtils.DebugWriter.DebugWriteLine("#W154KN#", ex.StackTrace, true, DebugUtils.VerbosityLevel.Detailed);
+                DebugUtils.DebugWriter.DebugWriteLine("#W154KN#", ex.StackTrace ?? "<No stack trace>", true, DebugUtils.VerbosityLevel.Detailed); // Added null check
             }
         }
     }

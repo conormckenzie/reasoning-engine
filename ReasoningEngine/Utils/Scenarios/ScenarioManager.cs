@@ -12,12 +12,14 @@ namespace ReasoningEngine.Utils.Scenarios
     public class ScenarioManager
     {
         private readonly CommandProcessor _commandProcessor;
-        private readonly GraphFileManager _graphFileManager;
+        // Updated field to use GraphObjectMapper
+        private readonly GraphObjectMapper _graphObjectMapper; 
 
-        public ScenarioManager(CommandProcessor commandProcessor, GraphFileManager graphFileManager)
+        // Updated constructor to accept GraphObjectMapper
+        public ScenarioManager(CommandProcessor commandProcessor, GraphObjectMapper graphObjectMapper) 
         {
             _commandProcessor = commandProcessor;
-            _graphFileManager = graphFileManager;
+            _graphObjectMapper = graphObjectMapper; // Assign the mapper
         }
 
         /// <summary>
@@ -57,8 +59,8 @@ namespace ReasoningEngine.Utils.Scenarios
                 {
                     case "weather":
                         DebugUtils.DebugWriter.DebugWriteLine("#SCN007#", "Running Weather Scenario");
-                        // Pass both commandProcessor and graphFileManager
-                        var weatherScenario = new PopulateWeatherScenarioData(_commandProcessor, _graphFileManager); 
+                        // Pass commandProcessor and the graphObjectMapper
+                        var weatherScenario = new PopulateWeatherScenarioData(_commandProcessor, _graphObjectMapper); 
                         weatherScenario.PopulateData();
                         return true;
 

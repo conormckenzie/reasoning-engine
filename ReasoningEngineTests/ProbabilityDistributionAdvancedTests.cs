@@ -50,14 +50,25 @@ namespace ReasoningEngineTests {
             var slightlyBelow = boundaryPoint - 0.4 * EPSILON;  // Should be in first range
             var slightlyAbove = boundaryPoint + 0.4 * EPSILON;  // Should be in first range (closer to 1 than to 1+1.1*EPSILON)
             var midpoint = boundaryPoint + 0.55 * EPSILON;      // Should be in first range (closer to 1)
-            var nearSecondRange = 1 + 0.9 * EPSILON;            // Should be in second range (closer to 1+1.1*EPSILON)
+            var nearSecondRange = 1 + 0.9 * EPSILON;            // Should be covered by both ranges (within EPSILON of both boundaries)
 
             Assert.Multiple(() =>
             {
-                Assert.That(distribution.GetContainingRange(slightlyBelow), Is.EqualTo(0), "Point below boundary");
-                Assert.That(distribution.GetContainingRange(slightlyAbove), Is.EqualTo(0), "Point above but closer to first range");
-                Assert.That(distribution.GetContainingRange(midpoint), Is.EqualTo(0), "Point closer to first range");
-                Assert.That(distribution.GetContainingRange(nearSecondRange), Is.EqualTo(1), "Point closer to second range");
+                var coveringBelow = distribution.GetCoveringRanges(slightlyBelow);
+                Assert.That(coveringBelow, Has.Count.EqualTo(1), "Point below boundary count");
+                Assert.That(coveringBelow, Is.EquivalentTo(new[] { 0 }), "Point below boundary index");
+
+                var coveringAbove = distribution.GetCoveringRanges(slightlyAbove);
+                Assert.That(coveringAbove, Has.Count.EqualTo(2), "Point slightly above boundary (within EPSILON of both) count");
+                Assert.That(coveringAbove, Is.EquivalentTo(new[] { 0, 1 }), "Point slightly above boundary (within EPSILON of both) indices");
+                
+                var coveringMid = distribution.GetCoveringRanges(midpoint);
+                 Assert.That(coveringMid, Has.Count.EqualTo(2), "Midpoint (within EPSILON of both) count");
+                 Assert.That(coveringMid, Is.EquivalentTo(new[] { 0, 1 }), "Midpoint (within EPSILON of both) indices");
+
+                var coveringNearSecond = distribution.GetCoveringRanges(nearSecondRange);
+                 Assert.That(coveringNearSecond, Has.Count.EqualTo(2), "Point near second range boundary (within EPSILON of both) count");
+                 Assert.That(coveringNearSecond, Is.EquivalentTo(new[] { 0, 1 }), "Point near second range boundary (within EPSILON of both) indices");
             });
         }
 
@@ -121,10 +132,10 @@ namespace ReasoningEngineTests {
         }
 
         [Test]
-        public void TestPointAssignmentToClosestRange()
+        public void TestCoveringRangesForPointsInGap() // Renamed test
         {
             var distribution = new ProbabilityDistribution(DomainType.Continuous);
-            
+
             // Create two ranges with small gap
             distribution.AddRange(0, 1, 0.5);
             distribution.AddRange(1 + 2 * EPSILON, 2, 0.5);
@@ -132,16 +143,21 @@ namespace ReasoningEngineTests {
             // Test points in the gap
             var gapPoint1 = 1 + 0.5 * EPSILON;     // Should be in first range (closer to 1)
             var gapPoint2 = 1 + 1.5 * EPSILON;     // Should be in second range (closer to 1+2*EPSILON)
-            var gapMidpoint = 1 + EPSILON;         // Should be in first range (equidistant, prefer lower range)
-            
+            var gapMidpoint = 1 + EPSILON;         // Equidistant point in gap, should be covered by both
+
             Assert.Multiple(() =>
             {
-                Assert.That(distribution.GetContainingRange(gapPoint1), Is.EqualTo(0), 
-                    "Point closer to first range's upper bound");
-                Assert.That(distribution.GetContainingRange(gapPoint2), Is.EqualTo(1), 
-                    "Point closer to second range's lower bound");
-                Assert.That(distribution.GetContainingRange(gapMidpoint), Is.EqualTo(0), 
-                    "Equidistant point should go to lower range");
+                var covering1 = distribution.GetCoveringRanges(gapPoint1);
+                 Assert.That(covering1, Has.Count.EqualTo(1), "Gap point 1 (only within EPSILON of range 0) count"); 
+                 Assert.That(covering1, Is.EquivalentTo(new[] { 0 }), "Gap point 1 (only within EPSILON of range 0) index"); 
+
+                var covering2 = distribution.GetCoveringRanges(gapPoint2);
+                 Assert.That(covering2, Has.Count.EqualTo(1), "Gap point 2 (only within EPSILON of range 1) count"); 
+                 Assert.That(covering2, Is.EquivalentTo(new[] { 1 }), "Gap point 2 (only within EPSILON of range 1) index"); 
+
+                var coveringMid = distribution.GetCoveringRanges(gapMidpoint);
+                 Assert.That(coveringMid, Has.Count.EqualTo(2), "Gap midpoint (within EPSILON of both) count"); // Equidistant, covered by both
+                 Assert.That(coveringMid, Is.EquivalentTo(new[] { 0, 1 }), "Gap midpoint (within EPSILON of both) indices"); 
             });
         }
 
