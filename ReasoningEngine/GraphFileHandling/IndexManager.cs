@@ -1,7 +1,7 @@
-using Newtonsoft.Json;
-using System;
+using System; // Removed Newtonsoft.Json
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json; // Added System.Text.Json
 
 namespace ReasoningEngine.GraphFileHandling
 {
@@ -25,7 +25,9 @@ namespace ReasoningEngine.GraphFileHandling
             if (File.Exists(indexFilePath))
             {
                 string json = File.ReadAllText(indexFilePath);
-                indexData = JsonConvert.DeserializeObject<Index>(json) ?? new Index { Nodes = new List<NodeInfo>() };
+                // Use System.Text.Json with case-insensitive option
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                indexData = JsonSerializer.Deserialize<Index>(json, options) ?? new Index { Nodes = new List<NodeInfo>() };
             }
             else
             {
@@ -38,7 +40,9 @@ namespace ReasoningEngine.GraphFileHandling
         /// </summary>
         private void SaveIndex()
         {
-            string json = JsonConvert.SerializeObject(indexData, Formatting.Indented);
+            // Use System.Text.Json with indented formatting
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            string json = JsonSerializer.Serialize(indexData, options);
             File.WriteAllText(indexFilePath, json);
         }
 

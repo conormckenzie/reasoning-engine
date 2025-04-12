@@ -11,9 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.0.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
-    <PackageReference Include="NUnit" Version="4.1.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <!-- Test dependencies removed - should be in test project -->
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="6.5.0" />

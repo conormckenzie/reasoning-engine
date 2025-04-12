@@ -1,11 +1,6 @@
 namespace ReasoningEngine
 {
-    public enum DomainInterpretation
-    {
-        Truth,
-        ContinuousRange,
-        DiscreteRange
-    }
+    // DomainInterpretation enum removed as it was unused (2025-04-12 Review)
 
     public enum DomainType
     {

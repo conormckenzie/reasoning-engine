@@ -106,31 +106,6 @@ namespace DebugUtils
             DebugWriter.DebugWriteLine("#00VB09#", $"Verbosity level is now set to {Verbosity}");
         }
 
-        /// <summary>
-        /// Toggles the debug mode based on user input and updates the user on the current status.
-        /// </summary>
-        /// <remarks>
-        /// OBSOLETE - replaced by ShowDebugOptionsMenu()
-        /// </remarks>
-        public static void SetDebugMode()
-        {
-            // Display current debug mode status
-            DebugWriter.DebugWriteLine("#00D7C9#", $"Debug mode is currently {(DebugMode ? "ON" : "OFF")}");
-            DebugWriter.DebugWriteLine("#00D7CA#", $"Would you like to turn it {(DebugMode ? "OFF" : "ON")}? (y/n): ");
-
-            // Read user input
-            string response = Console.ReadLine()?.ToLower() ?? string.Empty;
-            if (response == "y")
-            {
-                // Toggle debug mode and display the new status
-                DebugMode = !DebugMode;
-                DebugWriter.DebugWriteLine("#00D7CB#", $"Debug mode is now {(DebugMode ? "ON" : "OFF")}");
-            }
-            else
-            {
-                // Inform the user that debug mode remains unchanged
-                DebugWriter.DebugWriteLine("#00D7CC#", $"Debug mode unchanged. It is currently {(DebugMode ? "ON" : "OFF")}");
-            }
-        }
+        // Removed obsolete SetDebugMode() method - functionality handled by ShowDebugOptionsMenu()
     }
 }
