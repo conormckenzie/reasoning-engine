@@ -10,8 +10,9 @@ This document provides guidelines for AI assistants working on the Reasoning Eng
 *   **Serialization:** The project primarily uses `System.Text.Json` for serialization/deserialization.
 *   **Architecture:** Be aware of the V3 functional graph approach (Nodes as Variables/Functions) and the decoupled persistence layer (`IGraphStorageProvider` for raw storage, `GraphObjectMapper` for object mapping).
 *   **Tool Usage:**
-    *   Handle potentially long command outputs (like `git diff`) by redirecting to a temporary file (`> output.txt.~`) and then reading the file. This way it does not get halted due to requiring user interaction.
+    *   Handle potentially long command outputs (like `git diff`) by redirecting to a temporary file in the `git-ignore/cmd-outputs/` directory (e.g.`> git-ignore/cmd-outputs/output.txt.~`) and then reading the file. This way it does not get halted due to requiring user interaction.
     *   Use `dotnet build reasoning-engine.sln` to check for compilation errors/warnings. Do not rely solely on IDE linter feedback, but address build warnings when identified.
+    *   Running `dotnet test > [file]` with output redirection (`>`) provides concise results suitable for context transfer but suppresses verbose debug messages (e.g., from `DebugWriter`). This is the preferred way to see test output. If seeing these detailed messages is needed for debugging specific tests, run `dotnet test` *without* redirection, potentially using filters (`--filter`) to target specific tests.
 *   **Git Workflow:** Aim for small, logical commits with descriptive messages (e.g., using conventional commit prefixes like `feat:`, `fix:`, `refactor:`, `docs:`, `style:`, `chore:`).
 *   **User Preferences & Custom Instructions:**
     *   Always seek explicit confirmation from the user before marking tasks or sub-tasks as complete. State what was done and ask if it's complete and what to do next.
