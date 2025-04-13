@@ -31,16 +31,20 @@ namespace ReasoningEngineTests
         public void TestGetQuantization_Truth()
         {
             var distribution = new ProbabilityDistribution(DomainType.Truth);
-            distribution.AddPoint(0.0, 0.4);
-            distribution.AddPoint(1.0, 0.6);
+            // Use AddRange with narrow ranges to represent points for Truth domain
+            double epsilon = 1e-10; // Match the EPSILON constant in ProbabilityDistribution
+            double rangeWidth = 5 * epsilon; // Minimum allowed width
+            distribution.AddRange(0.0, rangeWidth, 0.4); // Represent point 0.0
+            distribution.AddRange(1.0 - rangeWidth, 1.0, 0.6); // Represent point 1.0
 
             var quantization = distribution.GetQuantization();
             Assert.That(quantization, Has.Count.EqualTo(2));
             
+            // Assertions check for the ranges now
             Assert.Multiple(() =>
             {
-                Assert.That(quantization[0], Is.EqualTo((0.0, 0.0)));
-                Assert.That(quantization[1], Is.EqualTo((1.0, 1.0)));
+                Assert.That(quantization[0], Is.EqualTo((0.0, rangeWidth)));
+                Assert.That(quantization[1], Is.EqualTo((1.0 - rangeWidth, 1.0)));
             });
         }
 
@@ -88,16 +92,20 @@ namespace ReasoningEngineTests
         public void TestGetQuantizationWithProbabilities_Truth()
         {
             var distribution = new ProbabilityDistribution(DomainType.Truth);
-            distribution.AddPoint(0.0, 0.4);
-            distribution.AddPoint(1.0, 0.6);
+            // Use AddRange with narrow ranges to represent points for Truth domain
+            double epsilon = 1e-10; // Match the EPSILON constant in ProbabilityDistribution
+            double rangeWidth = 5 * epsilon; // Minimum allowed width
+            distribution.AddRange(0.0, rangeWidth, 0.4); // Represent point 0.0
+            distribution.AddRange(1.0 - rangeWidth, 1.0, 0.6); // Represent point 1.0
 
             var quantization = distribution.GetQuantizationWithProbabilities();
             Assert.That(quantization, Has.Count.EqualTo(2));
             
+            // Assertions check for the ranges and probabilities now
             Assert.Multiple(() =>
             {
-                Assert.That(quantization[0], Is.EqualTo((0.0, 0.0, 0.4)));
-                Assert.That(quantization[1], Is.EqualTo((1.0, 1.0, 0.6)));
+                Assert.That(quantization[0], Is.EqualTo((0.0, rangeWidth, 0.4)));
+                Assert.That(quantization[1], Is.EqualTo((1.0 - rangeWidth, 1.0, 0.6)));
             });
         }
 
@@ -218,10 +226,14 @@ namespace ReasoningEngineTests
         }
 
         [Test]
-        public void TestAddPoint_OutOfRangeValueForTruth()
+        public void TestAddPoint_OutOfRangeValueForTruth() // Test name is now slightly misleading, but reflects original intent
         {
+            // This test now verifies that AddPoint is disallowed for Truth domain,
+            // regardless of the value provided, as per issues.md TODO #5/#12.
             var distribution = new ProbabilityDistribution(DomainType.Truth);
-            Assert.Throws<ArgumentException>(() => distribution.AddPoint(1.5, 0.5));
+            // Expect InvalidOperationException because AddPoint is disallowed for Truth
+            Assert.Throws<InvalidOperationException>(() => distribution.AddPoint(0.5, 0.5)); 
+            Assert.Throws<InvalidOperationException>(() => distribution.AddPoint(1.5, 0.5)); // Also check original out-of-range case
         }
 
         [Test]
