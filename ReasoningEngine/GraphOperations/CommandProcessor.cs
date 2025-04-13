@@ -4,13 +4,25 @@ using System.Collections.Generic;
 using ReasoningEngine.GraphFileHandling;
 using ReasoningEngine; // Corrected namespace for Core classes
 using DebugUtils;
+using System.Linq; // Added for Skip
 
 namespace ReasoningEngine.GraphAccess
 {
+    /// <summary>
+    /// Processes text-based commands to interact with the reasoning graph.
+    /// This class acts as a facade over the GraphObjectMapper, providing a command-based interface.
+    /// Rationale for Async-First:
+    /// The underlying GraphObjectMapper and IGraphStorageProvider use asynchronous I/O operations.
+    /// To avoid blocking threads and potential deadlocks (especially when consumed by async frameworks like ASP.NET Core),
+    /// this processor implements its core logic asynchronously using async/await.
+    /// A synchronous ProcessCommand method is provided for convenience, but it blocks waiting for the async result
+    /// and should be used cautiously in contexts sensitive to blocking (UI, high-throughput servers).
+    /// Consumers should prefer ProcessCommandAsync whenever possible.
+    /// </summary>
     public class CommandProcessor
     {
         // Inject GraphObjectMapper which handles interaction with the storage provider
-        private readonly GraphObjectMapper graphObjectMapper; 
+        private readonly GraphObjectMapper graphObjectMapper;
 
         public CommandProcessor(GraphObjectMapper graphObjectMapper) // Updated constructor parameter
         {
@@ -25,44 +37,79 @@ namespace ReasoningEngine.GraphAccess
         /// Example EditNode: "1|New Content|FunctionType=Linear|FunctionParams=Weights:0.5,0.6;Bias:0.1" 
         /// Note: FunctionParams value uses a semicolon-delimited string of Key:Value pairs.
         /// </summary>
+        /// <remarks>
+        /// This method provides a synchronous wrapper around the asynchronous core logic.
+        /// It blocks the calling thread until the underlying asynchronous operation completes.
+        /// WARNING: Blocking on asynchronous code can lead to deadlocks in synchronization contexts
+        /// (like UI frameworks or ASP.NET Classic) and can harm scalability in server applications
+        /// by holding onto threads. Prefer using <see cref="ProcessCommandAsync"/> whenever possible.
+        /// </remarks>
         public virtual string ProcessCommand(string command, string payload)
         {
-            switch (command.ToLower())
+            // Call the internal async helper and block for the result using GetAwaiter().GetResult()
+            // This is generally preferred over .Result for blocking as it unwraps AggregateException directly.
+            try
+            {
+                // Use GetAwaiter().GetResult() for synchronous blocking
+                return ProcessCommandAsyncInternal(command, payload).GetAwaiter().GetResult();
+            }
+            // No need to catch AggregateException specifically, GetAwaiter().GetResult() unwraps it.
+            // catch (AggregateException ae) when (ae.InnerException != null)
+            // {
+            //     // Unwrap AggregateException often thrown by .Result
+            //     // Log the error or return a specific error message
+            //     DebugUtils.DebugWriter.DebugWriteLine("#CMD_PROC_ERR#", $"Error processing command '{command}': {ae.InnerException.Message}");
+            //     return $"Error processing command '{command}': {ae.InnerException.Message}";
+            // }
+             catch (Exception ex) // Catch potential exceptions from the async operation (GetAwaiter().GetResult() unwraps AggregateException)
+            {
+                // Log the actual exception message
+                DebugUtils.DebugWriter.DebugWriteLine("#CMD_PROC_ERR#", $"Error processing command '{command}': {ex.Message}");
+                return $"Error processing command '{command}': {ex.Message}";
+            }
+            // Removed duplicate catch block
+        }
+
+        // Public async method now directly calls the internal async helper
+        public virtual async Task<string> ProcessCommandAsync(string command, string payload)
+        {
+            return await ProcessCommandAsyncInternal(command, payload); 
+        }
+
+        // Internal async helper containing the core logic
+        private async Task<string> ProcessCommandAsyncInternal(string command, string payload)
+        {
+             switch (command.ToLower())
             {
                 case "node_query":
-                    return QueryNode(payload);
+                    return await QueryNodeAsync(payload);
                 case "outgoing_edge_query":
-                    return QueryEdges(payload, true);
+                    return await QueryEdgesAsync(payload, true);
                 case "incoming_edge_query":
-                    return QueryEdges(payload, false);
+                    return await QueryEdgesAsync(payload, false);
                 case "add_node":
-                    return AddNode(payload);
+                    return await AddNodeAsync(payload);
                 case "delete_node":
-                    return DeleteNode(payload);
+                    return await DeleteNodeAsync(payload);
                 case "edit_node":
-                    return EditNode(payload);
+                    return await EditNodeAsync(payload);
                 case "add_edge":
-                    return AddEdge(payload);
+                    return await AddEdgeAsync(payload);
                 case "delete_edge":
-                    return DeleteEdge(payload);
+                    return await DeleteEdgeAsync(payload);
                 case "edit_edge":
-                    return EditEdge(payload);
+                    return await EditEdgeAsync(payload);
                 default:
                     return "Unknown command";
             }
         }
 
-        public virtual async Task<string> ProcessCommandAsync(string command, string payload)
-        {
-            return await Task.Run(() => ProcessCommand(command, payload));
-        }
-
-        private string QueryNode(string payload)
+        private async Task<string> QueryNodeAsync(string payload) // Changed signature to async Task<string>
         {
             if (long.TryParse(payload, out long nodeId))
             {
-                // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-                NodeV3? node = graphObjectMapper.GetNodeAsync(nodeId).Result; // Changed type to NodeV3?
+                // Use await with ConfigureAwait(false) for library code
+                NodeV3? node = await graphObjectMapper.GetNodeAsync(nodeId).ConfigureAwait(false);
                 if (node != null)
                 {
                     // Basic formatting, might need more detail depending on node Role
@@ -73,15 +120,14 @@ namespace ReasoningEngine.GraphAccess
             return "Invalid node ID.";
         }
 
-        private string QueryEdges(string payload, bool outgoing)
+        private async Task<string> QueryEdgesAsync(string payload, bool outgoing) // Changed signature
         {
             if (long.TryParse(payload, out long nodeId))
             {
-                 // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-                 // Changed List<Edge> to List<EdgeV2> to match GraphObjectMapper return type
-                 List<EdgeV2> edges = outgoing 
-                                    ? graphObjectMapper.GetOutgoingEdgesAsync(nodeId).Result 
-                                    : graphObjectMapper.GetIncomingEdgesAsync(nodeId).Result;
+                 // Use await with ConfigureAwait(false) for library code
+                 List<EdgeV2> edges = outgoing
+                                    ? await graphObjectMapper.GetOutgoingEdgesAsync(nodeId).ConfigureAwait(false)
+                                    : await graphObjectMapper.GetIncomingEdgesAsync(nodeId).ConfigureAwait(false);
 
                 if (edges.Count > 0)
                 {
@@ -101,7 +147,7 @@ namespace ReasoningEngine.GraphAccess
             return "Invalid node ID.";
         }
 
-        private string AddNode(string payload)
+        private async Task<string> AddNodeAsync(string payload) // Changed signature
         {
             string[] parts = payload.Split('|');
             if (parts.Length < 2 || !long.TryParse(parts[0], out long nodeId))
@@ -133,10 +179,9 @@ namespace ReasoningEngine.GraphAccess
 
                 // Delegate creation to NodeFactory using the dictionary (which now might contain a parsed FunctionParams dict)
                 Node newNode = NodeFactory.CreateNodeFromPayload(nodeId, content, parameters); // Use Node alias
-                
-                // TODO: Implement using GraphObjectMapper layer (to serialize newNode and call SaveNodeDataAsync)
-                // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-                bool success = graphObjectMapper.SaveNodeAsync(newNode).Result;
+
+                // Use await with ConfigureAwait(false) for library code
+                bool success = await graphObjectMapper.SaveNodeAsync(newNode).ConfigureAwait(false);
                 if (success)
                 {
                      return $"Node {nodeId} added successfully.";
@@ -157,13 +202,12 @@ namespace ReasoningEngine.GraphAccess
             }
         }
 
-        private string DeleteNode(string payload)
+        private async Task<string> DeleteNodeAsync(string payload) // Changed signature
         {
             if (long.TryParse(payload, out long nodeId))
             {
-                 // TODO: Implement using GraphObjectMapper layer (to call DeleteNodeDataAsync and handle edges)
-                 // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-                 bool success = graphObjectMapper.DeleteNodeAsync(nodeId).Result;
+                 // Use await with ConfigureAwait(false) for library code
+                 bool success = await graphObjectMapper.DeleteNodeAsync(nodeId).ConfigureAwait(false);
                  if (success)
                  {
                     // Note: Mapper attempts to delete associated edges. Check logs for details if any failed.
@@ -177,16 +221,16 @@ namespace ReasoningEngine.GraphAccess
             return "Invalid node ID.";
         }
 
-        private string EditNode(string payload)
+        private async Task<string> EditNodeAsync(string payload) // Changed signature
         {
             string[] parts = payload.Split('|');
             if (parts.Length < 2 || !long.TryParse(parts[0], out long nodeId))
             {
                 return "Invalid payload for editing a node.";
             }
-            
-            // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-            NodeV3? existingNode = graphObjectMapper.GetNodeAsync(nodeId).Result; // Changed type to NodeV3?
+
+            // Use await with ConfigureAwait(false) for library code
+            NodeV3? existingNode = await graphObjectMapper.GetNodeAsync(nodeId).ConfigureAwait(false);
             if (existingNode == null)
             {
                 return $"Node {nodeId} not found.";
@@ -220,11 +264,11 @@ namespace ReasoningEngine.GraphAccess
                 // Delegate update logic to NodeFactory, passing the dictionary
                 // NodeFactory.UpdateNodeFromPayload now accepts NodeV3 directly.
                 // Pass existingNode (which is NodeV3) without casting.
-                Node updatedNode = NodeFactory.UpdateNodeFromPayload(existingNode, newContent, updateParameters); 
+                Node updatedNode = NodeFactory.UpdateNodeFromPayload(existingNode, newContent, updateParameters);
 
                 // Save the updated node
-                // SaveNodeAsync expects Node (which is NodeV3), so updatedNode is compatible
-                bool success = graphObjectMapper.SaveNodeAsync(updatedNode).Result; 
+                // Use await with ConfigureAwait(false) for library code
+                bool success = await graphObjectMapper.SaveNodeAsync(updatedNode).ConfigureAwait(false);
                 if (success)
                 {
                     return $"Node {nodeId} updated successfully.";
@@ -245,7 +289,7 @@ namespace ReasoningEngine.GraphAccess
             }
         }
 
-        private string AddEdge(string payload)
+        private async Task<string> AddEdgeAsync(string payload) // Changed signature
         {
             string[] parts = payload.Split('|');
             if (parts.Length != 4 || !long.TryParse(parts[0], out long fromNodeId) || 
@@ -255,9 +299,9 @@ namespace ReasoningEngine.GraphAccess
             }
             string content = parts[3];
             Edge newEdge = new Edge(fromNodeId, toNodeId, weight, content); // Edge alias is EdgeV2
-            
-            // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-            bool success = graphObjectMapper.SaveEdgeAsync(newEdge).Result;
+
+            // Use await with ConfigureAwait(false) for library code
+            bool success = await graphObjectMapper.SaveEdgeAsync(newEdge).ConfigureAwait(false);
             if (success)
             {
                 return $"Edge from {fromNodeId} to {toNodeId} added successfully.";
@@ -269,7 +313,7 @@ namespace ReasoningEngine.GraphAccess
             }
         }
 
-        private string DeleteEdge(string payload)
+        private async Task<string> DeleteEdgeAsync(string payload) // Changed signature
         {
             string[] parts = payload.Split('|');
             if (parts.Length != 2 || !long.TryParse(parts[0], out long sourceNodeId) || 
@@ -278,8 +322,8 @@ namespace ReasoningEngine.GraphAccess
                 return "Invalid payload for deleting an edge.";
             }
 
-            // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-            bool success = graphObjectMapper.DeleteEdgeAsync(sourceNodeId, destNodeId).Result;
+            // Use await with ConfigureAwait(false) for library code
+            bool success = await graphObjectMapper.DeleteEdgeAsync(sourceNodeId, destNodeId).ConfigureAwait(false);
             if (success)
             {
                 return $"Edge from node {sourceNodeId} to node {destNodeId} deleted successfully.";
@@ -291,7 +335,7 @@ namespace ReasoningEngine.GraphAccess
             }
         }
 
-        private string EditEdge(string payload)
+        private async Task<string> EditEdgeAsync(string payload) // Changed signature
         {
             string[] parts = payload.Split('|');
             if (parts.Length != 4 || !long.TryParse(parts[0], out long sourceNodeId) || 
@@ -302,8 +346,9 @@ namespace ReasoningEngine.GraphAccess
             string newContent = parts[3];
 
             // Load the existing edge to preserve its EdgeId
-            // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-            EdgeV2? existingEdge = graphObjectMapper.GetEdgeAsync(sourceNodeId, destNodeId).Result; // Use EdgeV2
+            // Load the existing edge to preserve its EdgeId
+            // Use await with ConfigureAwait(false) for library code
+            EdgeV2? existingEdge = await graphObjectMapper.GetEdgeAsync(sourceNodeId, destNodeId).ConfigureAwait(false);
 
             if (existingEdge == null)
             {
@@ -316,7 +361,8 @@ namespace ReasoningEngine.GraphAccess
             // EdgeId remains the same
 
             // Save the modified existing edge object
-            bool success = graphObjectMapper.SaveEdgeAsync(existingEdge).Result; // Save the modified object
+            // Use await with ConfigureAwait(false) for library code
+            bool success = await graphObjectMapper.SaveEdgeAsync(existingEdge).ConfigureAwait(false);
             if (success)
             {
                  return $"Edge from {sourceNodeId} to {destNodeId} updated successfully.";
