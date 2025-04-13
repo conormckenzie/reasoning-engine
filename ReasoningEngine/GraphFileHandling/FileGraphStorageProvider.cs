@@ -40,9 +40,8 @@ namespace ReasoningEngine.GraphFileHandling
                 // Directly write the provided string data
                 File.WriteAllText(nodeFilePath, nodeData); 
 
-                // Update index (assuming index stores file paths, not edge counts directly now)
-                // TODO: Revisit IndexManager logic - does it still need edge count?
-                indexManager.AddOrUpdateNode(nodeId, nodeFilePath, 0); 
+                // Update index with node ID and file path
+                indexManager.AddOrUpdateNode(nodeId, nodeFilePath); // Removed edgeCount argument
                 return Task.FromResult(true);
             }
             catch (Exception ex)
@@ -238,9 +237,7 @@ namespace ReasoningEngine.GraphFileHandling
                 File.WriteAllText(incomingEdgeFilePath, edgeData); // Save same data
                 UpdateEdgeIndex(incomingEdgeFilePath, true); // Update incoming index
 
-                // TODO: Update node edge counts? IndexManager needs rework.
-                // UpdateNodeEdgeCount(fromNodeId, true);
-                // UpdateNodeEdgeCount(toNodeId, false);
+                // Removed calls to UpdateNodeEdgeCount as EdgeCount is no longer tracked in IndexManager
 
                 return Task.FromResult(true);
             }
@@ -310,9 +307,7 @@ namespace ReasoningEngine.GraphFileHandling
                     deletedIncoming = true;
                 }
 
-                // TODO: Update node edge counts? IndexManager needs rework.
-                // UpdateNodeEdgeCount(fromNodeId, true);
-                // UpdateNodeEdgeCount(toNodeId, false);
+                // Removed calls to UpdateNodeEdgeCount as EdgeCount is no longer tracked in IndexManager
 
                 return Task.FromResult(deletedOutgoing || deletedIncoming); // Return true if at least one file was deleted
             }
@@ -482,12 +477,7 @@ namespace ReasoningEngine.GraphFileHandling
 
         // Note: DeleteEdge(long, long) removed as DeleteEdgeDataAsync(long, long) provides the same functionality.
 
-        private bool UpdateNodeEdgeCount(long nodeId, bool outgoing)
-        {
-            int edgeCount = GetEdgeCount(nodeId, outgoing);
-            indexManager.AddOrUpdateNode(nodeId, GetNodeFilePath(nodeId), edgeCount);
-            return true;
-        }
+        // Removed UpdateNodeEdgeCount method as EdgeCount is no longer tracked in IndexManager
 
         private void EnsureDirectoryExists(string filePath)
         {
