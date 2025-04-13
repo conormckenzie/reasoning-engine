@@ -7,30 +7,30 @@ namespace ReasoningEngine
 {
     public class ProbabilityDistribution
     {
-        // Made setters public for deserialization via property mapping
-        public DomainType DomainType { get; set; } 
-        // Add string representation property
-        [JsonIgnore] // Should not be serialized (Now using System.Text.Json)
+        // Setters are now private to enforce validation via AddPoint/AddRange or JsonConstructor
+        public DomainType DomainType { get; private set; }
+        [JsonIgnore] // Should not be serialized
         public string DomainType_StringRepresentation => DomainType.ToString();
-        // Made setter public for deserialization via property mapping
-        public List<(double LowerBound, double UpperBound, double Probability)> Distribution { get; set; } 
+        public List<(double LowerBound, double UpperBound, double Probability)> Distribution { get; private set; }
         private const double EPSILON = 1e-10; // For floating point comparisons
 
-        // Parameterless constructor for deserialization
-        public ProbabilityDistribution() {
-            // Initialize with defaults, will be overwritten by deserializer
-            DomainType = DomainType.Truth; // Or another sensible default
+        // Constructor for programmatic creation (initializes empty distribution)
+        public ProbabilityDistribution(DomainType domainType)
+        {
+            DomainType = domainType;
             Distribution = new List<(double, double, double)>();
         }
 
-        // Original constructor for code usage
-        public ProbabilityDistribution(DomainType domainType) : this() // Chain to parameterless
+        // Constructor for JSON deserialization - performs validation on the loaded data
+        [JsonConstructor]
+        public ProbabilityDistribution(DomainType domainType, List<(double LowerBound, double UpperBound, double Probability)> distribution)
         {
             DomainType = domainType;
-            // Distribution is already initialized by the parameterless constructor
-        }
+            Distribution = distribution ?? new List<(double, double, double)>(); // Handle null input
 
-        // Removed private constructor previously used for JSON deserialization
+            // Validate the entire loaded distribution state
+            ValidateLoadedDistribution();
+        }
 
         public void AddPoint(double value, double probability)
         {
@@ -175,6 +175,77 @@ namespace ReasoningEngine
                     throw new InvalidOperationException("Unknown domain type");
             }
         }
+
+        /// <summary>
+        /// Validates the state of the Distribution list after it has been loaded (e.g., by deserialization).
+        /// Checks for sorting, overlaps, domain consistency, and total probability.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Thrown if the loaded state is invalid.</exception>
+        private void ValidateLoadedDistribution()
+        {
+            // 1. Check Total Probability
+            double totalProbability = GetTotalProbability(); // Use existing helper
+            if (totalProbability > 1 + EPSILON)
+                throw new InvalidOperationException($"Loaded distribution is invalid: Total probability {totalProbability} exceeds 1.");
+
+            // 2. Check Sorting and Overlaps/Gaps/Consistency
+            if (Distribution.Count > 1)
+            {
+                for (int i = 1; i < Distribution.Count; i++)
+                {
+                    var prev = Distribution[i - 1];
+                    var curr = Distribution[i];
+
+                    // Check sorting (should be guaranteed by FindInsertionIndex if built incrementally, but check for loaded data)
+                    if (curr.LowerBound < prev.LowerBound - EPSILON)
+                        throw new InvalidOperationException($"Loaded distribution is invalid: List is not sorted by LowerBound at index {i}. Prev={prev.LowerBound}, Curr={curr.LowerBound}.");
+
+                    // Check for significant overlaps (same logic as AddRange)
+                    if (curr.LowerBound < prev.UpperBound - EPSILON)
+                        throw new InvalidOperationException($"Loaded distribution is invalid: Overlap detected between index {i-1} (ends {prev.UpperBound}) and {i} (starts {curr.LowerBound}).");
+
+                    // Check domain-specific rules
+                    switch (DomainType)
+                    {
+                        case DomainType.DiscreteInteger:
+                            if (!IsInteger(prev.LowerBound) || !IsInteger(curr.LowerBound))
+                                throw new InvalidOperationException($"Loaded distribution is invalid: Non-integer value found at index {i} for DiscreteInteger domain.");
+                            // Optional: Could re-check consecutive integers here if needed, but AreRangesContiguousAndValid does it.
+                            break;
+                        case DomainType.Truth:
+                            if (prev.LowerBound < 0 || prev.UpperBound > 1 || curr.LowerBound < 0 || curr.UpperBound > 1)
+                                throw new InvalidOperationException($"Loaded distribution is invalid: Bounds outside [0,1] found at index {i} for Truth domain.");
+                            break;
+                        case DomainType.Continuous:
+                            // Optional: Could re-check gap > EPSILON here if needed, but AreRangesContiguousAndValid does it.
+                            break;
+                    }
+                }
+            }
+
+            // 3. Check individual range/point validity (e.g., width, domain bounds for single entries)
+            foreach (var item in Distribution)
+            {
+                 if (item.Probability < 0 || item.Probability > 1)
+                     throw new InvalidOperationException($"Loaded distribution is invalid: Probability {item.Probability} outside [0,1] found for range [{item.LowerBound},{item.UpperBound}].");
+
+                 if (DomainType == DomainType.DiscreteInteger)
+                 {
+                     if (!IsInteger(item.LowerBound)) // UpperBound is same as LowerBound for points
+                         throw new InvalidOperationException($"Loaded distribution is invalid: Non-integer value {item.LowerBound} found for DiscreteInteger domain.");
+                 }
+                 else // Continuous or Truth (Ranges)
+                 {
+                     if (item.UpperBound - item.LowerBound < 5 * EPSILON)
+                         throw new InvalidOperationException($"Loaded distribution is invalid: Range width too small for [{item.LowerBound},{item.UpperBound}].");
+                     if (DomainType == DomainType.Truth && (item.LowerBound < 0 || item.UpperBound > 1))
+                         throw new InvalidOperationException($"Loaded distribution is invalid: Bounds outside [0,1] found for Truth domain range [{item.LowerBound},{item.UpperBound}].");
+                 }
+            }
+
+            // If all checks pass, the loaded distribution is considered valid.
+        }
+
 
         /// <summary>
         /// Gets the probability for a specific value.
