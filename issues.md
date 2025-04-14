@@ -26,6 +26,7 @@ Context: Ongoing refinements for V3 architecture.
 - **Data Import:** Develop the planned Data Import System to replace `ScenarioManager`. (See `README.md`)
 - **ProbabilityDistribution:** Consider adding an explicit check for full domain coverage (e.g., ensuring no gaps > `2*EPSILON` exist across the entire conceptual domain, not just between defined ranges).
 - **ProbabilityDistribution:** Add methods for modifying/removing existing points or ranges (e.g., `RemovePoint`, `RemoveRange`, `ModifyProbability`, `CombineRanges`). Ensure these methods maintain internal consistency (sorted, non-overlapping, etc.).
+- **UI/Tooling:** Implement a metadata-driven approach for UI components (like `ConsoleMenu` or future GUIs) to dynamically discover and prompt for node/edge parameters based on type/version, improving separation of concerns and generalizability.
 - **Code Quality:** Review codebase for non-conforming debug IDs (should be `#XXXXXX#` format with 6 alphanumeric chars) in `DebugWriter` calls and standardize them.
 
 ---
