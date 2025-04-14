@@ -24,10 +24,11 @@ namespace ReasoningEngine.Utils.Scenarios
             _graphObjectMapper = graphObjectMapper; // Assign the mapper
         }
 
-        public void PopulateData()
+        // Made async to allow awaiting AddProbabilityDistributions
+        public async Task PopulateData()
         {
             DebugUtils.DebugWriter.DebugWriteLine("#Y8Z68I#", "Starting to populate weather scenario data...", true, DebugUtils.VerbosityLevel.Minimal);
-            
+
             // Add Variable nodes
             AddVariableNodes();
             
@@ -36,10 +37,10 @@ namespace ReasoningEngine.Utils.Scenarios
             
             // Add edges
             AddEdges();
-            
-            // Add probability distributions
-            AddProbabilityDistributions();
-            
+
+            // Add probability distributions asynchronously
+            await AddProbabilityDistributions().ConfigureAwait(false);
+
             DebugUtils.DebugWriter.DebugWriteLine("#TG4PZN#", "Weather scenario data population completed.", true, DebugUtils.VerbosityLevel.Minimal);
         }
 
@@ -236,17 +237,18 @@ namespace ReasoningEngine.Utils.Scenarios
             DebugUtils.DebugWriter.DebugWriteLine("#YRVH2N#", resultEdge27, true, DebugUtils.VerbosityLevel.Detailed);
         }
 
-        // Method to add probability distributions to SIMO nodes
-        private void AddProbabilityDistributions()
+        // Method to add probability distributions to Variable nodes
+        // Made async to properly await GraphObjectMapper calls
+        private async Task AddProbabilityDistributions()
         {
-            DebugUtils.DebugWriter.DebugWriteLine("#FIWWAS#", "Adding probability distributions to SIMO nodes...", true, DebugUtils.VerbosityLevel.Normal);
-            
+            DebugUtils.DebugWriter.DebugWriteLine("#FIWWAS#", "Adding probability distributions to Variable nodes...", true, DebugUtils.VerbosityLevel.Normal);
+
             try
             {
-                // Load Variable nodes from the graph file manager
-                var nodes = LoadVariableNodes(); // Updated method call
-                
-                if (nodes.Count == 0) // This check should still be valid
+                // Load Variable nodes asynchronously
+                var nodes = await LoadVariableNodes().ConfigureAwait(false);
+
+                if (nodes.Count == 0)
                 {
                     DebugUtils.DebugWriter.DebugWriteLine("#3M802W#", "No SIMO nodes found. Make sure to add nodes first.", true, DebugUtils.VerbosityLevel.Minimal);
                     return;
@@ -338,11 +340,14 @@ namespace ReasoningEngine.Utils.Scenarios
                             break;
                     }
 
-                    // Save the node if it was modified using the mapper
+                    // Save the node if it was modified using the mapper asynchronously
                     if (nodeModified)
                     {
-                        // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-                        if (_graphObjectMapper.SaveNodeAsync(node).Result) 
+                        // Use await with ConfigureAwait(false)
+                        // Adding comment explaining direct mapper usage:
+                        // Direct modification via GraphObjectMapper is used here for efficiency during scenario setup,
+                        // as encoding full distributions into CommandProcessor payloads is complex.
+                        if (await _graphObjectMapper.SaveNodeAsync(node).ConfigureAwait(false))
                         {
                             DebugUtils.DebugWriter.DebugWriteLine("#SAVE_OK#", $"Node {node.Id} saved successfully after adding distribution.", true, DebugUtils.VerbosityLevel.Detailed);
                         }
@@ -361,26 +366,25 @@ namespace ReasoningEngine.Utils.Scenarios
                 DebugUtils.DebugWriter.DebugWriteLine("#2IAIKF#", ex.StackTrace ?? "<No stack trace>", true, DebugUtils.VerbosityLevel.Detailed); // Added null check
             }
         }
-        
-        // Method now loads Variable nodes and returns List<NodeV3>
-        private List<NodeV3> LoadVariableNodes() 
+
+        // Method now loads Variable nodes asynchronously and returns Task<List<NodeV3>>
+        private async Task<List<NodeV3>> LoadVariableNodes()
         {
-            var variableNodes = new List<NodeV3>(); // Use NodeV3 explicitly
-            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_NODES#", "Loading Variable nodes...", true, DebugUtils.VerbosityLevel.Normal); // Updated message
-            
-            // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
+            var variableNodes = new List<NodeV3>();
+            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_NODES#", "Loading Variable nodes...", true, DebugUtils.VerbosityLevel.Normal);
+
             try
             {
-                // Get IDs via mapper
-                List<long> allNodeIds = _graphObjectMapper.GetAllNodeIdsAsync().Result; 
+                // Get IDs via mapper asynchronously
+                List<long> allNodeIds = await _graphObjectMapper.GetAllNodeIdsAsync().ConfigureAwait(false);
                 DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_IDS#", $"Found {allNodeIds.Count} total node IDs.", true, DebugUtils.VerbosityLevel.Detailed);
 
                 foreach (long nodeId in allNodeIds)
                 {
-                    // Load node via mapper - variable type changed to NodeV3?
-                    NodeV3? node = _graphObjectMapper.GetNodeAsync(nodeId).Result; 
+                    // Load node via mapper asynchronously
+                    NodeV3? node = await _graphObjectMapper.GetNodeAsync(nodeId).ConfigureAwait(false);
                     // Check if it was loaded successfully and has the Variable role
-                    if (node != null && node.Role == NodeRole.Variable) 
+                    if (node != null && node.Role == NodeRole.Variable)
                     {
                         // Add the NodeV3 object directly (Node is an alias for NodeV3)
                         variableNodes.Add(node); 

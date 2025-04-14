@@ -38,8 +38,8 @@ namespace ReasoningEngine.Utils.Scenarios
         /// </summary>
         /// <param name="scenarioName">The name of the scenario to run.</param>
         /// <param name="verbosity">Optional verbosity level for the scenario output. If not specified, uses the current global setting.</param>
-        /// <returns>True if the scenario was found and executed, false otherwise.</returns>
-        public bool RunScenario(string scenarioName, DebugUtils.VerbosityLevel? verbosity = null)
+        /// <returns>A Task representing the asynchronous operation, returning true if the scenario was found and executed, false otherwise.</returns>
+        public async Task<bool> RunScenario(string scenarioName, DebugUtils.VerbosityLevel? verbosity = null)
         {
             // Store the original verbosity level to restore it later
             var originalVerbosity = DebugUtils.DebugOptions.Verbosity;
@@ -60,8 +60,8 @@ namespace ReasoningEngine.Utils.Scenarios
                     case "weather":
                         DebugUtils.DebugWriter.DebugWriteLine("#SCN007#", "Running Weather Scenario");
                         // Pass commandProcessor and the graphObjectMapper
-                        var weatherScenario = new PopulateWeatherScenarioData(_commandProcessor, _graphObjectMapper); 
-                        weatherScenario.PopulateData();
+                        var weatherScenario = new PopulateWeatherScenarioData(_commandProcessor, _graphObjectMapper);
+                        await weatherScenario.PopulateData().ConfigureAwait(false); // Await the async method
                         return true;
 
                     // Add more scenarios here as needed

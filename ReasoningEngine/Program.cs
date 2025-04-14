@@ -1,10 +1,11 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
 using DotNetEnv;
 using ReasoningEngine.GraphFileHandling;
 using ReasoningEngine.GraphAccess;
 using ReasoningEngine.Utils.Scenarios;
 using DebugUtils;
 using System.IO;
+using System.Threading.Tasks; // Added for async Main
 
 namespace ReasoningEngine
 {
@@ -18,7 +19,8 @@ namespace ReasoningEngine
             new MenuItem("Start Web Server", "#WEB000#", "start_web_server"),
         };
 
-        static void Main(string[] args)
+        // Changed to async Task Main
+        static async Task Main(string[] args)
         {
             // Try current directory first
             string currentDirectory = Directory.GetCurrentDirectory();
@@ -55,7 +57,8 @@ namespace ReasoningEngine
             if (args.Length > 0)
             {
                 // Pass mapper instead of the old file manager
-                ProcessCommandLineArguments(args, commandProcessor, graphObjectMapper); 
+                // Await the async processing
+                await ProcessCommandLineArguments(args, commandProcessor, graphObjectMapper).ConfigureAwait(false);
             }
             else
             {
@@ -64,8 +67,8 @@ namespace ReasoningEngine
             }
         }
 
-        // Updated signature to take GraphObjectMapper
-        static void ProcessCommandLineArguments(string[] args, CommandProcessor commandProcessor, GraphObjectMapper graphObjectMapper) 
+        // Updated signature to take GraphObjectMapper and return async Task
+        static async Task ProcessCommandLineArguments(string[] args, CommandProcessor commandProcessor, GraphObjectMapper graphObjectMapper)
         {
             string command = args[0].ToLower();
 
@@ -110,8 +113,9 @@ namespace ReasoningEngine
                     }
                     
                     // ScenarioManager likely needs the mapper now
-                    var scenarioManager = new ScenarioManager(commandProcessor, graphObjectMapper); 
-                    scenarioManager.RunScenario(scenarioName, verbosity);
+                    var scenarioManager = new ScenarioManager(commandProcessor, graphObjectMapper);
+                    // Await the async scenario run
+                    await scenarioManager.RunScenario(scenarioName, verbosity).ConfigureAwait(false);
                     break;
 
                 case "--list-scenarios":
