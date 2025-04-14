@@ -162,11 +162,16 @@ namespace ReasoningEngine
                     // Create the new node (constructor creates distribution if needed)
                     var updatedVarNode = new Node(existingNode.Id, newContent, domainType); 
                     // If role didn't change and distribution existed, copy it back
-                    if (!roleChanged && dist != null) { 
-                        updatedVarNode.Distribution = dist; 
+                    if (!roleChanged && dist != null) {
+                        updatedVarNode.Distribution = dist;
+                    }
+                    // Copy ExtendedProperties using the public setter method
+                    foreach (var kvp in existingNode.ExtendedProperties)
+                    {
+                        updatedVarNode.SetExtendedProperty(kvp.Key, kvp.Value);
                     }
                     return updatedVarNode;
-                    
+
                 case NodeRole.Function:
                      // Start with existing function info if role didn't change
                      FunctionType funcType = !roleChanged ? (existingNode.Function ?? FunctionType.Linear) : FunctionType.Linear; // Default if changing role
@@ -214,12 +219,18 @@ namespace ReasoningEngine
                          funcParams = new Dictionary<string, object>();
                      }
 
-                    return new Node(existingNode.Id, newContent, funcType, funcParams); 
+                    var updatedFuncNode = new Node(existingNode.Id, newContent, funcType, funcParams);
+                    // Copy ExtendedProperties using the public setter method
+                    foreach (var kvp in existingNode.ExtendedProperties)
+                    {
+                        updatedFuncNode.SetExtendedProperty(kvp.Key, kvp.Value);
+                    }
+                    return updatedFuncNode;
 
                 default:
                      throw new ArgumentException($"Unsupported NodeRole '{targetRole}' for node update.");
             }
-            // TODO: Copy ExtendedProperties from existingNode if needed
+            // Removed TODO comment as ExtendedProperties are now copied
         }
 
         // --- Private Helper Methods for Parameter Parsing ---
