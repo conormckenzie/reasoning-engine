@@ -43,11 +43,10 @@ namespace ReasoningEngine
     public class Edge : EdgeV2 // Alias still points to V2
     {
         // Forward constructors to EdgeV2
-        public Edge(long fromNode, long toNode, double weight, string edgeContent) 
+        public Edge(long fromNode, long toNode, double weight, string edgeContent)
             : base(fromNode, toNode, weight, edgeContent) { }
-        
-        // Add forwarding constructor for loading with Guid if needed by GraphFileManager later
-        // public Edge(Guid edgeId, long fromNode, long toNode, double weight, string edgeContent) 
-        //    : base(edgeId, fromNode, toNode, weight, edgeContent) { }
+
+        // Removed commented-out constructor for loading with Guid.
+        // Deserialization targets EdgeV2 directly via its [JsonConstructor].
     }
 }

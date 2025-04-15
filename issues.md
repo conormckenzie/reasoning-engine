@@ -23,6 +23,7 @@ Context: Ongoing refinements for V3 architecture.
     - Add authentication/authorization.
 - **Performance:** Implement response caching (e.g., in `GraphObjectMapper` or application layer) for frequently accessed nodes and edges.
 - **Indexing:** Improve indexing in `FileGraphStorageProvider` for efficient Guid lookups and edge retrieval by node.
+- **Persistence:** Investigate alternative `IGraphStorageProvider` implementations using databases (e.g., SQLite, embedded/server-based Graph DBs like Neo4j) to improve query efficiency (especially incoming edges, Guid lookups) and potentially simplify consistency management.
 - **Data Import:** Develop the planned Data Import System to replace `ScenarioManager`. (See `README.md`)
 - **ProbabilityDistribution:** Consider adding an explicit check for full domain coverage (e.g., ensuring no gaps > `2*EPSILON` exist across the entire conceptual domain, not just between defined ranges).
 - **ProbabilityDistribution:** Add methods for modifying/removing existing points or ranges (e.g., `RemovePoint`, `RemoveRange`, `ModifyProbability`, `CombineRanges`). Ensure these methods maintain internal consistency (sorted, non-overlapping, etc.).

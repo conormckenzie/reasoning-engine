@@ -20,7 +20,9 @@ namespace ReasoningEngine
         ///   - "Role" (string, required): "Variable" or "Function".
         ///   - "VariableDomainType" (string, optional, for Variable role): Name of the DomainType enum (e.g., "Truth", "Continuous"). Defaults to Truth.
         ///   - "FunctionType" (string, required for Function role): Name of the FunctionType enum (e.g., "Linear", "DefinedOp").
-        ///   - "FunctionParams" (Dictionary<string, object>, optional, for Function role): Parameters specific to the FunctionType. 
+        ///   - "FunctionParams" (Dictionary<string, object> or string, optional, for Function role): Parameters specific to the FunctionType. 
+        ///     If provided as a string (e.g., from CommandProcessor), it's expected in the format "Key1:Value1;Key2:Value2;...".
+        ///     The factory parses this string into the required Dictionary<string, object>.
         ///     - For `DefinedOp`: Expected key `"Operation"` (string, e.g., "Multiply", "Add", "Sigmoid").
         ///     - For `Linear`: Expected keys `"Weights"` (`List<double>` or comma-separated string) and `"Bias"` (`double` or string convertible to double).
         ///     - TODO: Define parameters for `NeuralNet`.
@@ -111,7 +113,7 @@ namespace ReasoningEngine
         ///   - "Role": If provided and different, resets role-specific properties (Distribution or Function/Params).
         ///   - "VariableDomainType": Only used if Role is changed to Variable. Ignored otherwise.
         ///   - "FunctionType": If provided and different, resets FunctionParams.
-        ///   - "FunctionParams": Replaces existing parameters if provided (and FunctionType didn't change). Can be set to null to clear.
+        ///   - "FunctionParams": Replaces existing parameters if provided (and FunctionType didn't change). Can be set to null to clear. Can be provided as a Dictionary<string, object> or a string in the format "Key1:Value1;Key2:Value2;...".
         /// </param>
         /// <returns>A new, updated Node instance.</returns>
         /// <exception cref="ArgumentException">Thrown if the parameters are invalid.</exception>

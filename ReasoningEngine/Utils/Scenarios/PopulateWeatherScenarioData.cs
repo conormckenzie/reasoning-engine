@@ -475,42 +475,9 @@ namespace ReasoningEngine.Utils.Scenarios
             node.Distribution.AddPoint(3, 0.30); 
             node.Distribution.AddPoint(4, 0.20); 
             node.Distribution.AddPoint(5, 0.10); 
-            node.Distribution.AddPoint(6, 0.05); 
+            node.Distribution.AddPoint(6, 0.05);
         }
 
-        // Note: This Main method allows running the populator directly.
-        // However, it's recommended to run scenarios via the main program:
-        // `dotnet run --project ReasoningEngine/ReasoningEngine.csproj --run-scenario weather --verbosity Minimal`
-        public static void Main(string[] args)
-        {
-            try
-            {
-                // Load environment variables
-                Env.Load();
-                string dataFolderPath = Environment.GetEnvironmentVariable("DATA_FOLDER_PATH") 
-                                       ?? throw new Exception("DATA_FOLDER_PATH is not set in the environment variables.");
-                
-                DebugUtils.DebugWriter.DebugWriteLine("#WF3ARH#", $"Using data folder path: {dataFolderPath}", true, DebugUtils.VerbosityLevel.Normal);
-                
-                // Initialize Storage Provider, Mapper, and Command Processor
-                IGraphStorageProvider storageProvider = new FileGraphStorageProvider(dataFolderPath);
-                var graphObjectMapper = new GraphObjectMapper(storageProvider);
-                var commandProcessor = new CommandProcessor(graphObjectMapper);
-                
-                // Run OneTimeSetup to ensure the data directory is properly initialized
-                OneTimeSetup.Initialize();
-                
-                // Create and run the data populator, passing the mapper
-                var populator = new PopulateWeatherScenarioData(commandProcessor, graphObjectMapper); 
-                populator.PopulateData();
-                
-                DebugUtils.DebugWriter.DebugWriteLine("#ZLUMLC#", "Weather scenario data population completed successfully.", true, DebugUtils.VerbosityLevel.Minimal);
-            }
-            catch (Exception ex)
-            {
-                DebugUtils.DebugWriter.DebugWriteLine("#9KOY9E#", $"Error in Main: {ex.Message}", true, DebugUtils.VerbosityLevel.Minimal);
-                DebugUtils.DebugWriter.DebugWriteLine("#W154KN#", ex.StackTrace ?? "<No stack trace>", true, DebugUtils.VerbosityLevel.Detailed); // Added null check
-            }
-        }
+        // Removed static Main method. Scenarios should be run via Program.cs arguments.
     }
 }

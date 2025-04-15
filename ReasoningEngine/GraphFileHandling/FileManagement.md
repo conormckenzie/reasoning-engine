@@ -15,7 +15,7 @@ The Reasoning Engine uses a decoupled persistence layer to store and retrieve gr
 
 Key components of the persistence layer:
 1. **`IGraphStorageProvider` Interface:** Defines the contract for raw data storage operations (CRUD for node/edge data).
-2. **`FileGraphStorageProvider` (in `GraphFileManager.cs`):** The default implementation of `IGraphStorageProvider`, using a hierarchical file system structure to store node and edge data as JSON files.
+2. **`FileGraphStorageProvider` (in `FileGraphStorageProvider.cs`):** The default implementation of `IGraphStorageProvider`, using a hierarchical file system structure to store node and edge data as JSON files.
 3. **`GraphObjectMapper`:** Acts as a layer between the application logic (e.g., `CommandProcessor`) and the storage provider. It handles object serialization/deserialization, mapping between domain objects (`Node`, `Edge`) and raw data, and orchestrates calls to the `IGraphStorageProvider`.
 
 ## 2. System Architecture
@@ -36,13 +36,13 @@ This interface (`ReasoningEngine/GraphFileHandling/IGraphStorageProvider.cs`) de
 Implementations of this interface handle the specifics of the storage mechanism (e.g., file system, database).
 
 ### 2.2 `FileGraphStorageProvider` Implementation
-Located in `ReasoningEngine/GraphFileHandling/GraphFileManager.cs`, this class implements `IGraphStorageProvider` using the local file system.
-- **Node Storage:** Stores individual nodes as JSON files in a hierarchical directory structure based on their IDs (see Section 5).
-- **Edge Storage:** Stores individual edges as JSON files, potentially using a bidirectional structure (see Section 5). Relies on scanning directories for retrieving edge lists by node ID and currently uses inefficient scanning for Guid-based lookups.
+Located in `ReasoningEngine/GraphFileHandling/FileGraphStorageProvider.cs`, this class implements `IGraphStorageProvider` using the local file system.
+- **Node Storage:** Stores individual nodes as JSON files in a hierarchical directory structure based on their IDs (see Section 5.1).
+- **Edge Storage:** Stores individual edges as JSON files using a complex, hierarchical, bidirectional structure (see Section 5.2). Relies on scanning directories for retrieving edge lists by node ID and currently uses inefficient scanning for Guid-based lookups. *(Note: Simplification of this structure was deferred - see Code Review Issue #7).*
 - **Indexing:** Relies on directory structure, file existence checks, and two types of index files:
-    - **Main Index (`index.json` in base directory):** Managed by `IndexManager`. Stores a list of all known node IDs and their file paths (`NodeInfo`). Used by `FileGraphStorageProvider` for `GetAllNodeIdsAsync`. The stored `EdgeCount` per node is currently not reliably maintained or used effectively.
-    - **Edge Directory Indexes (`index.json` within edge hierarchy):** Managed directly by `FileGraphStorageProvider`. Each `index.json` lists the edge filenames (`{sourceId}-{destId}.json` or `{destId}-{sourceId}.json`) present in that specific directory. Used by `GetAllEdgeFiles` (and thus `GetOutgoing/IncomingEdgeIdsAsync`) to avoid scanning all files when loading edges by node ID.
-- **Limitations:** No index exists for efficient `EdgeId` (Guid) lookups.
+    - **Main Index (`index.json` in base directory):** Managed by `IndexManager`. Stores a list of all known node IDs and their file paths (`NodeInfo`). Used by `FileGraphStorageProvider` for `GetAllNodeIdsAsync`. *(Note: `EdgeCount` tracking was removed as it was unused/unreliable).*
+    - **Edge Directory Indexes (`index.json` within edge hierarchy):** Managed directly by `FileGraphStorageProvider`. Each `index.json` lists the edge filenames (e.g., `{sourceId}-{destId}.json` or `{destId}-{sourceId}.json`) present in that specific directory. Used by helper methods (`GetAllEdgeFiles`, `LoadEdges`) to avoid scanning every file when loading edges by node ID.
+- **Limitations:** No index exists for efficient `EdgeId` (Guid) lookups. Retrieving incoming edges is also inefficient.
 
 ### 2.3 `GraphObjectMapper`
 Located in `ReasoningEngine/GraphFileHandling/GraphObjectMapper.cs`, this class uses an instance of `IGraphStorageProvider` to perform higher-level operations:
@@ -90,9 +90,9 @@ Application components (like `CommandProcessor` or `ScenarioManager`) interact w
 
 ## 5. File and Directory Structure (FileGraphStorageProvider)
 
-This section details the specific file and directory structures used by the default `FileGraphStorageProvider` implementation, following the philosophy described in [Section 3](#3-file-path-generation-philosophy).
+This section details the specific file and directory structures currently used by the default `FileGraphStorageProvider` implementation, following the philosophy described in [Section 3](#3-file-path-generation-philosophy).
 
-*(Note: This reflects the intended design; the actual implementation in GraphFileManager.cs should be verified against this.)*
+*(Note: The edge file structure described in 5.2 is complex and redundant. Simplification was discussed (Code Review Issue #7) but deferred for now.)*
 
 ### 5.1 Node File Structure
 ```
