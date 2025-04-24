@@ -82,23 +82,23 @@ namespace ReasoningEngineTests
                 Assert.Fail("Failed to deserialize loaded edge data");
             }
 
-            // Verify index files exist (using provider's helper methods to get paths)
-            string outgoingEdgeFilePath = storageProvider.GetEdgeFilePath(edge.FromNode, edge.ToNode, true); 
+            // Verify index files exist (using FilePathHelper to get paths)
+            string outgoingEdgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.FromNode, edge.ToNode, true); 
             string? outgoingEdgeDir = Path.GetDirectoryName(outgoingEdgeFilePath);
             string outgoingIndexFilePath = Path.Combine(outgoingEdgeDir ?? "", "index.json");
             Assert.Multiple(() =>
             {
                 Assert.That(File.Exists(outgoingIndexFilePath), Is.True, "Outgoing index file missing");
 
-                string incomingEdgeFilePath = storageProvider.GetEdgeFilePath(edge.ToNode, edge.FromNode, false); // Note: GetEdgeFilePath needs correction for incoming
+                string incomingEdgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.ToNode, edge.FromNode, false); // Note: GetEdgeFilePath needs correction for incoming
                 string? incomingEdgeDir = Path.GetDirectoryName(incomingEdgeFilePath);
                 string incomingIndexFilePath = Path.Combine(incomingEdgeDir ?? "", "index.json");
-                Assert.That(File.Exists(incomingIndexFilePath), Is.True, "Incoming index file missing");
+                 Assert.That(File.Exists(incomingIndexFilePath), Is.True, "Incoming index file missing");
 
                  // Verify index content (optional, more detailed check)
-                 IndexFile outgoingIndex = LoadIndexFile(outgoingIndexFilePath);
+                 EdgeIndexFileHandler.IndexFile outgoingIndex = LoadIndexFile(outgoingIndexFilePath); // Qualify type
                  Assert.That(outgoingIndex.EdgeFiles, Does.Contain(Path.GetFileName(outgoingEdgeFilePath)), "Outgoing index file does not contain edge"); // Use Does.Contain
-                 IndexFile incomingIndex = LoadIndexFile(incomingIndexFilePath);
+                 EdgeIndexFileHandler.IndexFile incomingIndex = LoadIndexFile(incomingIndexFilePath); // Qualify type
                  Assert.That(incomingIndex.EdgeFiles, Does.Contain(Path.GetFileName(incomingEdgeFilePath)), "Incoming index file does not contain edge"); // Use Does.Contain
             });
         }
@@ -124,12 +124,12 @@ namespace ReasoningEngineTests
             string edgeData = JsonSerializer.Serialize(edge, options);
             Assert.That(storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData).Result, Is.True, "Failed to save edge");
 
-            // Get file paths using the provider's helper methods
-            string outgoingEdgeFilePath = storageProvider.GetEdgeFilePath(edge.FromNode, edge.ToNode, true); 
+            // Get file paths using FilePathHelper
+            string outgoingEdgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.FromNode, edge.ToNode, true); 
             string? outgoingEdgeDir = Path.GetDirectoryName(outgoingEdgeFilePath);
             string outgoingIndexFilePath = Path.Combine(outgoingEdgeDir ?? "", "index.json");
 
-            string incomingEdgeFilePath = storageProvider.GetEdgeFilePath(edge.ToNode, edge.FromNode, false); // Note: GetEdgeFilePath needs correction for incoming
+            string incomingEdgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.ToNode, edge.FromNode, false); // Note: GetEdgeFilePath needs correction for incoming
             string? incomingEdgeDir = Path.GetDirectoryName(incomingEdgeFilePath);
             string incomingIndexFilePath = Path.Combine(incomingEdgeDir ?? "", "index.json");
 
@@ -153,8 +153,8 @@ namespace ReasoningEngineTests
             });
 
             // Index files should be updated
-            IndexFile outgoingIndex = LoadIndexFile(outgoingIndexFilePath);
-            IndexFile incomingIndex = LoadIndexFile(incomingIndexFilePath);
+            EdgeIndexFileHandler.IndexFile outgoingIndex = LoadIndexFile(outgoingIndexFilePath); // Qualify type
+            EdgeIndexFileHandler.IndexFile incomingIndex = LoadIndexFile(incomingIndexFilePath); // Qualify type
 
             Assert.Multiple(() =>
             {
@@ -218,15 +218,15 @@ namespace ReasoningEngineTests
                 Assert.That(incomingEdgeIds3, Contains.Item(edge3.EdgeId));
             });
 
-             // Verify index files exist and are correct (similar check as before, using provider paths)
+             // Verify index files exist and are correct (similar check as before, using FilePathHelper)
              var edgesToCheck = new List<Edge> { edge1, edge2, edge3 }; 
              foreach (var edge in edgesToCheck)
              {
-                 string edgeFilePath = storageProvider.GetEdgeFilePath(edge.FromNode, edge.ToNode, true); 
+                 string edgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.FromNode, edge.ToNode, true); 
                  string? edgeDir = Path.GetDirectoryName(edgeFilePath);
                  string indexFilePath = Path.Combine(edgeDir ?? "", "index.json");
                  Assert.That(File.Exists(indexFilePath), Is.True, $"Index file missing for edge {edge.EdgeId}");
-                 IndexFile indexFile = LoadIndexFile(indexFilePath);
+                 EdgeIndexFileHandler.IndexFile indexFile = LoadIndexFile(indexFilePath); // Qualify type
                  Assert.That(indexFile.EdgeFiles, Does.Contain(Path.GetFileName(edgeFilePath)), $"Index file for edge {edge.EdgeId} missing entry"); // Use Does.Contain
              }
         }
@@ -322,8 +322,8 @@ namespace ReasoningEngineTests
                 // Verify node is gone
                 Assert.That(storageProvider.GetNodeDataAsync(1).Result, Is.Null); 
                 // Verify edge files are gone (as DeleteNodeDataAsync implementation deletes them)
-                string outgoingEdgeFilePath = storageProvider.GetEdgeFilePath(edge.FromNode, edge.ToNode, true); 
-                string incomingEdgeFilePath = storageProvider.GetEdgeFilePath(edge.ToNode, edge.FromNode, false); // Needs correction
+                string outgoingEdgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.FromNode, edge.ToNode, true); 
+                string incomingEdgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.ToNode, edge.FromNode, false); // Needs correction
                 Assert.That(File.Exists(outgoingEdgeFilePath), Is.False, "Outgoing edge file should be deleted with node");
                 Assert.That(File.Exists(incomingEdgeFilePath), Is.False, "Incoming edge file should be deleted with node");
                 // Verify edge IDs are gone from lists
@@ -484,11 +484,11 @@ namespace ReasoningEngineTests
         }
 
         // Make static as it doesn't use instance members
-        private static IndexFile LoadIndexFile(string indexFilePath)
+        private static EdgeIndexFileHandler.IndexFile LoadIndexFile(string indexFilePath) // Use the public nested class from EdgeIndexFileHandler
         {
             string json = File.ReadAllText(indexFilePath);
             // Changed from JsonConvert
-            return JsonSerializer.Deserialize<IndexFile>(json) ?? new IndexFile(); 
+            return JsonSerializer.Deserialize<EdgeIndexFileHandler.IndexFile>(json) ?? new EdgeIndexFileHandler.IndexFile(); // Use the public nested class from EdgeIndexFileHandler
         }
     }
 }

@@ -13,8 +13,7 @@ Context: Ongoing refinements for V3 architecture.
 1.  **(Verify)** **`ProbabilityDistribution`: Sorted Inserts:** Verify that `AddPoint` and `AddRange` correctly maintain sorted order by `LowerBound` via `FindInsertionIndex`. Consider adding specific tests.
 2.  **(Refine)** **`ProbabilityDistribution`: Interpolation Logic:** Review the linear interpolation logic in `GetProbability` for points near boundaries. Ensure it's robust and consider alternative interpolation methods if needed. (Replaces original TODO #4).
 3.  **`NodeFactory`: Parameter Parsing:** Implement robust parsing for `FunctionParams` in `CreateNodeFromPayload` and `UpdateNodeFromPayload`, converting string values to appropriate types based on `FunctionType`. (Original TODO #5).
-4.  **Persistence:** Adapt persistence layer (`GraphObjectMapper`, `FileGraphStorageProvider`) to fully handle serialization/deserialization of the complete `NodeV3` structure (including `Distribution`, `Function`, `FunctionParams`) and `EdgeV2`. Verify current partial implementation. (Original TODO #8).
-5.  **`ProbabilityDistribution`: Disallow `AddPoint` for `Truth` Domain:** Modify `AddPoint` to throw an `InvalidOperationException` if `DomainType` is `Truth`. The `Truth` domain represents a continuous probability value between [0, 1] and should only use `AddRange`. Point probabilities within this domain can be approximated using very narrow ranges if needed. (Original TODO #12).
+    4.  **Persistence:** Adapt persistence layer (`GraphObjectMapper`, `FileGraphStorageProvider`) to fully handle serialization/deserialization of the complete `NodeV3` structure (including `Distribution`, `Function`, `FunctionParams`) and `EdgeV2`. Verify current partial implementation. (Original TODO #8).
 
 ## General Future Improvements
 
@@ -31,6 +30,9 @@ Context: Ongoing refinements for V3 architecture.
 - **Code Quality:** Review codebase for non-conforming debug IDs (should be `#XXXXXX#` format with 6 alphanumeric chars) in `DebugWriter` calls and standardize them.
 
 ---
+*Completed (Current Session - 2025-04-23):*
+*   **`ProbabilityDistribution`: Disallow `AddPoint` for `Truth` Domain:** Verified already implemented and tested. (Original TODO #12).
+
 *Completed (Current Session - 2025-04-11):*
 *   **`ProbabilityDistribution`: Relax `AddRange` Validation:** Commented out "too close" check to allow adjacent ranges. (Original TODO #2).
 *   **`PopulateWeatherScenarioData`: Update to V3 & Rerun:** Updated script payload format and successfully ran the scenario. (Original TODOs #6, #7).
