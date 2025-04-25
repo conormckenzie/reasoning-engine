@@ -73,27 +73,48 @@ namespace ReasoningEngine
                     {
                          throw new ArgumentException($"Invalid FunctionType specified: '{funcTypeStr}'.");
                     }
-                    
-                    Dictionary<string, object>? functionParams = null;
-                    if (parameters.TryGetValue("FunctionParams", out object? funcParamsObj) && funcParamsObj is Dictionary<string, object> parsedParams)
+
+                    Dictionary<string, object> rawFunctionParams = new Dictionary<string, object>();
+                    if (parameters.TryGetValue("FunctionParams", out object? funcParamsObj))
                     {
-                        // Validate and parse parameters based on function type
-                        try
+                        if (funcParamsObj is Dictionary<string, object> dictParams)
                         {
-                            functionParams = ParseFunctionParameters(functionType, parsedParams);
-                            DebugWriter.DebugWriteLine("#FUNC_PARAM_PARSE#", $"Parsed {functionParams.Count} function parameters for node {id}.", true, VerbosityLevel.Detailed);
+                            rawFunctionParams = dictParams;
+                            DebugWriter.DebugWriteLine("#FUNC_PARAM_DICT#", $"Received FunctionParams as Dictionary for node {id}.", true, VerbosityLevel.Detailed);
                         }
-                        catch (ArgumentException ex)
+                        else if (funcParamsObj is string strParams)
                         {
-                            throw new ArgumentException($"Invalid FunctionParams for FunctionType '{functionType}': {ex.Message}", ex);
+                            try
+                            {
+                                rawFunctionParams = ParseFunctionParamsString(strParams);
+                                DebugWriter.DebugWriteLine("#FUNC_PARAM_STR#", $"Received and parsed FunctionParams string for node {id}: '{strParams}'.", true, VerbosityLevel.Detailed);
+                            }
+                            catch (ArgumentException ex)
+                            {
+                                throw new ArgumentException($"Invalid FunctionParams string format: {ex.Message}", ex);
+                            }
                         }
+                        else if (funcParamsObj != null) // Handle unexpected types
+                        {
+                             throw new ArgumentException("'FunctionParams' must be a Dictionary<string, object> or a string in 'Key1:Value1;...' format.");
+                        }
+                        // If funcParamsObj is null, rawFunctionParams remains empty, which is fine.
                     }
-                    else // No params provided, create empty dict if needed by constructor later
+                    // If "FunctionParams" key doesn't exist, rawFunctionParams remains empty.
+
+                    // Validate and parse the raw parameters (which might contain strings needing conversion)
+                    Dictionary<string, object>? finalFunctionParams;
+                    try
                     {
-                         functionParams = new Dictionary<string, object>();
+                        finalFunctionParams = ParseFunctionParameters(functionType, rawFunctionParams);
+                        DebugWriter.DebugWriteLine("#FUNC_PARAM_PARSE#", $"Parsed {finalFunctionParams.Count} final function parameters for node {id}.", true, VerbosityLevel.Detailed);
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        throw new ArgumentException($"Invalid FunctionParams content for FunctionType '{functionType}': {ex.Message}", ex);
                     }
                     
-                    newNode = new Node(id, content, functionType, functionParams); 
+                    newNode = new Node(id, content, functionType, finalFunctionParams); 
                     return newNode;
 
                 // Add cases for other roles as needed
@@ -197,25 +218,51 @@ namespace ReasoningEngine
                      // Check if FunctionParams are being updated (only if type didn't just change)
                      if (!functionTypeChanged && updateParameters.TryGetValue("FunctionParams", out object? funcParamsObj))
                      {
-                         if (funcParamsObj is Dictionary<string, object> rawParams) {
-                             // Parse and validate the new parameters
+                         Dictionary<string, object>? rawFunctionParams = null; // Holds params before final parsing
+
+                         if (funcParamsObj is Dictionary<string, object> dictParams) {
+                             rawFunctionParams = dictParams;
+                             DebugWriter.DebugWriteLine("#FUNC_PARAM_DICT_EDIT#", $"Received FunctionParams update as Dictionary for node {existingNode.Id}.", true, VerbosityLevel.Detailed);
+                         } 
+                         else if (funcParamsObj is string strParams) {
                              try
                              {
-                                 funcParams = ParseFunctionParameters(funcType, rawParams); // Use current funcType
+                                 rawFunctionParams = ParseFunctionParamsString(strParams);
+                                 DebugWriter.DebugWriteLine("#FUNC_PARAM_STR_EDIT#", $"Received and parsed FunctionParams update string for node {existingNode.Id}: '{strParams}'.", true, VerbosityLevel.Detailed);
+                             }
+                             catch (ArgumentException ex)
+                             {
+                                 throw new ArgumentException($"Invalid FunctionParams string format for update: {ex.Message}", ex);
+                             }
+                         } 
+                         else if (funcParamsObj == null) {
+                             // Explicitly clearing parameters
+                             funcParams = null; 
+                             rawFunctionParams = null; // Ensure raw is also null for consistency below
+                             DebugWriter.DebugWriteLine("#FUNC_PARAM_CLEAR_EDIT#", $"Cleared function parameters for node {existingNode.Id}.", true, VerbosityLevel.Detailed);
+                         } 
+                         else {
+                             // Invalid type provided
+                             throw new ArgumentException("'FunctionParams' for update must be a Dictionary<string, object>, a string ('Key1:Value1;...'), or null.");
+                         }
+
+                         // If parameters were provided (not cleared), parse them
+                         if (rawFunctionParams != null) 
+                         {
+                             try
+                             {
+                                 // Parse and validate the raw parameters (which might contain strings needing conversion)
+                                 funcParams = ParseFunctionParameters(funcType, rawFunctionParams); // Use current funcType
                                  DebugWriter.DebugWriteLine("#FUNC_PARAM_PARSE_EDIT#", $"Updated and parsed function parameters for node {existingNode.Id}.", true, VerbosityLevel.Detailed);
                              }
                              catch (ArgumentException ex)
                              {
-                                 throw new ArgumentException($"Invalid FunctionParams for update (FunctionType '{funcType}'): {ex.Message}", ex);
+                                 throw new ArgumentException($"Invalid FunctionParams content for update (FunctionType '{funcType}'): {ex.Message}", ex);
                              }
-                         } else if (funcParamsObj == null) {
-                             funcParams = null; // Clear parameters
-                             DebugWriter.DebugWriteLine("#FUNC_PARAM_CLEAR_EDIT#", $"Cleared function parameters for node {existingNode.Id}.", true, VerbosityLevel.Detailed);
-                         } else {
-                             throw new ArgumentException("'FunctionParams' must be a Dictionary<string, object> or null.");
                          }
+                         // If rawFunctionParams is null here, it means funcParamsObj was null, so funcParams remains null (cleared).
                      }
-                     // Ensure funcParams is not null if role is Function, even if cleared or unchanged
+                     // Ensure funcParams is not null if role is Function, even if cleared or unchanged (Node constructor expects non-null)
                      if (targetRole == NodeRole.Function && funcParams == null)
                      {
                          funcParams = new Dictionary<string, object>();
@@ -234,6 +281,51 @@ namespace ReasoningEngine
             }
             // Removed TODO comment as ExtendedProperties are now copied
         }
+
+        /// <summary>
+        /// Parses a string representation of function parameters into a dictionary.
+        /// Expected format: "Key1:Value1;Key2:Value2;..."
+        /// </summary>
+        /// <param name="paramString">The parameter string.</param>
+        /// <returns>A dictionary with string keys and string values.</returns>
+        /// <exception cref="ArgumentException">Thrown if the format is invalid.</exception>
+        private static Dictionary<string, object> ParseFunctionParamsString(string paramString)
+        {
+            var parsedParams = new Dictionary<string, object>();
+            if (string.IsNullOrWhiteSpace(paramString))
+            {
+                return parsedParams; // Return empty dictionary for empty/whitespace string
+            }
+
+            var pairs = paramString.Split(';');
+            foreach (var pair in pairs)
+            {
+                if (string.IsNullOrWhiteSpace(pair)) continue; // Skip empty segments
+
+                var parts = pair.Split(':');
+                if (parts.Length != 2)
+                {
+                    throw new ArgumentException($"Invalid parameter segment format: '{pair}'. Expected 'Key:Value'.");
+                }
+
+                var key = parts[0].Trim();
+                var value = parts[1].Trim(); // Keep value as string for later type-specific parsing
+
+                if (string.IsNullOrEmpty(key))
+                {
+                     throw new ArgumentException($"Invalid parameter segment: '{pair}'. Key cannot be empty.");
+                }
+
+                if (parsedParams.ContainsKey(key))
+                {
+                    // Overwrite or throw? Let's overwrite for flexibility, like standard dictionaries.
+                    DebugWriter.DebugWriteLine("#PARAM_OVERWRITE#", $"Duplicate key '{key}' found in FunctionParams string. Using last value '{value}'.", true, VerbosityLevel.Detailed);
+                }
+                parsedParams[key] = value;
+            }
+            return parsedParams;
+        }
+
 
         // --- Private Helper Methods for Parameter Parsing ---
 
