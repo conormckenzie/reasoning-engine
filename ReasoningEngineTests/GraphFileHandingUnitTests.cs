@@ -479,9 +479,140 @@ namespace ReasoningEngineTests
             }
              else
             {
-                 Assert.Fail("Failed to deserialize loaded edge data");
+             Assert.Fail("Failed to deserialize loaded edge data");
+             }
+        }
+
+        [Test]
+        public void TestSaveAndLoadVariableNodeWithDistribution()
+        {
+            // Arrange
+            var node = new Node(101, "Variable Node", DomainType.Continuous);
+            node.Distribution?.AddRange(0.0, 1.0, 0.3); // Use null-conditional access
+            node.Distribution?.AddRange(1.0 + 1e-9, 2.0, 0.7); // Add another range
+
+            // Act: Save using ObjectMapper
+            Assert.That(graphObjectMapper.SaveNodeAsync(node).Result, Is.True, "Failed to save node via ObjectMapper");
+
+            // Act: Load using ObjectMapper
+            NodeV3? loadedNode = graphObjectMapper.GetNodeAsync(node.Id).Result;
+
+            // Assert
+            Assert.That(loadedNode, Is.Not.Null, "Loaded node should not be null");
+            if (loadedNode != null)
+            {
+                Assert.Multiple(() =>
+                {
+                    Assert.That(loadedNode.Id, Is.EqualTo(node.Id));
+                    Assert.That(loadedNode.Content, Is.EqualTo(node.Content));
+                    Assert.That(loadedNode.Role, Is.EqualTo(NodeRole.Variable));
+                    Assert.That(loadedNode.Distribution, Is.Not.Null, "Loaded distribution should not be null");
+                    Assert.That(loadedNode.Distribution?.DomainType, Is.EqualTo(DomainType.Continuous)); // Use null-conditional
+                    Assert.That(loadedNode.Distribution?.Distribution, Has.Count.EqualTo(2), "Distribution should have 2 ranges"); // Use null-conditional
+
+                    if (loadedNode.Distribution?.Distribution.Count == 2) // Check count before accessing elements
+                    {
+                        var loadedRanges = loadedNode.Distribution.Distribution;
+                        Assert.That(loadedRanges[0].LowerBound, Is.EqualTo(0.0).Within(1e-12));
+                        Assert.That(loadedRanges[0].UpperBound, Is.EqualTo(1.0).Within(1e-12));
+                        Assert.That(loadedRanges[0].Probability, Is.EqualTo(0.3).Within(1e-12));
+                        Assert.That(loadedRanges[1].LowerBound, Is.EqualTo(1.0 + 1e-9).Within(1e-12));
+                        Assert.That(loadedRanges[1].UpperBound, Is.EqualTo(2.0).Within(1e-12));
+                        Assert.That(loadedRanges[1].Probability, Is.EqualTo(0.7).Within(1e-12));
+                    }
+                });
             }
         }
+
+        [Test]
+        public void TestSaveAndLoadFunctionNodeWithParams()
+        {
+            // Arrange
+            var funcParams = new Dictionary<string, object>
+            {
+                { "Weights", new List<double> { 0.5, -0.2 } },
+                { "Bias", 1.5 }
+            };
+            var node = new Node(102, "Function Node", FunctionType.Linear, funcParams);
+
+            // Act: Save using ObjectMapper
+            Assert.That(graphObjectMapper.SaveNodeAsync(node).Result, Is.True, "Failed to save node via ObjectMapper");
+
+            // Act: Load using ObjectMapper
+            NodeV3? loadedNode = graphObjectMapper.GetNodeAsync(node.Id).Result;
+
+            // Assert
+            Assert.That(loadedNode, Is.Not.Null, "Loaded node should not be null");
+            if (loadedNode != null)
+            {
+                Assert.Multiple(() =>
+                {
+                    Assert.That(loadedNode.Id, Is.EqualTo(node.Id));
+                    Assert.That(loadedNode.Content, Is.EqualTo(node.Content));
+                    Assert.That(loadedNode.Role, Is.EqualTo(NodeRole.Function));
+                    Assert.That(loadedNode.Function, Is.EqualTo(FunctionType.Linear));
+                    Assert.That(loadedNode.FunctionParams, Is.Not.Null, "Loaded FunctionParams should not be null");
+
+                    if (loadedNode.FunctionParams != null)
+                    {
+                        // Verify Weights (needs careful handling due to object type)
+                        Assert.That(loadedNode.FunctionParams.ContainsKey("Weights"), Is.True, "Loaded params missing 'Weights'");
+                        Assert.That(loadedNode.FunctionParams["Weights"], Is.InstanceOf<List<double>>(), "'Weights' should be List<double>");
+                        if (loadedNode.FunctionParams["Weights"] is List<double> loadedWeights)
+                        {
+                            Assert.That(loadedWeights, Is.EqualTo(new List<double> { 0.5, -0.2 }), "Weights mismatch");
+                        }
+
+                        // Verify Bias
+                        Assert.That(loadedNode.FunctionParams.ContainsKey("Bias"), Is.True, "Loaded params missing 'Bias'");
+                        Assert.That(loadedNode.FunctionParams["Bias"], Is.InstanceOf<double>(), "'Bias' should be double");
+                        Assert.That(loadedNode.FunctionParams["Bias"], Is.EqualTo(1.5).Within(1e-12), "Bias mismatch");
+                    }
+                });
+            }
+        }
+
+        [Test]
+        public void TestSaveAndLoadEdgeWithExtendedProperties()
+        {
+            // Arrange
+            var fromNode = new Node(201, "From Node Ext", DomainType.Truth);
+            var toNode = new Node(202, "To Node Ext", DomainType.Truth);
+            var edge = new Edge(fromNode.Id, toNode.Id, 1.0, "Edge With Ext Props");
+            edge.SetExtendedProperty("SourceSystem", "SystemA");
+            edge.SetExtendedProperty("Confidence", 0.95);
+            edge.SetExtendedProperty("IsTemporary", false);
+
+            // Save nodes first
+            Assert.That(graphObjectMapper.SaveNodeAsync(fromNode).Result, Is.True);
+            Assert.That(graphObjectMapper.SaveNodeAsync(toNode).Result, Is.True);
+
+            // Act: Save edge using ObjectMapper
+            Assert.That(graphObjectMapper.SaveEdgeAsync(edge).Result, Is.True, "Failed to save edge via ObjectMapper");
+
+            // Act: Load edge using ObjectMapper
+            EdgeV2? loadedEdge = graphObjectMapper.GetEdgeAsync(edge.EdgeId).Result;
+
+            // Assert
+            Assert.That(loadedEdge, Is.Not.Null, "Loaded edge should not be null");
+            if (loadedEdge != null)
+            {
+                Assert.Multiple(() =>
+                {
+                    Assert.That(loadedEdge.EdgeId, Is.EqualTo(edge.EdgeId));
+                    Assert.That(loadedEdge.FromNode, Is.EqualTo(edge.FromNode));
+                    Assert.That(loadedEdge.ToNode, Is.EqualTo(edge.ToNode));
+                    Assert.That(loadedEdge.ExtendedProperties, Is.Not.Null, "Loaded ExtendedProperties should not be null");
+                    Assert.That(loadedEdge.ExtendedProperties.Count, Is.EqualTo(3), "ExtendedProperties count mismatch");
+
+                    // Verify specific properties using the GetExtendedProperty<T> helper, which handles JsonElement conversion
+                    Assert.That(loadedEdge.GetExtendedProperty<string>("SourceSystem"), Is.EqualTo("SystemA"));
+                    Assert.That(loadedEdge.GetExtendedProperty<double>("Confidence"), Is.EqualTo(0.95).Within(1e-12));
+                    Assert.That(loadedEdge.GetExtendedProperty<bool>("IsTemporary"), Is.EqualTo(false));
+                });
+            }
+        }
+
 
         // Make static as it doesn't use instance members
         private static EdgeIndexFileHandler.IndexFile LoadIndexFile(string indexFilePath) // Use the public nested class from EdgeIndexFileHandler

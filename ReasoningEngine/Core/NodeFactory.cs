@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json; // Added for JsonElement handling
 using DebugUtils;
 
 namespace ReasoningEngine
@@ -327,9 +328,9 @@ namespace ReasoningEngine
         }
 
 
-        // --- Private Helper Methods for Parameter Parsing ---
+        // --- Internal Helper Methods for Parameter Parsing (used by NodeV3 constructor too) ---
 
-        private static Dictionary<string, object> ParseFunctionParameters(FunctionType type, Dictionary<string, object> rawParams)
+        internal static Dictionary<string, object> ParseFunctionParameters(FunctionType type, Dictionary<string, object> rawParams)
         {
             switch (type)
             {
@@ -346,7 +347,7 @@ namespace ReasoningEngine
             }
         }
 
-        private static Dictionary<string, object> ParseLinearParams(Dictionary<string, object> rawParams)
+        internal static Dictionary<string, object> ParseLinearParams(Dictionary<string, object> rawParams)
         {
             var parsedParams = new Dictionary<string, object>();
 
@@ -355,11 +356,12 @@ namespace ReasoningEngine
             {
                 throw new ArgumentException("Missing required parameter 'Weights' for Linear function.");
             }
-            if (weightsObj is List<double> weightsList)
+
+            if (weightsObj is List<double> weightsList) // Already correct type
             {
                 parsedParams["Weights"] = weightsList;
             }
-            else if (weightsObj is string weightsStr)
+            else if (weightsObj is string weightsStr) // String format
             {
                 try
                 {
@@ -372,9 +374,43 @@ namespace ReasoningEngine
                     throw new ArgumentException($"Invalid format for 'Weights' string parameter. Expected comma-separated doubles. Error: {ex.Message}", ex);
                 }
             }
+            else if (weightsObj is JsonElement weightsElement) // Handle JsonElement from deserialization
+            {
+                 if (weightsElement.ValueKind == JsonValueKind.Array)
+                 {
+                     try 
+                     {
+                         // Attempt to deserialize the JsonElement array into List<double>
+                         parsedParams["Weights"] = weightsElement.Deserialize<List<double>>() ?? throw new ArgumentException("Weights array deserialized to null.");
+                     }
+                     catch (JsonException ex)
+                     {
+                          throw new ArgumentException($"Invalid JSON format for 'Weights' array parameter. Expected an array of numbers. Error: {ex.Message}", ex);
+                     }
+                 }
+                 else if (weightsElement.ValueKind == JsonValueKind.String)
+                 {
+                     // Handle case where JSON contained a string representation
+                     string weightsJsonStr = weightsElement.GetString() ?? "";
+                     try
+                     {
+                         parsedParams["Weights"] = weightsJsonStr.Split(',')
+                                                             .Select(s => double.Parse(s.Trim()))
+                                                             .ToList();
+                     }
+                     catch (Exception ex) when (ex is FormatException || ex is OverflowException)
+                     {
+                         throw new ArgumentException($"Invalid format for 'Weights' string parameter within JSON. Expected comma-separated doubles. Error: {ex.Message}", ex);
+                     }
+                 }
+                 else 
+                 {
+                      throw new ArgumentException($"Unexpected JSON ValueKind '{weightsElement.ValueKind}' for 'Weights' parameter. Expected Array or String.");
+                 }
+            }
             else
             {
-                throw new ArgumentException("'Weights' parameter must be a List<double> or a comma-separated string of doubles.");
+                throw new ArgumentException($"Unsupported type '{weightsObj?.GetType().Name ?? "null"}' for 'Weights' parameter. Expected List<double>, string, or JsonElement.");
             }
 
             // Parse Bias
@@ -382,11 +418,12 @@ namespace ReasoningEngine
             {
                 throw new ArgumentException("Missing required parameter 'Bias' for Linear function.");
             }
-             if (biasObj is double biasDouble)
+
+             if (biasObj is double biasDouble) // Already correct type
             {
                 parsedParams["Bias"] = biasDouble;
             }
-            else if (biasObj is string biasStr)
+            else if (biasObj is string biasStr) // String format
             {
                  try
                  {
@@ -405,9 +442,39 @@ namespace ReasoningEngine
              {
                   parsedParams["Bias"] = (double)biasLong;
              }
+             else if (biasObj is JsonElement biasElement) // Handle JsonElement from deserialization
+             {
+                  if (biasElement.ValueKind == JsonValueKind.Number)
+                  {
+                      if (biasElement.TryGetDouble(out double biasVal))
+                      {
+                          parsedParams["Bias"] = biasVal;
+                      }
+                      else
+                      {
+                           throw new ArgumentException("Could not get double value from 'Bias' JSON number parameter.");
+                      }
+                  }
+                  else if (biasElement.ValueKind == JsonValueKind.String)
+                  {
+                      string biasJsonStr = biasElement.GetString() ?? "";
+                       try
+                       {
+                           parsedParams["Bias"] = double.Parse(biasJsonStr.Trim());
+                       }
+                       catch (Exception ex) when (ex is FormatException || ex is OverflowException)
+                       {
+                           throw new ArgumentException($"Invalid format for 'Bias' string parameter within JSON. Expected a double. Error: {ex.Message}", ex);
+                       }
+                  }
+                  else
+                  {
+                       throw new ArgumentException($"Unexpected JSON ValueKind '{biasElement.ValueKind}' for 'Bias' parameter. Expected Number or String.");
+                  }
+             }
             else
             {
-                throw new ArgumentException("'Bias' parameter must be a double or a string convertible to double.");
+                throw new ArgumentException($"Unsupported type '{biasObj?.GetType().Name ?? "null"}' for 'Bias' parameter. Expected double, string, int, long, or JsonElement.");
             }
 
             // Copy any other parameters directly (though none are expected for Linear currently)
@@ -422,7 +489,7 @@ namespace ReasoningEngine
             return parsedParams;
         }
 
-        private static Dictionary<string, object> ParseDefinedOpParams(Dictionary<string, object> rawParams)
+        internal static Dictionary<string, object> ParseDefinedOpParams(Dictionary<string, object> rawParams)
         {
              var parsedParams = new Dictionary<string, object>();
 

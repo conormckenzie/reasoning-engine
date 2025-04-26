@@ -5,28 +5,49 @@ using System.Text.Json.Serialization; // Added for System.Text.Json
 
 namespace ReasoningEngine
 {
+    /// <summary>
+    /// Represents a single range or point in a probability distribution.
+    /// Using a struct for better serialization compatibility with System.Text.Json compared to tuples.
+    /// </summary>
+    public struct ProbabilityRange
+    {
+        // Use public init setters for easy construction and deserialization
+        public double LowerBound { get; init; }
+        public double UpperBound { get; init; }
+        public double Probability { get; init; }
+
+        // Optional: Add a constructor for convenience if needed elsewhere
+        // public ProbabilityRange(double lower, double upper, double prob)
+        // {
+        //     LowerBound = lower;
+        //     UpperBound = upper;
+        //     Probability = prob;
+        // }
+    }
+
     public class ProbabilityDistribution
     {
         // Setters are now private to enforce validation via AddPoint/AddRange or JsonConstructor
         public DomainType DomainType { get; private set; }
         [JsonIgnore] // Should not be serialized
         public string DomainType_StringRepresentation => DomainType.ToString();
-        public List<(double LowerBound, double UpperBound, double Probability)> Distribution { get; private set; }
+        // Changed from List of Tuples to List of ProbabilityRange struct
+        public List<ProbabilityRange> Distribution { get; private set; }
         private const double EPSILON = 1e-10; // For floating point comparisons
 
         // Constructor for programmatic creation (initializes empty distribution)
         public ProbabilityDistribution(DomainType domainType)
         {
             DomainType = domainType;
-            Distribution = new List<(double, double, double)>();
+            Distribution = new List<ProbabilityRange>(); // Initialize with new type
         }
 
         // Constructor for JSON deserialization - performs validation on the loaded data
         [JsonConstructor]
-        public ProbabilityDistribution(DomainType domainType, List<(double LowerBound, double UpperBound, double Probability)> distribution)
+        public ProbabilityDistribution(DomainType domainType, List<ProbabilityRange> distribution) // Changed parameter type
         {
             DomainType = domainType;
-            Distribution = distribution ?? new List<(double, double, double)>(); // Handle null input
+            Distribution = distribution ?? new List<ProbabilityRange>(); // Handle null input, use new type
 
             // Validate the entire loaded distribution state
             ValidateLoadedDistribution();
@@ -53,7 +74,8 @@ namespace ReasoningEngine
                 
                 // Insert sorted by LowerBound (value)
                 int index = FindInsertionIndex(value);
-                Distribution.Insert(index, (value, value, probability)); 
+                // Use ProbabilityRange struct
+                Distribution.Insert(index, new ProbabilityRange { LowerBound = value, UpperBound = value, Probability = probability }); 
                 ValidateTotalProbability();
             }
             else
@@ -107,7 +129,8 @@ namespace ReasoningEngine
 
             // Insert sorted by LowerBound
             int index = FindInsertionIndex(lowerBound);
-            Distribution.Insert(index, (lowerBound, upperBound, probability)); 
+             // Use ProbabilityRange struct
+            Distribution.Insert(index, new ProbabilityRange { LowerBound = lowerBound, UpperBound = upperBound, Probability = probability });
             ValidateTotalProbability();
         }
 
@@ -193,6 +216,7 @@ namespace ReasoningEngine
             {
                 for (int i = 1; i < Distribution.Count; i++)
                 {
+                    // Access properties via the ProbabilityRange struct
                     var prev = Distribution[i - 1];
                     var curr = Distribution[i];
 
@@ -224,7 +248,7 @@ namespace ReasoningEngine
             }
 
             // 3. Check individual range/point validity (e.g., width, domain bounds for single entries)
-            foreach (var item in Distribution)
+            foreach (var item in Distribution) // item is now ProbabilityRange
             {
                  if (item.Probability < 0 || item.Probability > 1)
                      throw new InvalidOperationException($"Loaded distribution is invalid: Probability {item.Probability} outside [0,1] found for range [{item.LowerBound},{item.UpperBound}].");
@@ -236,8 +260,10 @@ namespace ReasoningEngine
                  }
                  else // Continuous or Truth (Ranges)
                  {
+                     // Check width using struct properties
                      if (item.UpperBound - item.LowerBound < 5 * EPSILON)
                          throw new InvalidOperationException($"Loaded distribution is invalid: Range width too small for [{item.LowerBound},{item.UpperBound}].");
+                     // Check Truth bounds using struct properties
                      if (DomainType == DomainType.Truth && (item.LowerBound < 0 || item.UpperBound > 1))
                          throw new InvalidOperationException($"Loaded distribution is invalid: Bounds outside [0,1] found for Truth domain range [{item.LowerBound},{item.UpperBound}].");
                  }
@@ -273,6 +299,7 @@ namespace ReasoningEngine
             else if (coveringRangesIndices.Count == 1)
             {
                 // Point clearly falls within one range
+                // Access Probability via struct property
                 return Distribution[coveringRangesIndices[0]].Probability;
             }
             else // Count is 2 (Point is ambiguous, falling within EPSILON of two boundaries)
@@ -280,21 +307,25 @@ namespace ReasoningEngine
                 // Implement linear interpolation (TODO #4)
                 int index1 = coveringRangesIndices[0];
                 int index2 = coveringRangesIndices[1];
+                // Access ranges as ProbabilityRange structs
                 var range1 = Distribution[index1];
                 var range2 = Distribution[index2];
 
                 // Ensure range1 is the lower range if indices weren't guaranteed sorted by GetCoveringRanges (though they should be)
+                // Compare struct properties
                 if (range1.LowerBound > range2.LowerBound)
                 {
                     (range1, range2) = (range2, range1); // Swap if needed
                     (index1, index2) = (index2, index1);
                 }
 
+                // Access struct properties
                 double zoneStart = range1.UpperBound;
                 double zoneEnd = range2.LowerBound;
                 double zoneWidth = zoneEnd - zoneStart;
 
                 // Log a warning about ambiguity and interpolation
+                // Access struct properties for logging
                 DebugUtils.DebugWriter.DebugWriteLine("#PROB01#", // Corrected Debug ID format 
                     $"Ambiguous point {value} between range {index1} [{range1.LowerBound},{range1.UpperBound}] (P={range1.Probability}) and range {index2} [{range2.LowerBound},{range2.UpperBound}] (P={range2.Probability}). Interpolating.");
 
@@ -304,6 +335,7 @@ namespace ReasoningEngine
                     // Returning the probability of the range the point is closer to might be slightly better.
                      double dist1 = Math.Abs(value - zoneStart);
                      double dist2 = Math.Abs(value - zoneEnd);
+                     // Access struct properties
                      return (dist1 <= dist2) ? range1.Probability : range2.Probability;
                 }
 
@@ -313,6 +345,7 @@ namespace ReasoningEngine
                 // Clamp t to [0, 1] to handle cases where 'value' might be slightly outside the strict gap due to EPSILON checks
                 t = Math.Max(0.0, Math.Min(1.0, t)); 
 
+                // Access struct properties for interpolation
                 double interpolatedProbability = range1.Probability * (1.0 - t) + range2.Probability * t;
 
                 return interpolatedProbability;
@@ -328,6 +361,7 @@ namespace ReasoningEngine
             {
                 case DomainType.Truth:
                 case DomainType.DiscreteInteger:
+                    // Access struct properties in LINQ query
                     return Distribution
                         .Where(d => d.LowerBound >= lowerBound - EPSILON && d.UpperBound <= upperBound + EPSILON)
                         .Sum(d => d.Probability);
@@ -335,6 +369,7 @@ namespace ReasoningEngine
                 case DomainType.Continuous:
                     // For now, only handle cases where query range exactly matches stored ranges
                     // Could be extended to handle partial overlaps if needed
+                    // Access struct properties in LINQ query
                     return Distribution
                         .Where(d => Math.Abs(d.LowerBound - lowerBound) < EPSILON && 
                                   Math.Abs(d.UpperBound - upperBound) < EPSILON)
@@ -345,13 +380,16 @@ namespace ReasoningEngine
             }
         }
 
-        public IReadOnlyList<(double LowerBound, double UpperBound, double Probability)> GetDistribution()
+        // Consider if this method is still needed, or if callers can use the public Distribution property directly.
+        // If kept, update return type to reflect the internal structure.
+        public IReadOnlyList<ProbabilityRange> GetDistribution()
         {
-            return Distribution.AsReadOnly();
+            return Distribution.AsReadOnly(); // Return list of structs
         }
 
         private double GetTotalProbability()
         {
+            // Access struct property
             return Distribution.Sum(d => d.Probability);
         }
 
@@ -372,9 +410,10 @@ namespace ReasoningEngine
         /// </summary>
         public IReadOnlyList<(double Start, double End)> GetQuantization()
         {
+            // Select from struct properties
             var result = Distribution
                 .Select(d => (d.LowerBound, d.UpperBound))
-                .OrderBy(range => range.LowerBound)
+                .OrderBy(range => range.LowerBound) // OrderBy still works on the tuple created by Select
                 .ToList();
 
             return result.AsReadOnly();
@@ -382,9 +421,10 @@ namespace ReasoningEngine
 
         public IReadOnlyList<(double Start, double End, double Probability)> GetQuantizationWithProbabilities()
         {
+             // Select from struct properties
             var result = Distribution
                 .Select(d => (d.LowerBound, d.UpperBound, d.Probability))
-                .OrderBy(range => range.LowerBound)
+                .OrderBy(range => range.LowerBound) // OrderBy still works on the tuple created by Select
                 .ToList();
 
             return result.AsReadOnly();
@@ -406,9 +446,11 @@ namespace ReasoningEngine
 
             for (int i = 0; i < Distribution.Count; i++)
             {
+                // Access struct properties
                 var range = Distribution[i];
                 
                 // Check if point might be in this range (Original logic restored again)
+                // Access struct properties
                 if (point <= range.UpperBound + EPSILON && 
                     point >= range.LowerBound - EPSILON)
                 {
@@ -425,8 +467,10 @@ namespace ReasoningEngine
         /// </summary>
         private int FindInsertionIndex(double lowerBound)
         {
-            // Perform binary search to find the index of the first element >= lowerBound
-            int index = Distribution.BinarySearch(0, Distribution.Count, (lowerBound, 0, 0), Comparer<(double LowerBound, double UpperBound, double Probability)>.Create((x, y) => x.LowerBound.CompareTo(y.LowerBound)));
+            // Perform binary search using ProbabilityRange and comparing LowerBound
+            // Create a dummy ProbabilityRange just for the comparison key
+            var searchKey = new ProbabilityRange { LowerBound = lowerBound }; 
+            int index = Distribution.BinarySearch(searchKey, Comparer<ProbabilityRange>.Create((x, y) => x.LowerBound.CompareTo(y.LowerBound)));
 
             // If BinarySearch returns a non-negative value, it's the index of an exact match (or where it would be).
             // If it returns a negative value, it's the bitwise complement of the index of the first element larger than the item.

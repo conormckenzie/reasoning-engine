@@ -65,8 +65,27 @@ namespace ReasoningEngine
                  Console.Error.WriteLine($"Warning: Deserialized Variable node {id} with null Distribution.");
             }
              if (Role == NodeRole.Function && Function == null)
-            {
+             {
                  Console.Error.WriteLine($"Warning: Deserialized Function node {id} with null Function type.");
+             }
+
+            // Re-process FunctionParams after deserialization to convert JsonElements
+            if (this.Role == NodeRole.Function && this.Function.HasValue && this.FunctionParams != null)
+            {
+                try
+                {
+                    // Call the factory's parser which handles type conversions (e.g., string/JsonElement to double/List<double>)
+                    this.FunctionParams = NodeFactory.ParseFunctionParameters(this.Function.Value, this.FunctionParams);
+                    // Log success? Optional.
+                    // DebugUtils.DebugWriter.DebugWriteLine("#NODE_PARAM_REPARSE#", $"Re-parsed FunctionParams for node {id} after deserialization.", true, DebugUtils.VerbosityLevel.Detailed);
+                }
+                catch (Exception ex)
+                {
+                     // Log error and potentially leave FunctionParams partially processed or null?
+                     // Leaving them as they were deserialized might be safer than nulling them.
+                     Console.Error.WriteLine($"Error re-parsing FunctionParams for node {id} after deserialization: {ex.Message}");
+                     // Optionally: this.FunctionParams = null; // Or keep the potentially partially parsed dictionary
+                }
             }
         }
 
