@@ -7,20 +7,43 @@ namespace ReasoningEngine
 {
     // NodeType enum removed as NodeRole replaces its purpose in V3+
 
+    /// <summary>
+    /// Abstract base class for all node types in the reasoning graph.
+    /// Provides common properties and methods for nodes.
+    /// </summary>
     public abstract class NodeBase : IVersioned
     {
+        /// <summary>
+        /// Gets the unique numerical identifier for the node.
+        /// </summary>
         // Setter protected
-        public long Id { get; protected set; } 
+        public long Id { get; protected set; }
+        
+        /// <summary>
+        /// Gets the version of the node structure.
+        /// </summary>
         [JsonIgnore] // Ignore Version during serialization/deserialization (Now using System.Text.Json)
         public abstract int Version { get; }
         // public NodeType Type { get; protected set; } // Removed
+        
+        /// <summary>
+        /// Gets or sets a string providing a human-readable description or label for the node.
+        /// </summary>
         public string Content { get; set; } // Kept Content here (public set OK)
+        
+        /// <summary>
+        /// Gets or sets a dictionary for storing arbitrary additional metadata for the node.
+        /// </summary>
         // Property public, setter protected is correct.
         [JsonInclude] // Allow System.Text.Json to deserialize into this property despite protected setter
-        public Dictionary<string, object> ExtendedProperties { get; protected set; } = new Dictionary<string, object>(); 
+        public Dictionary<string, object> ExtendedProperties { get; protected set; } = new Dictionary<string, object>();
 
+        /// <summary>
+        /// Initializes a new instance of the NodeBase class with a specified unique identifier.
+        /// </summary>
+        /// <param name="id">The unique identifier for the node.</param>
         // Constructor made public (as in commit b7611d3)
-        public NodeBase(long id) 
+        public NodeBase(long id)
         {
             Id = id;
             Content = string.Empty; // Initialize Content
@@ -28,13 +51,27 @@ namespace ReasoningEngine
         }
 
         // Removed abstract UpgradeToLatest as V1/V2 are removed and V3 handles it
-        // public abstract NodeBase UpgradeToLatest(); 
+        // public abstract NodeBase UpgradeToLatest();
 
+        /// <summary>
+        /// Sets or updates an extended property for the node.
+        /// </summary>
+        /// <param name="key">The key of the property.</param>
+        /// <param name="value">The value of the property.</param>
         public void SetExtendedProperty(string key, object value)
         {
             ExtendedProperties[key] = value;
         }
 
+        /// <summary>
+        /// Gets an extended property by key, attempting to cast or deserialize it to the specified type.
+        /// Handles cases where the value might be a JsonElement after deserialization.
+        /// </summary>
+        /// <typeparam name="T">The target type for the property value.</typeparam>
+        /// <param name="key">The key of the property.</param>
+        /// <returns>The property value cast or deserialized to the specified type.</returns>
+        /// <exception cref="KeyNotFoundException">Thrown if the property key is not found.</exception>
+        /// <exception cref="InvalidCastException">Thrown if the property value cannot be converted to the specified type.</exception>
         public T GetExtendedProperty<T>(string key)
         {
             if (!ExtendedProperties.TryGetValue(key, out var value))
@@ -53,12 +90,12 @@ namespace ReasoningEngine
                 try
                 {
                     // Attempt to deserialize the JsonElement to the requested type T
-                    T? deserializedValue = element.Deserialize<T>(); 
+                    T? deserializedValue = element.Deserialize<T>();
                     if (deserializedValue != null)
                     {
-                        // Optional: Replace the JsonElement in the dictionary with the actual type 
+                        // Optional: Replace the JsonElement in the dictionary with the actual type
                         // for future accesses, though this modifies state during a get operation.
-                        // ExtendedProperties[key] = deserializedValue; 
+                        // ExtendedProperties[key] = deserializedValue;
                         return deserializedValue;
                     }
                     else

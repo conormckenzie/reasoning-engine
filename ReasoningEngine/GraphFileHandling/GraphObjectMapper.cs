@@ -4,17 +4,23 @@ using System.Threading.Tasks;
 using System.Text.Json; // Using System.Text.Json for serialization
 using ReasoningEngine; // For Node, Edge etc.
 using DebugUtils;
+using System.Linq; // Added for Where, Contains
 
 namespace ReasoningEngine.GraphFileHandling
 {
     /// <summary>
-    /// Handles the mapping between graph objects (Node, Edge) and their serialized representation 
+    /// Handles the mapping between graph objects (Node, Edge) and their serialized representation
     /// stored via an IGraphStorageProvider. It encapsulates serialization/deserialization logic.
     /// </summary>
     public class GraphObjectMapper
     {
         private readonly IGraphStorageProvider storageProvider;
 
+        /// <summary>
+        /// Initializes a new instance of the GraphObjectMapper.
+        /// </summary>
+        /// <param name="storageProvider">The storage provider to use for raw data operations.</param>
+        /// <exception cref="ArgumentNullException">Thrown if the storageProvider is null.</exception>
         public GraphObjectMapper(IGraphStorageProvider storageProvider)
         {
             this.storageProvider = storageProvider ?? throw new ArgumentNullException(nameof(storageProvider));
@@ -22,6 +28,11 @@ namespace ReasoningEngine.GraphFileHandling
 
         // --- Node Operations ---
 
+        /// <summary>
+        /// Asynchronously retrieves a Node object by its ID.
+        /// </summary>
+        /// <param name="nodeId">The ID of the node to retrieve.</param>
+        /// <returns>A Task containing the NodeV3 object if found, otherwise null.</returns>
         public async Task<NodeV3?> GetNodeAsync(long nodeId) // Changed return type to NodeV3?
         {
             string? nodeData = await storageProvider.GetNodeDataAsync(nodeId);
@@ -45,13 +56,19 @@ namespace ReasoningEngine.GraphFileHandling
                 return null; // Or throw custom exception
             }
             // Removed duplicate generic catch block
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                  DebugWriter.DebugWriteLine("#MAP_GETNODE_GEN_ERR#", $"Unexpected error getting node {nodeId}: {ex.Message}");
                  return null; // Or throw
              }
         }
 
+        /// <summary>
+        /// Asynchronously saves or updates a Node object in the storage.
+        /// </summary>
+        /// <param name="node">The NodeV3 object to save.</param>
+        /// <returns>A Task containing true if the operation was successful, false otherwise.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the node is null.</exception>
         public async Task<bool> SaveNodeAsync(NodeV3 node) // Changed parameter type to NodeV3
         {
              if (node == null) throw new ArgumentNullException(nameof(node));
@@ -77,6 +94,11 @@ namespace ReasoningEngine.GraphFileHandling
              }
         }
 
+        /// <summary>
+        /// Asynchronously deletes a Node object and its associated edges from the storage.
+        /// </summary>
+        /// <param name="nodeId">The ID of the node to delete.</param>
+        /// <returns>A Task containing true if the node deletion was successful (even if some edge deletions failed), false if the node deletion itself failed.</returns>
         public async Task<bool> DeleteNodeAsync(long nodeId)
         {
             bool success = true;
@@ -89,7 +111,7 @@ namespace ReasoningEngine.GraphFileHandling
                 var incomingEdgeIds = await storageProvider.GetIncomingEdgeIdsAsync(nodeId);
                 edgeIdsToDelete.AddRange(outgoingEdgeIds);
                 // Add incoming only if not already present from outgoing (avoid double delete attempts)
-                edgeIdsToDelete.AddRange(incomingEdgeIds.Where(id => !edgeIdsToDelete.Contains(id))); 
+                edgeIdsToDelete.AddRange(incomingEdgeIds.Where(id => !edgeIdsToDelete.Contains(id)));
 
                 DebugWriter.DebugWriteLine("#MAP_DELNODE_EDGES#", $"Found {edgeIdsToDelete.Count} unique edges associated with node {nodeId} for deletion.", true, VerbosityLevel.Detailed);
 
@@ -125,6 +147,11 @@ namespace ReasoningEngine.GraphFileHandling
 
         // --- Edge Operations ---
 
+        /// <summary>
+        /// Asynchronously retrieves an Edge object by its unique identifier (Guid).
+        /// </summary>
+        /// <param name="edgeId">The unique identifier (Guid) of the edge to retrieve.</param>
+        /// <returns>A Task containing the EdgeV2 object if found, otherwise null.</returns>
         public async Task<EdgeV2?> GetEdgeAsync(Guid edgeId) // Changed return type
         {
             string? edgeData = await storageProvider.GetEdgeDataAsync(edgeId);
@@ -139,7 +166,7 @@ namespace ReasoningEngine.GraphFileHandling
             {
                 // TODO: Implement robust deserialization, potentially checking a version/type field
                 // Deserialize directly into EdgeV2, which has the correct [JsonConstructor]
-                EdgeV2? edge = JsonSerializer.Deserialize<EdgeV2>(edgeData); 
+                EdgeV2? edge = JsonSerializer.Deserialize<EdgeV2>(edgeData);
                 return edge; // Return type changed to EdgeV2?
             }
             catch (System.Text.Json.JsonException ex)
@@ -154,6 +181,12 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
          
+        /// <summary>
+        /// Asynchronously retrieves an Edge object by its source and destination node IDs.
+        /// </summary>
+        /// <param name="fromNodeId">The ID of the source node.</param>
+        /// <param name="toNodeId">The ID of the destination node.</param>
+        /// <returns>A Task containing the EdgeV2 object if found, otherwise null.</returns>
         public async Task<EdgeV2?> GetEdgeAsync(long fromNodeId, long toNodeId) // Changed return type
         {
             string? edgeData = await storageProvider.GetEdgeDataAsync(fromNodeId, toNodeId);
@@ -182,6 +215,11 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of all outgoing Edge objects from a specific node.
+        /// </summary>
+        /// <param name="nodeId">The ID of the source node.</param>
+        /// <returns>A Task containing a list of outgoing EdgeV2 objects.</returns>
         public async Task<List<EdgeV2>> GetOutgoingEdgesAsync(long nodeId) // Changed list type
         {
             var edges = new List<EdgeV2>(); // Changed list type
@@ -211,6 +249,11 @@ namespace ReasoningEngine.GraphFileHandling
             return edges;
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of all incoming Edge objects to a specific node.
+        /// </summary>
+        /// <param name="nodeId">The ID of the destination node.</param>
+        /// <returns>A Task containing a list of incoming EdgeV2 objects.</returns>
         public async Task<List<EdgeV2>> GetIncomingEdgesAsync(long nodeId) // Changed list type
         {
             var edges = new List<EdgeV2>(); // Changed list type
@@ -240,6 +283,13 @@ namespace ReasoningEngine.GraphFileHandling
             return edges;
         }
 
+        /// <summary>
+        /// Asynchronously saves or updates an Edge object in the storage.
+        /// Performs a check to ensure both source and destination nodes exist before saving.
+        /// </summary>
+        /// <param name="edge">The EdgeV2 object to save.</param>
+        /// <returns>A Task containing true if the operation was successful, false otherwise (e.g., if a node does not exist).</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the edge is null.</exception>
         public async Task<bool> SaveEdgeAsync(EdgeV2 edge) // Changed parameter type to EdgeV2
         {
             if (edge == null) throw new ArgumentNullException(nameof(edge));
@@ -279,6 +329,11 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
+        /// <summary>
+        /// Asynchronously deletes an Edge object by its unique identifier (Guid).
+        /// </summary>
+        /// <param name="edgeId">The unique identifier (Guid) of the edge to delete.</param>
+        /// <returns>A Task containing true if the operation was successful, false otherwise.</returns>
         public async Task<bool> DeleteEdgeAsync(Guid edgeId)
         {
             // Directly call the provider's method for deletion by Guid
@@ -294,6 +349,12 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
         
+        /// <summary>
+        /// Asynchronously deletes an Edge object by its source and destination node IDs.
+        /// </summary>
+        /// <param name="fromNodeId">The ID of the source node.</param>
+        /// <param name="toNodeId">The ID of the destination node.</param>
+        /// <returns>A Task containing true if the operation was successful, false otherwise.</returns>
         public async Task<bool> DeleteEdgeAsync(long fromNodeId, long toNodeId)
         {
             // Directly call the provider's method for deletion by node IDs
@@ -310,6 +371,10 @@ namespace ReasoningEngine.GraphFileHandling
 
         // --- Utility / Other ---
 
+        /// <summary>
+        /// Asynchronously retrieves a list of all node IDs from the storage using the underlying storage provider.
+        /// </summary>
+        /// <returns>A Task containing a list of all node IDs.</returns>
         public async Task<List<long>> GetAllNodeIdsAsync()
         {
             return await storageProvider.GetAllNodeIdsAsync();

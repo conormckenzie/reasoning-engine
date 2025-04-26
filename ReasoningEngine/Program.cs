@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
+﻿﻿using System;
 using DotNetEnv;
 using ReasoningEngine.GraphFileHandling;
 using ReasoningEngine.GraphAccess;
@@ -9,6 +9,10 @@ using System.Threading.Tasks; // Added for async Main
 
 namespace ReasoningEngine
 {
+    /// <summary>
+    /// The main entry point for the Reasoning Engine application.
+    /// Handles command-line arguments and the interactive console menu.
+    /// </summary>
     class Program
     {
         private static List<MenuItem> mainMenuItems = new List<MenuItem>
@@ -19,6 +23,11 @@ namespace ReasoningEngine
             new MenuItem("Start Web Server", "#WEB000#", "start_web_server"),
         };
 
+        /// <summary>
+        /// The main entry point of the application.
+        /// Loads environment variables, initializes the graph components, and processes command-line arguments or shows the interactive menu.
+        /// </summary>
+        /// <param name="args">Command-line arguments.</param>
         // Changed to async Task Main
         static async Task Main(string[] args)
         {
@@ -67,6 +76,12 @@ namespace ReasoningEngine
             }
         }
 
+        /// <summary>
+        /// Processes command-line arguments to perform specific actions (setup, run scenario, list scenarios, show help).
+        /// </summary>
+        /// <param name="args">The command-line arguments.</param>
+        /// <param name="commandProcessor">The CommandProcessor instance for executing graph commands.</param>
+        /// <param name="graphObjectMapper">The GraphObjectMapper instance for scenario management.</param>
         // Updated signature to take GraphObjectMapper and return async Task
         static async Task ProcessCommandLineArguments(string[] args, CommandProcessor commandProcessor, GraphObjectMapper graphObjectMapper)
         {
@@ -137,6 +152,9 @@ namespace ReasoningEngine
             }
         }
 
+        /// <summary>
+        /// Displays the command-line usage help message.
+        /// </summary>
         static void ShowHelp()
         {
             DebugWriter.DebugWriteLine("#L9GCJP#", "Reasoning Engine - Command Line Usage");
@@ -158,6 +176,11 @@ namespace ReasoningEngine
             DebugWriter.DebugWriteLine("#CMD024#", "If no options are provided, the interactive menu will be shown.");
         }
 
+        /// <summary>
+        /// Displays the main interactive console menu and handles user input.
+        /// </summary>
+        /// <param name="commandProcessor">The CommandProcessor instance for executing graph commands.</param>
+        /// <param name="graphOperationsUserMenu">The GraphOperationsUserMenu instance for the graph operations submenu.</param>
         static void ShowMenu(CommandProcessor commandProcessor, GraphOperationsUserMenu graphOperationsUserMenu)
         {
             while (true)

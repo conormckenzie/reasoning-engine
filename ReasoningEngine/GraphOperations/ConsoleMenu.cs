@@ -5,11 +5,18 @@ using DebugUtils;
 
 namespace ReasoningEngine.GraphAccess
 {
+    /// <summary>
+    /// Provides a console-based user interface for interacting with graph operations via the CommandProcessor.
+    /// </summary>
     public class GraphOperationsUserMenu
     {
         private readonly CommandProcessor commandProcessor;
         private List<MenuItem> menuItems;
 
+        /// <summary>
+        /// Initializes a new instance of the GraphOperationsUserMenu.
+        /// </summary>
+        /// <param name="commandProcessor">The CommandProcessor instance to use for executing graph operations.</param>
         public GraphOperationsUserMenu(CommandProcessor commandProcessor)
         {
             this.commandProcessor = commandProcessor;
@@ -28,6 +35,9 @@ namespace ReasoningEngine.GraphAccess
             };
         }
 
+        /// <summary>
+        /// Displays the graph operations menu and handles user input to execute commands.
+        /// </summary>
         public void ShowMenu()
         {
             while (true)

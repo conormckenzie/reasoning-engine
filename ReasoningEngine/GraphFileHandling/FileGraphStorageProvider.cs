@@ -1,13 +1,19 @@
 // File: GraphFileManager.cs
 
+using System; // Added for Guid
 using System.Text.Json; // Changed from Newtonsoft.Json
 using DebugUtils;
 using System.Collections.Concurrent;
-
+using System.IO; // Added for Path, File, Directory
+using System.Linq; // Added for Union, ToList
 using System.Threading.Tasks; // Added for Task
 
 namespace ReasoningEngine.GraphFileHandling
 {
+    /// <summary>
+    /// Provides a file-system based implementation of the IGraphStorageProvider interface.
+    /// Stores graph data (Nodes and Edges) as JSON files in a hierarchical directory structure.
+    /// </summary>
     // Renamed and now implements IGraphStorageProvider
     public class FileGraphStorageProvider : IGraphStorageProvider
     {
@@ -15,6 +21,10 @@ namespace ReasoningEngine.GraphFileHandling
         private readonly IndexManager indexManager; // For main node index
         private readonly EdgeIndexFileHandler _edgeIndexHandler; // Handler for edge index files
 
+        /// <summary>
+        /// Initializes a new instance of the FileGraphStorageProvider.
+        /// </summary>
+        /// <param name="baseDir">The base directory path where graph data will be stored.</param>
         public FileGraphStorageProvider(string baseDir) // Renamed constructor
         {
             this.baseDir = baseDir;
@@ -25,12 +35,22 @@ namespace ReasoningEngine.GraphFileHandling
 
         // --- IGraphStorageProvider Implementation ---
 
+        /// <summary>
+        /// Asynchronously retrieves a list of all node IDs from the storage.
+        /// </summary>
+        /// <returns>A Task containing a list of all node IDs.</returns>
         public Task<List<long>> GetAllNodeIdsAsync()
         {
             // IndexManager provides this synchronously for the file system
             return Task.FromResult(indexManager.GetNodeIds());
         }
 
+        /// <summary>
+        /// Asynchronously saves or updates the data for a specific node.
+        /// </summary>
+        /// <param name="nodeId">The ID of the node.</param>
+        /// <param name="nodeData">The raw string data (JSON) of the node.</param>
+        /// <returns>A Task containing true if the operation was successful, false otherwise.</returns>
         public Task<bool> SaveNodeDataAsync(long nodeId, string nodeData)
         {
              try
@@ -52,6 +72,11 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
+        /// <summary>
+        /// Asynchronously retrieves the raw data for a specific node.
+        /// </summary>
+        /// <param name="nodeId">The ID of the node.</param>
+        /// <returns>A Task containing the raw string data (JSON) of the node, or null if the node is not found.</returns>
        public Task<string?> GetNodeDataAsync(long nodeId)
         {
              try
@@ -75,6 +100,11 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
+        /// <summary>
+        /// Asynchronously checks if a node with the specified ID exists in the storage.
+        /// </summary>
+        /// <param name="nodeId">The ID of the node.</param>
+        /// <returns>A Task containing true if the node exists, false otherwise.</returns>
         public async Task<bool> NodeExistsAsync(long nodeId)
         {
             string nodeFilePath = FilePathHelper.GetNodeFilePath(baseDir, nodeId);
@@ -85,6 +115,11 @@ namespace ReasoningEngine.GraphFileHandling
 
         // --- IGraphStorageProvider Implementation (Continued) ---
 
+        /// <summary>
+        /// Asynchronously deletes the data for a specific node and its associated edges.
+        /// </summary>
+        /// <param name="nodeId">The ID of the node to delete.</param>
+        /// <returns>A Task containing true if the operation was successful, false otherwise.</returns>
         public async Task<bool> DeleteNodeDataAsync(long nodeId) // Changed to async Task
         {
              try
@@ -153,6 +188,12 @@ namespace ReasoningEngine.GraphFileHandling
 
         // --- Edge Operations ---
 
+        /// <summary>
+        /// Asynchronously retrieves the raw data for a specific edge by its unique identifier (Guid).
+        /// Note: This implementation is currently inefficient as it requires scanning all edge files.
+        /// </summary>
+        /// <param name="edgeId">The unique identifier (Guid) of the edge.</param>
+        /// <returns>A Task containing the raw string data (JSON) of the edge, or null if the edge is not found.</returns>
         public Task<string?> GetEdgeDataAsync(Guid edgeId)
         {
             // Inefficient implementation: Scan all edge files.
@@ -204,6 +245,12 @@ namespace ReasoningEngine.GraphFileHandling
         // Helper class for partial deserialization
         private class EdgeIdHelper { public Guid EdgeId { get; set; } }
 
+        /// <summary>
+        /// Asynchronously retrieves the raw data for a specific edge by its source and destination node IDs.
+        /// </summary>
+        /// <param name="fromNodeId">The ID of the source node.</param>
+        /// <param name="toNodeId">The ID of the destination node.</param>
+        /// <returns>A Task containing the raw string data (JSON) of the edge, or null if the edge is not found.</returns>
         public Task<string?> GetEdgeDataAsync(long fromNodeId, long toNodeId)
         {
              try
@@ -227,6 +274,15 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
+        /// <summary>
+        /// Asynchronously saves or updates the data for a specific edge.
+        /// Saves two representations of the edge data (outgoing and incoming) for efficient retrieval by node ID.
+        /// </summary>
+        /// <param name="edgeId">The unique identifier (Guid) of the edge.</param>
+        /// <param name="fromNodeId">The ID of the source node.</param>
+        /// <param name="toNodeId">The ID of the destination node.</param>
+        /// <param name="edgeData">The raw string data (JSON) of the edge.</param>
+        /// <returns>A Task containing true if the operation was successful, false otherwise.</returns>
         public Task<bool> SaveEdgeDataAsync(Guid edgeId, long fromNodeId, long toNodeId, string edgeData)
         {
              try
@@ -243,7 +299,7 @@ namespace ReasoningEngine.GraphFileHandling
                 DebugWriter.DebugWriteLine("#SAVE_EDGE_PATH_IN#", $"Saving incoming edge {edgeId} to: {incomingEdgeFilePath}", true, VerbosityLevel.Detailed);
                 FilePathHelper.EnsureDirectoryExists(incomingEdgeFilePath);
                 File.WriteAllText(incomingEdgeFilePath, edgeData); // Save same data
-                _edgeIndexHandler.UpdateEdgeIndex(incomingEdgeFilePath, true); // Use handler
+                _edgeIndexHandler.UpdateEdgeIndex(incomingEdgeFilePath, true);
 
                 return Task.FromResult(true);
             }
@@ -254,6 +310,12 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
+        /// <summary>
+        /// Asynchronously deletes the data for a specific edge by its unique identifier (Guid).
+        /// Note: This implementation is currently inefficient as it requires scanning all edge files to find the edge.
+        /// </summary>
+        /// <param name="edgeId">The unique identifier (Guid) of the edge to delete.</param>
+        /// <returns>A Task containing true if the operation was successful, false otherwise.</returns>
         public async Task<bool> DeleteEdgeDataAsync(Guid edgeId)
         {
             // Inefficient implementation: Scan to find the edge, then delete both representations.
@@ -287,6 +349,13 @@ namespace ReasoningEngine.GraphFileHandling
         // Helper class for partial deserialization
         private class EdgeFromToHelper { public long FromNode { get; set; } public long ToNode { get; set; } }
 
+        /// <summary>
+        /// Asynchronously deletes the data for a specific edge by its source and destination node IDs.
+        /// Deletes both the outgoing and incoming representations of the edge data.
+        /// </summary>
+        /// <param name="fromNodeId">The ID of the source node.</param>
+        /// <param name="toNodeId">The ID of the destination node.</param>
+        /// <returns>A Task containing true if at least one representation of the edge was deleted, false otherwise.</returns>
         public Task<bool> DeleteEdgeDataAsync(long fromNodeId, long toNodeId)
         {
             try
@@ -323,6 +392,12 @@ namespace ReasoningEngine.GraphFileHandling
             }
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of unique identifiers (Guids) for all outgoing edges from a specific node.
+        /// Note: This implementation is potentially inefficient as it loads all outgoing edge data to extract Guids.
+        /// </summary>
+        /// <param name="nodeId">The ID of the source node.</param>
+        /// <returns>A Task containing a list of outgoing edge Guids.</returns>
         public Task<List<Guid>> GetOutgoingEdgeIdsAsync(long nodeId)
         {
             // Implementation uses existing LoadEdges which reads all edge files for the node.
@@ -333,6 +408,12 @@ namespace ReasoningEngine.GraphFileHandling
             return Task.FromResult(edgeIds);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of unique identifiers (Guids) for all incoming edges to a specific node.
+        /// Note: This implementation is potentially inefficient as it loads all incoming edge data to extract Guids.
+        /// </summary>
+        /// <param name="nodeId">The ID of the destination node.</param>
+        /// <returns>A Task containing a list of incoming edge Guids.</returns>
         public Task<List<Guid>> GetIncomingEdgeIdsAsync(long nodeId)
         {
              DebugWriter.DebugWriteLine("#EDGE_TODO#", $"GetIncomingEdgeIdsAsync not efficiently implemented for file storage.");

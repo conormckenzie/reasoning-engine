@@ -15,15 +15,23 @@ namespace ReasoningEngine.Utils.Scenarios
     {
         private readonly CommandProcessor _commandProcessor;
         // Updated field to use GraphObjectMapper
-        private readonly GraphObjectMapper _graphObjectMapper; 
+        private readonly GraphObjectMapper _graphObjectMapper;
 
-        // Updated constructor to accept GraphObjectMapper
-        public PopulateWeatherScenarioData(CommandProcessor commandProcessor, GraphObjectMapper graphObjectMapper) 
+        /// <summary>
+        /// Initializes a new instance of the PopulateWeatherScenarioData class.
+        /// </summary>
+        /// <param name="commandProcessor">The CommandProcessor instance to use for adding nodes and edges.</param>
+        /// <param name="graphObjectMapper">The GraphObjectMapper instance to use for saving nodes with distributions.</param>
+        public PopulateWeatherScenarioData(CommandProcessor commandProcessor, GraphObjectMapper graphObjectMapper)
         {
             _commandProcessor = commandProcessor;
             _graphObjectMapper = graphObjectMapper; // Assign the mapper
         }
 
+        /// <summary>
+        /// Populates the reasoning engine with data for the weather scenario.
+        /// Adds nodes, edges, and probability distributions.
+        /// </summary>
         // Made async to allow awaiting AddProbabilityDistributions
         public async Task PopulateData()
         {

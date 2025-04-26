@@ -36,6 +36,9 @@ namespace DebugUtils
         /// </summary>
         public static VerbosityLevel Verbosity { get; set; } = VerbosityLevel.Normal;
 
+        /// <summary>
+        /// Displays the debug options menu and handles user interaction.
+        /// </summary>
         public static void ShowDebugOptionsMenu()
         {
             while (true)

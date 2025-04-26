@@ -5,8 +5,15 @@ using DotNetEnv;
 
 namespace ReasoningEngine // Changed namespace
 {
+    /// <summary>
+    /// Provides one-time setup functionality for the application, such as loading environment variables
+    /// and ensuring necessary directories and files exist.
+    /// </summary>
     public static class OneTimeSetup
     {
+        /// <summary>
+        /// Static constructor to load environment variables from the .env file when the class is first accessed.
+        /// </summary>
         // Load environment variables from the .env file
         static OneTimeSetup()
         {
@@ -14,7 +21,7 @@ namespace ReasoningEngine // Changed namespace
         }
 
         // Get the data folder path from environment variables, or throw an exception if not set
-        private static readonly string baseDir = Environment.GetEnvironmentVariable("DATA_FOLDER_PATH") 
+        private static readonly string baseDir = Environment.GetEnvironmentVariable("DATA_FOLDER_PATH")
                                                  ?? throw new Exception("DATA_FOLDER_PATH is not set in the environment variables.");
         private static readonly string indexFilePath = Path.Combine(baseDir, "index.json");
 

@@ -26,25 +26,29 @@ This project is under active development and currently undergoing a major refact
      ```plaintext
      DATA_FOLDER_PATH=/path/to/your/data/folder
      ```
-2. Build the project using the .NET CLI:
+2. Run the one-time setup:
+   ```bash
+   dotnet run --project ReasoningEngine/ReasoningEngine.csproj --setup
+   ```
+3. Build the project using the .NET CLI:
    ```bash
    dotnet build
    ```
 
-3. Run the project:
+4. Run the project:
    ```bash
    dotnet run --project ReasoningEngine/ReasoningEngine.csproj
    ```
    (This starts the interactive console menu).
 
-4. **Run Scenarios (Optional):**
+5. **Run Scenarios (Optional):**
    ```bash
    # Example: Run the weather scenario with minimal output
-   dotnet run --project ReasoningEngine/ReasoningEngine.csproj --run-scenario weather --verbosity Minimal 
+   dotnet run --project ReasoningEngine/ReasoningEngine.csproj --run-scenario weather --verbosity Minimal
    ```
    (See `dotnet run --project ReasoningEngine/ReasoningEngine.csproj --help` for more options).
 
-5. **Run Tests:**
+6. **Run Tests:**
    ```bash
    dotnet test
    ```
