@@ -25,17 +25,36 @@ namespace ReasoningEngine
         // }
     }
 
+    /// <summary>
+    /// Represents a probability distribution over a specified domain (Continuous, DiscreteInteger, or Truth).
+    /// Handles uncertainty using an EPSILON tolerance and provides methods for adding points/ranges,
+    /// querying probabilities (including interpolation near boundaries), and validation.
+    /// </summary>
     public class ProbabilityDistribution
     {
         // Setters are now private to enforce validation via AddPoint/AddRange or JsonConstructor
+        /// <summary>
+        /// Gets the domain type (Continuous, DiscreteInteger, Truth) for this distribution.
+        /// </summary>
         public DomainType DomainType { get; private set; }
+
+        /// <summary>
+        /// Gets the string representation of the DomainType. Ignored during serialization.
+        /// </summary>
         [JsonIgnore] // Should not be serialized
         public string DomainType_StringRepresentation => DomainType.ToString();
-        // Changed from List of Tuples to List of ProbabilityRange struct
+
+        /// <summary>
+        /// Gets the internal list of probability ranges or points defining the distribution.
+        /// The list is kept sorted by LowerBound. Direct modification is discouraged; use AddPoint/AddRange.
+        /// </summary>
         public List<ProbabilityRange> Distribution { get; private set; }
         private const double EPSILON = 1e-10; // For floating point comparisons
 
-        // Constructor for programmatic creation (initializes empty distribution)
+        /// <summary>
+        /// Initializes a new, empty ProbabilityDistribution for the specified domain type.
+        /// </summary>
+        /// <param name="domainType">The domain type for this distribution.</param>
         public ProbabilityDistribution(DomainType domainType)
         {
             DomainType = domainType;
@@ -53,6 +72,13 @@ namespace ReasoningEngine
             ValidateLoadedDistribution();
         }
 
+        /// <summary>
+        /// Adds a probability point for a specific value. Only valid for DiscreteInteger domains.
+        /// </summary>
+        /// <param name="value">The discrete integer value.</param>
+        /// <param name="probability">The probability associated with the value (must be between 0 and 1).</param>
+        /// <exception cref="ArgumentException">Thrown if probability is invalid or value is not an integer.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the domain is not DiscreteInteger, if the point already exists, or if total probability exceeds 1.</exception>
         public void AddPoint(double value, double probability)
         {
             if (probability < 0 || probability > 1)
@@ -84,6 +110,15 @@ namespace ReasoningEngine
             }
         }
 
+        /// <summary>
+        /// Adds a probability range [lowerBound, upperBound] with a uniform probability density over that range.
+        /// Only valid for Continuous or Truth domains.
+        /// </summary>
+        /// <param name="lowerBound">The lower bound of the range.</param>
+        /// <param name="upperBound">The upper bound of the range.</param>
+        /// <param name="probability">The probability associated with the range (must be between 0 and 1).</param>
+        /// <exception cref="ArgumentException">Thrown if probability is invalid, range width is too small, or bounds are invalid for the Truth domain.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the domain is DiscreteInteger, if the range overlaps with an existing range, or if total probability exceeds 1.</exception>
         public void AddRange(double lowerBound, double upperBound, double probability)
         {
             // Basic validation
@@ -352,6 +387,16 @@ namespace ReasoningEngine
             }
         }
 
+        /// <summary>
+        /// Gets the total probability defined within the specified bounds [lowerBound, upperBound].
+        /// For DiscreteInteger/Truth domains, sums probabilities of points within the bounds (inclusive, using EPSILON tolerance).
+        /// For Continuous domains, currently only sums probabilities of ranges that exactly match the query bounds (within EPSILON).
+        /// </summary>
+        /// <param name="lowerBound">The lower bound of the query range.</param>
+        /// <param name="upperBound">The upper bound of the query range.</param>
+        /// <returns>The total probability within the specified bounds.</returns>
+        /// <exception cref="ArgumentException">Thrown if lowerBound >= upperBound.</exception>
+        /// <exception cref="InvalidOperationException">Thrown for unknown domain types.</exception>
         public double GetProbability(double lowerBound, double upperBound)
         {
             if (lowerBound >= upperBound)
@@ -382,6 +427,10 @@ namespace ReasoningEngine
 
         // Consider if this method is still needed, or if callers can use the public Distribution property directly.
         // If kept, update return type to reflect the internal structure.
+        /// <summary>
+        /// Gets a read-only view of the internal distribution list.
+        /// </summary>
+        /// <returns>A read-only list of ProbabilityRange structs.</returns>
         public IReadOnlyList<ProbabilityRange> GetDistribution()
         {
             return Distribution.AsReadOnly(); // Return list of structs
@@ -419,6 +468,12 @@ namespace ReasoningEngine
             return result.AsReadOnly();
         }
 
+        /// <summary>
+        /// Returns a description of how the probability distribution is quantized, including probabilities.
+        /// Similar to GetQuantization, but includes the probability for each point/range.
+        /// The returned values are ordered by position on the number line.
+        /// </summary>
+        /// <returns>A read-only list of tuples representing the quantized ranges/points and their probabilities.</returns>
         public IReadOnlyList<(double Start, double End, double Probability)> GetQuantizationWithProbabilities()
         {
              // Select from struct properties
