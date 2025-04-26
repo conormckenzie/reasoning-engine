@@ -10,7 +10,7 @@ KNOWN ISSUES:
 
 Context: Ongoing refinements for V3 architecture.
 
-1.  **(Refine)** **`ProbabilityDistribution`: Interpolation Logic:** Review the linear interpolation logic in `GetProbability` for points near boundaries. Ensure it's robust and consider alternative interpolation methods if needed. (Replaces original TODO #4).
+*(No active TODOs remaining from the initial V3 refinement list)*
 
 ## General Future Improvements
 
@@ -28,6 +28,7 @@ Context: Ongoing refinements for V3 architecture.
 
 ---
 *Completed (Current Session - 2025-04-25):*
+*   **(Refine)** **`ProbabilityDistribution`: Interpolation Logic:** Reviewed the linear interpolation logic in `GetProbability` for points near boundaries; deemed robust. (Original TODO #4).
 *   **(Verify)** **`ProbabilityDistribution`: Sorted Inserts:** Verified that `AddPoint` and `AddRange` correctly maintain sorted order via `FindInsertionIndex`. Confirmed covered by existing tests (`TestGetQuantization_OrderPreservation`, `TestRangeOrdering`). (Original TODO #1).
 *   **`NodeFactory`: Parameter Parsing:** Implemented robust parsing for `FunctionParams` (including post-deserialization handling of `JsonElement`) in `CreateNodeFromPayload` and `UpdateNodeFromPayload`. (Original TODO #5, Completed via commit `14b2453`).
 *   **Persistence:** Adapted persistence layer (`GraphObjectMapper`, `FileGraphStorageProvider`) to fully handle serialization/deserialization of `NodeV3` (including `Distribution`, `Function`, `FunctionParams`) and `EdgeV2` (including `ExtendedProperties`). Verified via new tests. (Original TODO #8, Completed via commit `14b2453`).
