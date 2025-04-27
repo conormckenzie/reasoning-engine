@@ -82,23 +82,23 @@ namespace ReasoningEngineTests
                 Assert.Fail("Failed to deserialize loaded edge data");
             }
 
-            // Verify index files exist (using provider's helper methods to get paths)
-            string outgoingEdgeFilePath = storageProvider.GetEdgeFilePath(edge.FromNode, edge.ToNode, true); 
+            // Verify index files exist (using FilePathHelper to get paths)
+            string outgoingEdgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.FromNode, edge.ToNode, true); 
             string? outgoingEdgeDir = Path.GetDirectoryName(outgoingEdgeFilePath);
             string outgoingIndexFilePath = Path.Combine(outgoingEdgeDir ?? "", "index.json");
             Assert.Multiple(() =>
             {
                 Assert.That(File.Exists(outgoingIndexFilePath), Is.True, "Outgoing index file missing");
 
-                string incomingEdgeFilePath = storageProvider.GetEdgeFilePath(edge.ToNode, edge.FromNode, false); // Note: GetEdgeFilePath needs correction for incoming
+                string incomingEdgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.ToNode, edge.FromNode, false); // Note: GetEdgeFilePath needs correction for incoming
                 string? incomingEdgeDir = Path.GetDirectoryName(incomingEdgeFilePath);
                 string incomingIndexFilePath = Path.Combine(incomingEdgeDir ?? "", "index.json");
-                Assert.That(File.Exists(incomingIndexFilePath), Is.True, "Incoming index file missing");
+                 Assert.That(File.Exists(incomingIndexFilePath), Is.True, "Incoming index file missing");
 
                  // Verify index content (optional, more detailed check)
-                 IndexFile outgoingIndex = LoadIndexFile(outgoingIndexFilePath);
+                 EdgeIndexFileHandler.IndexFile outgoingIndex = LoadIndexFile(outgoingIndexFilePath); // Qualify type
                  Assert.That(outgoingIndex.EdgeFiles, Does.Contain(Path.GetFileName(outgoingEdgeFilePath)), "Outgoing index file does not contain edge"); // Use Does.Contain
-                 IndexFile incomingIndex = LoadIndexFile(incomingIndexFilePath);
+                 EdgeIndexFileHandler.IndexFile incomingIndex = LoadIndexFile(incomingIndexFilePath); // Qualify type
                  Assert.That(incomingIndex.EdgeFiles, Does.Contain(Path.GetFileName(incomingEdgeFilePath)), "Incoming index file does not contain edge"); // Use Does.Contain
             });
         }
@@ -124,12 +124,12 @@ namespace ReasoningEngineTests
             string edgeData = JsonSerializer.Serialize(edge, options);
             Assert.That(storageProvider.SaveEdgeDataAsync(edge.EdgeId, edge.FromNode, edge.ToNode, edgeData).Result, Is.True, "Failed to save edge");
 
-            // Get file paths using the provider's helper methods
-            string outgoingEdgeFilePath = storageProvider.GetEdgeFilePath(edge.FromNode, edge.ToNode, true); 
+            // Get file paths using FilePathHelper
+            string outgoingEdgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.FromNode, edge.ToNode, true); 
             string? outgoingEdgeDir = Path.GetDirectoryName(outgoingEdgeFilePath);
             string outgoingIndexFilePath = Path.Combine(outgoingEdgeDir ?? "", "index.json");
 
-            string incomingEdgeFilePath = storageProvider.GetEdgeFilePath(edge.ToNode, edge.FromNode, false); // Note: GetEdgeFilePath needs correction for incoming
+            string incomingEdgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.ToNode, edge.FromNode, false); // Note: GetEdgeFilePath needs correction for incoming
             string? incomingEdgeDir = Path.GetDirectoryName(incomingEdgeFilePath);
             string incomingIndexFilePath = Path.Combine(incomingEdgeDir ?? "", "index.json");
 
@@ -153,8 +153,8 @@ namespace ReasoningEngineTests
             });
 
             // Index files should be updated
-            IndexFile outgoingIndex = LoadIndexFile(outgoingIndexFilePath);
-            IndexFile incomingIndex = LoadIndexFile(incomingIndexFilePath);
+            EdgeIndexFileHandler.IndexFile outgoingIndex = LoadIndexFile(outgoingIndexFilePath); // Qualify type
+            EdgeIndexFileHandler.IndexFile incomingIndex = LoadIndexFile(incomingIndexFilePath); // Qualify type
 
             Assert.Multiple(() =>
             {
@@ -218,15 +218,15 @@ namespace ReasoningEngineTests
                 Assert.That(incomingEdgeIds3, Contains.Item(edge3.EdgeId));
             });
 
-             // Verify index files exist and are correct (similar check as before, using provider paths)
+             // Verify index files exist and are correct (similar check as before, using FilePathHelper)
              var edgesToCheck = new List<Edge> { edge1, edge2, edge3 }; 
              foreach (var edge in edgesToCheck)
              {
-                 string edgeFilePath = storageProvider.GetEdgeFilePath(edge.FromNode, edge.ToNode, true); 
+                 string edgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.FromNode, edge.ToNode, true); 
                  string? edgeDir = Path.GetDirectoryName(edgeFilePath);
                  string indexFilePath = Path.Combine(edgeDir ?? "", "index.json");
                  Assert.That(File.Exists(indexFilePath), Is.True, $"Index file missing for edge {edge.EdgeId}");
-                 IndexFile indexFile = LoadIndexFile(indexFilePath);
+                 EdgeIndexFileHandler.IndexFile indexFile = LoadIndexFile(indexFilePath); // Qualify type
                  Assert.That(indexFile.EdgeFiles, Does.Contain(Path.GetFileName(edgeFilePath)), $"Index file for edge {edge.EdgeId} missing entry"); // Use Does.Contain
              }
         }
@@ -322,8 +322,8 @@ namespace ReasoningEngineTests
                 // Verify node is gone
                 Assert.That(storageProvider.GetNodeDataAsync(1).Result, Is.Null); 
                 // Verify edge files are gone (as DeleteNodeDataAsync implementation deletes them)
-                string outgoingEdgeFilePath = storageProvider.GetEdgeFilePath(edge.FromNode, edge.ToNode, true); 
-                string incomingEdgeFilePath = storageProvider.GetEdgeFilePath(edge.ToNode, edge.FromNode, false); // Needs correction
+                string outgoingEdgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.FromNode, edge.ToNode, true); 
+                string incomingEdgeFilePath = FilePathHelper.GetEdgeFilePath(tempDir, edge.ToNode, edge.FromNode, false); // Needs correction
                 Assert.That(File.Exists(outgoingEdgeFilePath), Is.False, "Outgoing edge file should be deleted with node");
                 Assert.That(File.Exists(incomingEdgeFilePath), Is.False, "Incoming edge file should be deleted with node");
                 // Verify edge IDs are gone from lists
@@ -479,16 +479,147 @@ namespace ReasoningEngineTests
             }
              else
             {
-                 Assert.Fail("Failed to deserialize loaded edge data");
+             Assert.Fail("Failed to deserialize loaded edge data");
+             }
+        }
+
+        [Test]
+        public void TestSaveAndLoadVariableNodeWithDistribution()
+        {
+            // Arrange
+            var node = new Node(101, "Variable Node", DomainType.Continuous);
+            node.Distribution?.AddRange(0.0, 1.0, 0.3); // Use null-conditional access
+            node.Distribution?.AddRange(1.0 + 1e-9, 2.0, 0.7); // Add another range
+
+            // Act: Save using ObjectMapper
+            Assert.That(graphObjectMapper.SaveNodeAsync(node).Result, Is.True, "Failed to save node via ObjectMapper");
+
+            // Act: Load using ObjectMapper
+            NodeV3? loadedNode = graphObjectMapper.GetNodeAsync(node.Id).Result;
+
+            // Assert
+            Assert.That(loadedNode, Is.Not.Null, "Loaded node should not be null");
+            if (loadedNode != null)
+            {
+                Assert.Multiple(() =>
+                {
+                    Assert.That(loadedNode.Id, Is.EqualTo(node.Id));
+                    Assert.That(loadedNode.Content, Is.EqualTo(node.Content));
+                    Assert.That(loadedNode.Role, Is.EqualTo(NodeRole.Variable));
+                    Assert.That(loadedNode.Distribution, Is.Not.Null, "Loaded distribution should not be null");
+                    Assert.That(loadedNode.Distribution?.DomainType, Is.EqualTo(DomainType.Continuous)); // Use null-conditional
+                    Assert.That(loadedNode.Distribution?.Distribution, Has.Count.EqualTo(2), "Distribution should have 2 ranges"); // Use null-conditional
+
+                    if (loadedNode.Distribution?.Distribution.Count == 2) // Check count before accessing elements
+                    {
+                        var loadedRanges = loadedNode.Distribution.Distribution;
+                        Assert.That(loadedRanges[0].LowerBound, Is.EqualTo(0.0).Within(1e-12));
+                        Assert.That(loadedRanges[0].UpperBound, Is.EqualTo(1.0).Within(1e-12));
+                        Assert.That(loadedRanges[0].Probability, Is.EqualTo(0.3).Within(1e-12));
+                        Assert.That(loadedRanges[1].LowerBound, Is.EqualTo(1.0 + 1e-9).Within(1e-12));
+                        Assert.That(loadedRanges[1].UpperBound, Is.EqualTo(2.0).Within(1e-12));
+                        Assert.That(loadedRanges[1].Probability, Is.EqualTo(0.7).Within(1e-12));
+                    }
+                });
             }
         }
 
+        [Test]
+        public void TestSaveAndLoadFunctionNodeWithParams()
+        {
+            // Arrange
+            var funcParams = new Dictionary<string, object>
+            {
+                { "Weights", new List<double> { 0.5, -0.2 } },
+                { "Bias", 1.5 }
+            };
+            var node = new Node(102, "Function Node", FunctionType.Linear, funcParams);
+
+            // Act: Save using ObjectMapper
+            Assert.That(graphObjectMapper.SaveNodeAsync(node).Result, Is.True, "Failed to save node via ObjectMapper");
+
+            // Act: Load using ObjectMapper
+            NodeV3? loadedNode = graphObjectMapper.GetNodeAsync(node.Id).Result;
+
+            // Assert
+            Assert.That(loadedNode, Is.Not.Null, "Loaded node should not be null");
+            if (loadedNode != null)
+            {
+                Assert.Multiple(() =>
+                {
+                    Assert.That(loadedNode.Id, Is.EqualTo(node.Id));
+                    Assert.That(loadedNode.Content, Is.EqualTo(node.Content));
+                    Assert.That(loadedNode.Role, Is.EqualTo(NodeRole.Function));
+                    Assert.That(loadedNode.Function, Is.EqualTo(FunctionType.Linear));
+                    Assert.That(loadedNode.FunctionParams, Is.Not.Null, "Loaded FunctionParams should not be null");
+
+                    if (loadedNode.FunctionParams != null)
+                    {
+                        // Verify Weights (needs careful handling due to object type)
+                        Assert.That(loadedNode.FunctionParams.ContainsKey("Weights"), Is.True, "Loaded params missing 'Weights'");
+                        Assert.That(loadedNode.FunctionParams["Weights"], Is.InstanceOf<List<double>>(), "'Weights' should be List<double>");
+                        if (loadedNode.FunctionParams["Weights"] is List<double> loadedWeights)
+                        {
+                            Assert.That(loadedWeights, Is.EqualTo(new List<double> { 0.5, -0.2 }), "Weights mismatch");
+                        }
+
+                        // Verify Bias
+                        Assert.That(loadedNode.FunctionParams.ContainsKey("Bias"), Is.True, "Loaded params missing 'Bias'");
+                        Assert.That(loadedNode.FunctionParams["Bias"], Is.InstanceOf<double>(), "'Bias' should be double");
+                        Assert.That(loadedNode.FunctionParams["Bias"], Is.EqualTo(1.5).Within(1e-12), "Bias mismatch");
+                    }
+                });
+            }
+        }
+
+        [Test]
+        public void TestSaveAndLoadEdgeWithExtendedProperties()
+        {
+            // Arrange
+            var fromNode = new Node(201, "From Node Ext", DomainType.Truth);
+            var toNode = new Node(202, "To Node Ext", DomainType.Truth);
+            var edge = new Edge(fromNode.Id, toNode.Id, 1.0, "Edge With Ext Props");
+            edge.SetExtendedProperty("SourceSystem", "SystemA");
+            edge.SetExtendedProperty("Confidence", 0.95);
+            edge.SetExtendedProperty("IsTemporary", false);
+
+            // Save nodes first
+            Assert.That(graphObjectMapper.SaveNodeAsync(fromNode).Result, Is.True);
+            Assert.That(graphObjectMapper.SaveNodeAsync(toNode).Result, Is.True);
+
+            // Act: Save edge using ObjectMapper
+            Assert.That(graphObjectMapper.SaveEdgeAsync(edge).Result, Is.True, "Failed to save edge via ObjectMapper");
+
+            // Act: Load edge using ObjectMapper
+            EdgeV2? loadedEdge = graphObjectMapper.GetEdgeAsync(edge.EdgeId).Result;
+
+            // Assert
+            Assert.That(loadedEdge, Is.Not.Null, "Loaded edge should not be null");
+            if (loadedEdge != null)
+            {
+                Assert.Multiple(() =>
+                {
+                    Assert.That(loadedEdge.EdgeId, Is.EqualTo(edge.EdgeId));
+                    Assert.That(loadedEdge.FromNode, Is.EqualTo(edge.FromNode));
+                    Assert.That(loadedEdge.ToNode, Is.EqualTo(edge.ToNode));
+                    Assert.That(loadedEdge.ExtendedProperties, Is.Not.Null, "Loaded ExtendedProperties should not be null");
+                    Assert.That(loadedEdge.ExtendedProperties.Count, Is.EqualTo(3), "ExtendedProperties count mismatch");
+
+                    // Verify specific properties using the GetExtendedProperty<T> helper, which handles JsonElement conversion
+                    Assert.That(loadedEdge.GetExtendedProperty<string>("SourceSystem"), Is.EqualTo("SystemA"));
+                    Assert.That(loadedEdge.GetExtendedProperty<double>("Confidence"), Is.EqualTo(0.95).Within(1e-12));
+                    Assert.That(loadedEdge.GetExtendedProperty<bool>("IsTemporary"), Is.EqualTo(false));
+                });
+            }
+        }
+
+
         // Make static as it doesn't use instance members
-        private static IndexFile LoadIndexFile(string indexFilePath)
+        private static EdgeIndexFileHandler.IndexFile LoadIndexFile(string indexFilePath) // Use the public nested class from EdgeIndexFileHandler
         {
             string json = File.ReadAllText(indexFilePath);
             // Changed from JsonConvert
-            return JsonSerializer.Deserialize<IndexFile>(json) ?? new IndexFile(); 
+            return JsonSerializer.Deserialize<EdgeIndexFileHandler.IndexFile>(json) ?? new EdgeIndexFileHandler.IndexFile(); // Use the public nested class from EdgeIndexFileHandler
         }
     }
 }

@@ -15,19 +15,28 @@ namespace ReasoningEngine.Utils.Scenarios
     {
         private readonly CommandProcessor _commandProcessor;
         // Updated field to use GraphObjectMapper
-        private readonly GraphObjectMapper _graphObjectMapper; 
+        private readonly GraphObjectMapper _graphObjectMapper;
 
-        // Updated constructor to accept GraphObjectMapper
-        public PopulateWeatherScenarioData(CommandProcessor commandProcessor, GraphObjectMapper graphObjectMapper) 
+        /// <summary>
+        /// Initializes a new instance of the PopulateWeatherScenarioData class.
+        /// </summary>
+        /// <param name="commandProcessor">The CommandProcessor instance to use for adding nodes and edges.</param>
+        /// <param name="graphObjectMapper">The GraphObjectMapper instance to use for saving nodes with distributions.</param>
+        public PopulateWeatherScenarioData(CommandProcessor commandProcessor, GraphObjectMapper graphObjectMapper)
         {
             _commandProcessor = commandProcessor;
             _graphObjectMapper = graphObjectMapper; // Assign the mapper
         }
 
-        public void PopulateData()
+        /// <summary>
+        /// Populates the reasoning engine with data for the weather scenario.
+        /// Adds nodes, edges, and probability distributions.
+        /// </summary>
+        // Made async to allow awaiting AddProbabilityDistributions
+        public async Task PopulateData()
         {
             DebugUtils.DebugWriter.DebugWriteLine("#Y8Z68I#", "Starting to populate weather scenario data...", true, DebugUtils.VerbosityLevel.Minimal);
-            
+
             // Add Variable nodes
             AddVariableNodes();
             
@@ -36,10 +45,10 @@ namespace ReasoningEngine.Utils.Scenarios
             
             // Add edges
             AddEdges();
-            
-            // Add probability distributions
-            AddProbabilityDistributions();
-            
+
+            // Add probability distributions asynchronously
+            await AddProbabilityDistributions().ConfigureAwait(false);
+
             DebugUtils.DebugWriter.DebugWriteLine("#TG4PZN#", "Weather scenario data population completed.", true, DebugUtils.VerbosityLevel.Minimal);
         }
 
@@ -236,17 +245,18 @@ namespace ReasoningEngine.Utils.Scenarios
             DebugUtils.DebugWriter.DebugWriteLine("#YRVH2N#", resultEdge27, true, DebugUtils.VerbosityLevel.Detailed);
         }
 
-        // Method to add probability distributions to SIMO nodes
-        private void AddProbabilityDistributions()
+        // Method to add probability distributions to Variable nodes
+        // Made async to properly await GraphObjectMapper calls
+        private async Task AddProbabilityDistributions()
         {
-            DebugUtils.DebugWriter.DebugWriteLine("#FIWWAS#", "Adding probability distributions to SIMO nodes...", true, DebugUtils.VerbosityLevel.Normal);
-            
+            DebugUtils.DebugWriter.DebugWriteLine("#FIWWAS#", "Adding probability distributions to Variable nodes...", true, DebugUtils.VerbosityLevel.Normal);
+
             try
             {
-                // Load Variable nodes from the graph file manager
-                var nodes = LoadVariableNodes(); // Updated method call
-                
-                if (nodes.Count == 0) // This check should still be valid
+                // Load Variable nodes asynchronously
+                var nodes = await LoadVariableNodes().ConfigureAwait(false);
+
+                if (nodes.Count == 0)
                 {
                     DebugUtils.DebugWriter.DebugWriteLine("#3M802W#", "No SIMO nodes found. Make sure to add nodes first.", true, DebugUtils.VerbosityLevel.Minimal);
                     return;
@@ -338,11 +348,14 @@ namespace ReasoningEngine.Utils.Scenarios
                             break;
                     }
 
-                    // Save the node if it was modified using the mapper
+                    // Save the node if it was modified using the mapper asynchronously
                     if (nodeModified)
                     {
-                        // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
-                        if (_graphObjectMapper.SaveNodeAsync(node).Result) 
+                        // Use await with ConfigureAwait(false)
+                        // Adding comment explaining direct mapper usage:
+                        // Direct modification via GraphObjectMapper is used here for efficiency during scenario setup,
+                        // as encoding full distributions into CommandProcessor payloads is complex.
+                        if (await _graphObjectMapper.SaveNodeAsync(node).ConfigureAwait(false))
                         {
                             DebugUtils.DebugWriter.DebugWriteLine("#SAVE_OK#", $"Node {node.Id} saved successfully after adding distribution.", true, DebugUtils.VerbosityLevel.Detailed);
                         }
@@ -361,26 +374,25 @@ namespace ReasoningEngine.Utils.Scenarios
                 DebugUtils.DebugWriter.DebugWriteLine("#2IAIKF#", ex.StackTrace ?? "<No stack trace>", true, DebugUtils.VerbosityLevel.Detailed); // Added null check
             }
         }
-        
-        // Method now loads Variable nodes and returns List<NodeV3>
-        private List<NodeV3> LoadVariableNodes() 
+
+        // Method now loads Variable nodes asynchronously and returns Task<List<NodeV3>>
+        private async Task<List<NodeV3>> LoadVariableNodes()
         {
-            var variableNodes = new List<NodeV3>(); // Use NodeV3 explicitly
-            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_NODES#", "Loading Variable nodes...", true, DebugUtils.VerbosityLevel.Normal); // Updated message
-            
-            // Use Task.Result for simplicity in this synchronous method. Consider async/await pattern later.
+            var variableNodes = new List<NodeV3>();
+            DebugUtils.DebugWriter.DebugWriteLine("#LOAD_VAR_NODES#", "Loading Variable nodes...", true, DebugUtils.VerbosityLevel.Normal);
+
             try
             {
-                // Get IDs via mapper
-                List<long> allNodeIds = _graphObjectMapper.GetAllNodeIdsAsync().Result; 
+                // Get IDs via mapper asynchronously
+                List<long> allNodeIds = await _graphObjectMapper.GetAllNodeIdsAsync().ConfigureAwait(false);
                 DebugUtils.DebugWriter.DebugWriteLine("#LOAD_SIMO_IDS#", $"Found {allNodeIds.Count} total node IDs.", true, DebugUtils.VerbosityLevel.Detailed);
 
                 foreach (long nodeId in allNodeIds)
                 {
-                    // Load node via mapper - variable type changed to NodeV3?
-                    NodeV3? node = _graphObjectMapper.GetNodeAsync(nodeId).Result; 
+                    // Load node via mapper asynchronously
+                    NodeV3? node = await _graphObjectMapper.GetNodeAsync(nodeId).ConfigureAwait(false);
                     // Check if it was loaded successfully and has the Variable role
-                    if (node != null && node.Role == NodeRole.Variable) 
+                    if (node != null && node.Role == NodeRole.Variable)
                     {
                         // Add the NodeV3 object directly (Node is an alias for NodeV3)
                         variableNodes.Add(node); 
@@ -471,42 +483,9 @@ namespace ReasoningEngine.Utils.Scenarios
             node.Distribution.AddPoint(3, 0.30); 
             node.Distribution.AddPoint(4, 0.20); 
             node.Distribution.AddPoint(5, 0.10); 
-            node.Distribution.AddPoint(6, 0.05); 
+            node.Distribution.AddPoint(6, 0.05);
         }
 
-        // Note: This Main method allows running the populator directly.
-        // However, it's recommended to run scenarios via the main program:
-        // `dotnet run --project ReasoningEngine/ReasoningEngine.csproj --run-scenario weather --verbosity Minimal`
-        public static void Main(string[] args)
-        {
-            try
-            {
-                // Load environment variables
-                Env.Load();
-                string dataFolderPath = Environment.GetEnvironmentVariable("DATA_FOLDER_PATH") 
-                                       ?? throw new Exception("DATA_FOLDER_PATH is not set in the environment variables.");
-                
-                DebugUtils.DebugWriter.DebugWriteLine("#WF3ARH#", $"Using data folder path: {dataFolderPath}", true, DebugUtils.VerbosityLevel.Normal);
-                
-                // Initialize Storage Provider, Mapper, and Command Processor
-                IGraphStorageProvider storageProvider = new FileGraphStorageProvider(dataFolderPath);
-                var graphObjectMapper = new GraphObjectMapper(storageProvider);
-                var commandProcessor = new CommandProcessor(graphObjectMapper);
-                
-                // Run OneTimeSetup to ensure the data directory is properly initialized
-                OneTimeSetup.Initialize();
-                
-                // Create and run the data populator, passing the mapper
-                var populator = new PopulateWeatherScenarioData(commandProcessor, graphObjectMapper); 
-                populator.PopulateData();
-                
-                DebugUtils.DebugWriter.DebugWriteLine("#ZLUMLC#", "Weather scenario data population completed successfully.", true, DebugUtils.VerbosityLevel.Minimal);
-            }
-            catch (Exception ex)
-            {
-                DebugUtils.DebugWriter.DebugWriteLine("#9KOY9E#", $"Error in Main: {ex.Message}", true, DebugUtils.VerbosityLevel.Minimal);
-                DebugUtils.DebugWriter.DebugWriteLine("#W154KN#", ex.StackTrace ?? "<No stack trace>", true, DebugUtils.VerbosityLevel.Detailed); // Added null check
-            }
-        }
+        // Removed static Main method. Scenarios should be run via Program.cs arguments.
     }
 }

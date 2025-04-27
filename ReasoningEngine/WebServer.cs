@@ -15,25 +15,50 @@ using ReasoningEngine.GraphAccess;
 
 namespace ReasoningEngine
 {
+    /// <summary>
+    /// Represents a standardized API response wrapper.
+    /// </summary>
+    /// <typeparam name="T">The type of the data payload.</typeparam>
     public class ApiResponse<T>
     {
+        /// <summary>
+        /// Gets or sets a value indicating whether the API request was successful.
+        /// </summary>
         public bool Success { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the data payload of the API response.
+        /// </summary>
         public T? Data { get; set; }
+        
+        /// <summary>
+        /// Gets or sets an error message if the API request was not successful.
+        /// </summary>
         public string? Error { get; set; }
     }
 
+    /// <summary>
+    /// Represents a request body for executing a command via the API.
+    /// </summary>
     public class CommandRequest
     {
+        /// <summary>
+        /// Gets or sets the payload string for the command.
+        /// </summary>
         public string Payload { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Hosts a web server for the Reasoning Engine API.
+    /// Provides RESTful endpoints for interacting with the graph via the CommandProcessor.
+    /// </summary>
     public class WebServer
     {
         private readonly CommandProcessor commandProcessor;
         private static readonly string[] SupportedCommands = new[]
         {
             "node_query",
-            "outgoing_edge_query", 
+            "outgoing_edge_query",
             "incoming_edge_query",
             "add_node",
             "delete_node",
@@ -56,11 +81,18 @@ namespace ReasoningEngine
             ["edit_edge"] = "Updates an existing edge's properties."
         };
 
+        /// <summary>
+        /// Initializes a new instance of the WebServer class.
+        /// </summary>
+        /// <param name="commandProcessor">The CommandProcessor instance to use for executing commands.</param>
         public WebServer(CommandProcessor commandProcessor)
         {
             this.commandProcessor = commandProcessor;
         }
 
+        /// <summary>
+        /// Starts the web server and configures the API endpoints.
+        /// </summary>
         public void Start()
         {
             var builder = WebApplication.CreateBuilder();

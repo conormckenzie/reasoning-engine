@@ -26,25 +26,29 @@ This project is under active development and currently undergoing a major refact
      ```plaintext
      DATA_FOLDER_PATH=/path/to/your/data/folder
      ```
-2. Build the project using the .NET CLI:
+2. Run the one-time setup:
+   ```bash
+   dotnet run --project ReasoningEngine/ReasoningEngine.csproj --setup
+   ```
+3. Build the project using the .NET CLI:
    ```bash
    dotnet build
    ```
 
-3. Run the project:
+4. Run the project:
    ```bash
    dotnet run --project ReasoningEngine/ReasoningEngine.csproj
    ```
    (This starts the interactive console menu).
 
-4. **Run Scenarios (Optional):**
+5. **Run Scenarios (Optional):**
    ```bash
    # Example: Run the weather scenario with minimal output
-   dotnet run --project ReasoningEngine/ReasoningEngine.csproj --run-scenario weather --verbosity Minimal 
+   dotnet run --project ReasoningEngine/ReasoningEngine.csproj --run-scenario weather --verbosity Minimal
    ```
    (See `dotnet run --project ReasoningEngine/ReasoningEngine.csproj --help` for more options).
 
-5. **Run Tests:**
+6. **Run Tests:**
    ```bash
    dotnet test
    ```
@@ -109,7 +113,7 @@ ReasoningEngine/
 │   ├── IGraphStorageProvider.cs # Interface for raw data storage
 │   ├── FileGraphStorageProvider.cs # File-based implementation of IGraphStorageProvider (formerly GraphFileManager.cs)
 │   ├── GraphObjectMapper.cs  # Handles object mapping & serialization using IGraphStorageProvider
-│   └── IndexManager.cs       # Manages the main node index file (`index.json`) used by FileGraphStorageProvider
+│   └── IndexManager.cs       # Manages the main node index file (`index.json`) for node lookups
 │
 ├── GraphOperations/          # High-level API and UI
 │   ├── CommandProcessor.cs   # Processes string commands to manipulate the graph
@@ -122,6 +126,7 @@ ReasoningEngine/
 │   ├── DebugUtils/           # Debugging helpers
 │   └── Scenarios/            # Scenario loading/management (to be replaced by Data Import)
 │
+├── OneTimeSetup.cs           # Handles initial setup (e.g., creating data folder)
 ├── Program.cs                # Main application entry point (CLI args, Menu)
 ├── WebServer.cs              # ASP.NET Core web API (optional entry point)
 ├── ReasoningEngine.csproj    # Project file
@@ -145,8 +150,8 @@ See `docs/KnowledgeRepresentationV3.md` for full details.
     - `IGraphStorageProvider`: Interface defining raw data storage operations.
     - `FileGraphStorageProvider` (in `FileGraphStorageProvider.cs`): Implements `IGraphStorageProvider` using the file system (see `ReasoningEngine/GraphFileHandling/FileManagement.md` for file structure details). Uses `IndexManager` for node lookups.
     - `GraphObjectMapper`: Handles serialization/deserialization and mapping between domain objects (`Node`, `Edge`) and the storage provider.
-- **Command Processor (`GraphOperations/CommandProcessor.cs`):** Provides a string-based API for graph manipulation, using `NodeFactory` and `GraphObjectMapper`. The payload format is typically `id|content|param1=value1|param2=value2...`.
-- **Entry Points (`Program.cs`, `WebServer.cs`):** Provide console and web API access.
+- **Command Processor (`GraphOperations/CommandProcessor.cs`):** Provides a string-based API for graph manipulation, using `NodeFactory` and `GraphObjectMapper`. The payload format is typically `id|content|param1=value1|param2=value2...`. Note that for `Function` nodes, the `FunctionParams` parameter expects a nested structure formatted as a single string: `"FunctionParams=Key1:Value1;Key2:Value2;..."`.
+- **Entry Points (`Program.cs`, `WebServer.cs`):** Provide console and web API access. `Program.cs` also handles command-line arguments for tasks like running scenarios or setup.
     - `WebServer.cs` (Optional): Exposes functionality via an ASP.NET Core RESTful API. Uses `ApiResponse<T>` for consistent responses and explicit operation names in endpoints (e.g., `/api/nodes/{id}/update`). Includes OpenAPI/Swagger documentation.
 
 ### Additional Components

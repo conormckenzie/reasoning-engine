@@ -1,6 +1,7 @@
 # Custom
 *.~
 .env
+.secrets
 data/
 data/index.json
 ignore/

@@ -47,8 +47,8 @@ Based on its `NodeRole`, a `NodeV3` object utilizes specific properties:
 
 Edges represent directed dependencies or the flow of information:
 
-*   **Structure:** Defined by `EdgeId` (Guid), `FromNode` (ID), `ToNode` (ID), `Version` (currently 2), `Content` (description), `Weight` (double), and `ExtendedProperties`.
-*   **`InputName` Convention:** For edges connecting to a `Function` node (`Variable` -> `Function` or `Function` -> `Function`), the `ExtendedProperties` dictionary *may* contain an `"InputName"` key. This allows `Function` nodes to map specific incoming edges to named arguments if needed (e.g., distinguishing inputs for non-commutative operations). If `"InputName"` is not present, the function might rely on edge order or assume default input roles.
+*   **Structure:** Defined by `EdgeId` (Guid), `FromNode` (ID), `ToNode` (ID), `Version` (currently 2), `EdgeContent` (string description), `Weight` (double), and inherits `ExtendedProperties` (dictionary) from `EdgeBase`.
+*   **`InputName` Convention:** For edges connecting to a `Function` node (`Variable` -> `Function` or `Function` -> `Function`), the inherited `ExtendedProperties` dictionary *may* contain an `"InputName"` key. This allows `Function` nodes to map specific incoming edges to named arguments if needed (e.g., distinguishing inputs for non-commutative operations). If `"InputName"` is not present, the function might rely on edge order or assume default input roles.
 *   **Connectivity Rules & Interpretation:**
     *   `Variable` -> `Function`: Provides the state/value of the Variable as input to the Function.
     *   `Function` -> `Function`: Chains functions; output of the source function is input to the target function.

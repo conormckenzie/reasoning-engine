@@ -10,11 +10,7 @@ KNOWN ISSUES:
 
 Context: Ongoing refinements for V3 architecture.
 
-1.  **(Verify)** **`ProbabilityDistribution`: Sorted Inserts:** Verify that `AddPoint` and `AddRange` correctly maintain sorted order by `LowerBound` via `FindInsertionIndex`. Consider adding specific tests.
-2.  **(Refine)** **`ProbabilityDistribution`: Interpolation Logic:** Review the linear interpolation logic in `GetProbability` for points near boundaries. Ensure it's robust and consider alternative interpolation methods if needed. (Replaces original TODO #4).
-3.  **`NodeFactory`: Parameter Parsing:** Implement robust parsing for `FunctionParams` in `CreateNodeFromPayload` and `UpdateNodeFromPayload`, converting string values to appropriate types based on `FunctionType`. (Original TODO #5).
-4.  **Persistence:** Adapt persistence layer (`GraphObjectMapper`, `FileGraphStorageProvider`) to fully handle serialization/deserialization of the complete `NodeV3` structure (including `Distribution`, `Function`, `FunctionParams`) and `EdgeV2`. Verify current partial implementation. (Original TODO #8).
-5.  **`ProbabilityDistribution`: Disallow `AddPoint` for `Truth` Domain:** Modify `AddPoint` to throw an `InvalidOperationException` if `DomainType` is `Truth`. The `Truth` domain represents a continuous probability value between [0, 1] and should only use `AddRange`. Point probabilities within this domain can be approximated using very narrow ranges if needed. (Original TODO #12).
+*(No active TODOs remaining from the initial V3 refinement list)*
 
 ## General Future Improvements
 
@@ -23,11 +19,23 @@ Context: Ongoing refinements for V3 architecture.
     - Add authentication/authorization.
 - **Performance:** Implement response caching (e.g., in `GraphObjectMapper` or application layer) for frequently accessed nodes and edges.
 - **Indexing:** Improve indexing in `FileGraphStorageProvider` for efficient Guid lookups and edge retrieval by node.
+- **Persistence:** Investigate alternative `IGraphStorageProvider` implementations using databases (e.g., SQLite, embedded/server-based Graph DBs like Neo4j) to improve query efficiency (especially incoming edges, Guid lookups) and potentially simplify consistency management.
 - **Data Import:** Develop the planned Data Import System to replace `ScenarioManager`. (See `README.md`)
 - **ProbabilityDistribution:** Consider adding an explicit check for full domain coverage (e.g., ensuring no gaps > `2*EPSILON` exist across the entire conceptual domain, not just between defined ranges).
+- **ProbabilityDistribution:** Add methods for modifying/removing existing points or ranges (e.g., `RemovePoint`, `RemoveRange`, `ModifyProbability`, `CombineRanges`). Ensure these methods maintain internal consistency (sorted, non-overlapping, etc.).
+- **UI/Tooling:** Implement a metadata-driven approach for UI components (like `ConsoleMenu` or future GUIs) to dynamically discover and prompt for node/edge parameters based on type/version, improving separation of concerns and generalizability.
 - **Code Quality:** Review codebase for non-conforming debug IDs (should be `#XXXXXX#` format with 6 alphanumeric chars) in `DebugWriter` calls and standardize them.
 
 ---
+*Completed (Current Session - 2025-04-25):*
+*   **(Refine)** **`ProbabilityDistribution`: Interpolation Logic:** Reviewed the linear interpolation logic in `GetProbability` for points near boundaries; deemed robust. (Original TODO #4).
+*   **(Verify)** **`ProbabilityDistribution`: Sorted Inserts:** Verified that `AddPoint` and `AddRange` correctly maintain sorted order via `FindInsertionIndex`. Confirmed covered by existing tests (`TestGetQuantization_OrderPreservation`, `TestRangeOrdering`). (Original TODO #1).
+*   **`NodeFactory`: Parameter Parsing:** Implemented robust parsing for `FunctionParams` (including post-deserialization handling of `JsonElement`) in `CreateNodeFromPayload` and `UpdateNodeFromPayload`. (Original TODO #5, Completed via commit `14b2453`).
+*   **Persistence:** Adapted persistence layer (`GraphObjectMapper`, `FileGraphStorageProvider`) to fully handle serialization/deserialization of `NodeV3` (including `Distribution`, `Function`, `FunctionParams`) and `EdgeV2` (including `ExtendedProperties`). Verified via new tests. (Original TODO #8, Completed via commit `14b2453`).
+
+*Completed (Current Session - 2025-04-23):*
+*   **`ProbabilityDistribution`: Disallow `AddPoint` for `Truth` Domain:** Verified already implemented and tested. (Original TODO #12).
+
 *Completed (Current Session - 2025-04-11):*
 *   **`ProbabilityDistribution`: Relax `AddRange` Validation:** Commented out "too close" check to allow adjacent ranges. (Original TODO #2).
 *   **`PopulateWeatherScenarioData`: Update to V3 & Rerun:** Updated script payload format and successfully ran the scenario. (Original TODOs #6, #7).

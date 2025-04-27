@@ -5,11 +5,18 @@ using DebugUtils;
 
 namespace ReasoningEngine.GraphAccess
 {
+    /// <summary>
+    /// Provides a console-based user interface for interacting with graph operations via the CommandProcessor.
+    /// </summary>
     public class GraphOperationsUserMenu
     {
         private readonly CommandProcessor commandProcessor;
         private List<MenuItem> menuItems;
 
+        /// <summary>
+        /// Initializes a new instance of the GraphOperationsUserMenu.
+        /// </summary>
+        /// <param name="commandProcessor">The CommandProcessor instance to use for executing graph operations.</param>
         public GraphOperationsUserMenu(CommandProcessor commandProcessor)
         {
             this.commandProcessor = commandProcessor;
@@ -28,6 +35,9 @@ namespace ReasoningEngine.GraphAccess
             };
         }
 
+        /// <summary>
+        /// Displays the graph operations menu and handles user input to execute commands.
+        /// </summary>
         public void ShowMenu()
         {
             while (true)
@@ -79,7 +89,24 @@ namespace ReasoningEngine.GraphAccess
                     string nodeId = Console.ReadLine() ?? "";
                     DebugWriter.DebugWrite("#PYIN03#", "Enter node content: ");
                     string content = Console.ReadLine() ?? "";
-                    return $"{nodeId}|{content}";
+
+                    // --- Generic Parameter Prompt ---
+                    string basePayload = $"{nodeId}|{content}";
+                    DebugWriter.DebugWrite("#PYIN10#", "Enter additional parameters (e.g., Role=Variable|VariableDomainType=Truth|FunctionParams=Key:Val;Key2:Val2) [Optional]: ");
+                    string additionalParams = Console.ReadLine() ?? "";
+
+                    if (!string.IsNullOrWhiteSpace(additionalParams))
+                    {
+                        // Append additional params if provided
+                        return $"{basePayload}|{additionalParams.Trim()}";
+                    }
+                    else
+                    {
+                        // Return only base payload if no additional params entered
+                        return basePayload;
+                    }
+                    // --- End Generic Parameter Prompt ---
+
 
                 case "add_edge":
                 case "edit_edge":
